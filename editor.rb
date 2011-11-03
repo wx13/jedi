@@ -497,7 +497,6 @@ class FileBuffer
 		@cutrow = -2
 		@mark_col = 0
 		@mark_row = 0
-		@undo_commands = []
 		# flags
 		@autoindent = true
 		@editmode = true
@@ -567,6 +566,8 @@ class FileBuffer
 		end
 		text.gsub!(/\r/,"\n")
 		@text = text.split("\n",-1)
+		# setup buffer history for undo/redo
+		
 	end
 
 	def save
@@ -1497,6 +1498,58 @@ class FileBuffer
 	end
 
 end
+
+
+
+
+
+
+#
+# Linked list of buffer text states
+# for undo/redo
+#
+class BufferHistory
+	attr_accessor :tree
+	class Node
+		attr_accessor :next, :prev, :text
+		def initialize(text)
+			for k in 1..(text.length-1)
+				@tree[0][k] = text[k]
+			end
+		end
+		def delete
+			@text = nil
+		end
+	end
+	def initialize(text)
+		@tree = Node.new(text)
+		@tree.next = nil
+		@tree.prev = nil
+	end
+	def push(text)
+		old = @tree
+		@tree = Node.new(text)
+		@tree.next = nil
+		@tree.prev = old
+		old.next = @tree
+	end
+	def text
+		@tree.text
+	end
+	def prev
+		@tree.prev
+	end
+	def next
+		@tree.next
+	end
+	def 
+	def delete
+		@tree = @tree.prev
+		@tree.next.text
+	end
+end
+
+
 
 
 
