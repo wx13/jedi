@@ -144,6 +144,8 @@ $viewmode_commandlist = {
 	?N => "buffer.search(-1)",
 	?g => "buffer.goto_line",
 	?i => "buffer.toggle_editmode",
+	?[ => "buffer.undo",
+	?] => "buffer.redo",
 	?K => "buffer.screen_up",
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
@@ -473,7 +475,7 @@ end
 #
 class FileBuffer
 
-	attr_accessor :filename, :text, :status, :editmode
+	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
 		@filename = filename
@@ -503,7 +505,7 @@ class FileBuffer
 		@insertmode = true
 		@linewrap = false
 		# undo-redo history
-		buffer_history = BufferHistory.new(@text)
+		@buffer_history = BufferHistory.new(@text)
 	end
 
 
@@ -623,7 +625,6 @@ class FileBuffer
 		if col == @text[row].length
 			mergerows(row,row+1)
 		else
-			#c = @text[row][col].chr
 			@text[row] = @text[row].dup
 			@text[row][col] = ""
 		end
@@ -639,7 +640,6 @@ class FileBuffer
 		@status = "Modified"
 	end
 	def delrow(row)
-		#text = @text[row]
 		@text.delete_at(row)
 		@status = "Modified"
 	end
@@ -669,10 +669,8 @@ class FileBuffer
 		@status = "Modified"
 	end
 	def append(row,text)
-		#col = @text[row].length
 		@text[row] = @text[row].dup
 		@text[row] += text
-		#@undo_commands << "@text["+row.to_s+"] = @text["+row.to_s+"][0.."+col.to_s+"]"
 		@status = "Modified"
 	end
 	def insert(row,col,text)
@@ -758,10 +756,30 @@ class FileBuffer
 	# Undo / redo
 	#
 	def undo
-		@text = buffer_history.prev.text
+		if @buffer_history.prev != nil
+			#$screen.write_message(@text[0])
+			#Curses.getch
+			@buffer_history.tree = @buffer_history.prev
+			@text = @buffer_history.copy(@text)
+			#$screen.write_message(@text[0])
+			#Curses.getch
+		end
 	end
 	def redo
-		@text = buffer_history.next.text
+#		temp = @buffer_history
+#		while @buffer_history.prev != nil
+#			@buffer_history = @buffer_history.prev
+#		end
+#		while @buffer_history != nil
+#			$screen.write_message(@buffer_history.text[0])
+#			Curses.getch
+#			@buffer_history = @buffer_history.next
+#		end
+#		$screen.write_message("Done.")
+		if @buffer_history.next != nil
+			@buffer_history.tree = @buffer_history.next
+			@text = @buffer_history.copy(@text)
+		end
 	end
 
 
@@ -1469,12 +1487,17 @@ end
 #
 class BufferHistory
 	attr_accessor :tree
+	def initialize(text)
+		@tree = Node.new(text)
+		@tree.next = nil
+		@tree.prev = nil
+	end
 	class Node
 		attr_accessor :next, :prev, :text
 		def initialize(text)
-			@text = [[]]
-			for k in 1..(text.length-1)
-				@text[0][k] = text[k]
+			@text = []
+			for k in 0..(text.length-1)
+				@text[k] = text[k]
 			end
 		end
 		def delete
@@ -1482,11 +1505,6 @@ class BufferHistory
 			if @next != nil then @next.prev = @prev end
 			if @prev != nil then @prev.next = @next end
 		end
-	end
-	def initialize(text)
-		@tree = Node.new(text)
-		@tree.next = nil
-		@tree.prev = nil
 	end
 	def add(text)
 		old = @tree
@@ -1497,6 +1515,13 @@ class BufferHistory
 	end
 	def text
 		@tree.text
+	end
+	def copy(atext)
+		atext = []
+		for k in 0..(@tree.text.length-1)
+			atext[k] = @tree.text[k]
+		end
+		return(atext)
 	end
 	def prev
 		if @tree.prev == nil
@@ -1664,6 +1689,12 @@ $screen.init_screen do
 		# display the current buffer
 		buffer = buffers.current
 		buffer.dump_to_screen($screen)
+
+		# take a snapshot of the buffer text,
+		# for undo/redo purposes
+		if buffer.buffer_history.text != buffer.text
+			buffer.buffer_history.add(buffer.text)
+		end
 
 		# wait for a key press
 		c = Curses.getch
