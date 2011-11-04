@@ -1509,7 +1509,10 @@ class BufferHistory
 	def add(text)
 		old = @tree
 		@tree = Node.new(text)
-		@tree.next = nil
+		@tree.next = old.next
+		if old.next != nil
+			old.next.prev = @tree
+		end
 		@tree.prev = old
 		old.next = @tree
 	end
