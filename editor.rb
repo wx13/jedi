@@ -623,12 +623,14 @@ class FileBuffer
 		if col == @text[row].length
 			mergerows(row,row+1)
 		else
-			c = @text[row][col].chr
+			#c = @text[row][col].chr
+			@text[row] = @text[row].dup
 			@text[row][col] = ""
 		end
 		@status = "Modified"
 	end
 	def insertchar(row,col,c)
+		@text[row] = @text[row].dup
 		if @insertmode || col == @text[row].length
 			@text[row].insert(col,c)
 		else
@@ -637,7 +639,7 @@ class FileBuffer
 		@status = "Modified"
 	end
 	def delrow(row)
-		text = @text[row]
+		#text = @text[row]
 		@text.delete_at(row)
 		@status = "Modified"
 	end
@@ -646,6 +648,7 @@ class FileBuffer
 			return
 		end
 		col = @text[row1].length
+		@text[row1] = @text[row1].dup
 		@text[row1] += @text[row2]
 		@text.delete_at(row2)
 		@status = "Modified"
@@ -667,17 +670,20 @@ class FileBuffer
 	end
 	def append(row,text)
 		#col = @text[row].length
+		@text[row] = @text[row].dup
 		@text[row] += text
 		#@undo_commands << "@text["+row.to_s+"] = @text["+row.to_s+"][0.."+col.to_s+"]"
 		@status = "Modified"
 	end
 	def insert(row,col,text)
+		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
 		@status = "Modified"
 	end
 	def block_indent(row1,row2)
 		for r in row1..row2
 			if @text[r].length > 0
+				@text[r] = @text[r].dup
 				@text[r].insert(0,"\t")
 			end
 		end
@@ -696,6 +702,7 @@ class FileBuffer
 		end
 		for r in row1..row2
 			if @text[r][0] != nil
+				@text[r] = @text[r].dup
 				@text[r][0] = ""
 			end
 		end
@@ -714,6 +721,7 @@ class FileBuffer
 		end
 		for r in row1..row2
 			if @text[r][0] != nil
+				@text[r] = @text[r].dup
 				@text[r][0] = ""
 			end
 		end
@@ -738,6 +746,7 @@ class FileBuffer
 		end
 		for r in row1..row2
 			if @text[r][0] != nil
+				@text[r] = @text[r].dup
 				@text[r][0] = ""
 			end
 		end
