@@ -502,6 +502,8 @@ class FileBuffer
 		@editmode = true
 		@insertmode = true
 		@linewrap = false
+		# undo-redo history
+		buffer_history = BufferHistory.new(@text)
 	end
 
 
@@ -566,8 +568,6 @@ class FileBuffer
 		end
 		text.gsub!(/\r/,"\n")
 		@text = text.split("\n",-1)
-		# setup buffer history for undo/redo
-		
 	end
 
 	def save
@@ -619,104 +619,63 @@ class FileBuffer
 
 	# these are the functions which do the mods
 	# Everything else calls these
-	def delchar(row,col,options={})
-		opts = {:flag => true}.merge(options)
+	def delchar(row,col)
 		if col == @text[row].length
 			mergerows(row,row+1)
 		else
 			c = @text[row][col].chr
 			@text[row][col] = ""
-			if opts[:flag]
-				@undo_commands << "insertchar("+row.to_s+","+col.to_s+",\""+c+"\",{:flag=>false})"
-			end
 		end
 		@status = "Modified"
 	end
-	def insertchar(row,col,c,options={})
-		opts = {:flag => true}.merge(options)
+	def insertchar(row,col,c)
 		if @insertmode || col == @text[row].length
 			@text[row].insert(col,c)
 		else
 			@text[row][col] = c
 		end
-		if opts[:flag]
-			@undo_commands << "delchar("+row.to_s+","+col.to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def delrow(row,options={})
-		opts = {:flag => true}.merge(options)
+	def delrow(row)
 		text = @text[row]
 		@text.delete_at(row)
-		if opts[:flag]
-			@undo_commands << "insertrow("+row.to_s+",\""+text+"\",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def mergerows(row1,row2,options={})
+	def mergerows(row1,row2)
 		if row2 >= @text.length
 			return
 		end
-		opts = {:flag => true}.merge(options)
 		col = @text[row1].length
 		@text[row1] += @text[row2]
 		@text.delete_at(row2)
-		if opts[:flag]
-			@undo_commands << "splitrow("+row1.to_s+","+col.to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def splitrow(row,col,options={})
-		opts = {:flag => true}.merge(options)
+	def splitrow(row,col)
 		text = @text[row].dup
 		@text[row] = text[(col)..-1]
 		insertrow(row,text[0..(col-1)])
-		if opts[:flag]
-			@undo_commands << "mergerows("+row.to_s+","+(row+1).to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def insertrow(row,text,options={})
-		opts = {:flag => true}.merge(options)
+	def insertrow(row,text)
 		@text.insert(row,text)
-		if opts[:flag]
-			@undo_commands << "delrow("+(row).to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def setrow(row,text,options={})
-		opts = {:flag => true}.merge(options)
+	def setrow(row,text)
 		old = @text[row]
 		@text[row] = text
-		if opts[:flag]
-			@undo_commands << "setrow("+row.to_s+",\""+old+"\",{:flag=>false})"
-			#@undo_commands << "@text["+row.to_s+"] = \""+old+"\""
-		end
 		@status = "Modified"
 	end
-	def append(row,text,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "setrow("+row.to_s+",\""+@text[row]+"\",{:flag=>false})"
-		end
+	def append(row,text)
 		#col = @text[row].length
 		@text[row] += text
 		#@undo_commands << "@text["+row.to_s+"] = @text["+row.to_s+"][0.."+col.to_s+"]"
 		@status = "Modified"
 	end
-	def insert(row,col,text,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "setrow("+row.to_s+",\""+@text[row]+"\",{:flag=>false})"
-		end
+	def insert(row,col,text)
 		@text[row].insert(col,text)
 		@status = "Modified"
 	end
-	def block_indent(row1,row2,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "block_unindent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		end
+	def block_indent(row1,row2)
 		for r in row1..row2
 			if @text[r].length > 0
 				@text[r].insert(0,"\t")
@@ -724,11 +683,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
-	def block_unindent(row1,row2,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "block_indent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		end
+	def block_unindent(row1,row2)
 		for r in row1..row2
 			if @text[r].length == 0
 				next
@@ -746,11 +701,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
-	def block_unspace(row1,row2,options={})
-		#opts = {:flag => true}.merge(options)
-		#if opts[:flag]
-		#	@undo_commands << "block_indent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		#end
+	def block_unspace(row1,row2)
 		for r in row1..row2
 			if @text[r].length == 0
 				next
@@ -768,11 +719,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
-	def block_uncomment(row1,row2,options={})
-		#opts = {:flag => true}.merge(options)
-		#if opts[:flag]
-		#	@undo_commands << "block_indent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		#end
+	def block_uncomment(row1,row2)
 		c = ""
 		ftype = @filename.split(".")[-1]
 		case ftype
@@ -797,12 +744,15 @@ class FileBuffer
 		@status = "Modified"
 	end
 
+
+	#
+	# Undo / redo
+	#
 	def undo
-		if @undo_commands.length >= 1
-			command = @undo_commands.pop
-			eval(command)
-			$screen.write_message(command)
-		end
+		@text = buffer_history.prev.text
+	end
+	def redo
+		@text = buffer_history.next.text
 	end
 
 
@@ -1513,12 +1463,15 @@ class BufferHistory
 	class Node
 		attr_accessor :next, :prev, :text
 		def initialize(text)
+			@text = [[]]
 			for k in 1..(text.length-1)
-				@tree[0][k] = text[k]
+				@text[0][k] = text[k]
 			end
 		end
 		def delete
 			@text = nil
+			if @next != nil then @next.prev = @prev end
+			if @prev != nil then @prev.next = @next end
 		end
 	end
 	def initialize(text)
@@ -1526,7 +1479,7 @@ class BufferHistory
 		@tree.next = nil
 		@tree.prev = nil
 	end
-	def push(text)
+	def add(text)
 		old = @tree
 		@tree = Node.new(text)
 		@tree.next = nil
@@ -1537,15 +1490,30 @@ class BufferHistory
 		@tree.text
 	end
 	def prev
-		@tree.prev
+		if @tree.prev == nil
+			return(@tree)
+		else
+			return(@tree.prev)
+		end
 	end
 	def next
-		@tree.next
+		if @tree.next == nil
+			return(@tree)
+		else
+			return(@tree.next)
+		end
 	end
-	def 
 	def delete
-		@tree = @tree.prev
-		@tree.next.text
+		if (@tree.next==nil)&&(@tree.prev==nil)
+			return(@tree)
+		else
+			@tree.delete
+			if @tree.next == nil
+				return(@tree.prev)
+			else
+				return(@tree.next)
+			end
+		end
 	end
 end
 
