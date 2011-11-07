@@ -1515,6 +1515,34 @@ class BufferHistory
 		end
 		@tree.prev = old
 		old.next = @tree
+		# prune the tree, so it doesn't get too big
+		n=0
+		x = @tree
+		while x != nil
+			n += 1
+			x0 = x
+			x = x.prev
+		end
+		x = x0
+		while n > 500
+			n -= 1
+			x = x.next
+			x.prev.delete
+		end
+		# now forward
+		n=0
+		x = @tree
+		while x != nil
+			n += 1
+			x0 = x
+			x = x.next
+		end
+		x = x0
+		while n > 500
+			n -= 1
+			x = x.prev
+			x.next.delete
+		end
 	end
 	def text
 		@tree.text
