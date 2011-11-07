@@ -144,6 +144,8 @@ $viewmode_commandlist = {
 	?N => "buffer.search(-1)",
 	?g => "buffer.goto_line",
 	?i => "buffer.toggle_editmode",
+	?[ => "buffer.undo",
+	?] => "buffer.redo",
 	?K => "buffer.screen_up",
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
@@ -473,7 +475,7 @@ end
 #
 class FileBuffer
 
-	attr_accessor :filename, :text, :status, :editmode
+	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
 		@filename = filename
@@ -497,12 +499,13 @@ class FileBuffer
 		@cutrow = -2
 		@mark_col = 0
 		@mark_row = 0
-		@undo_commands = []
 		# flags
 		@autoindent = true
 		@editmode = true
 		@insertmode = true
 		@linewrap = false
+		# undo-redo history
+		@buffer_history = BufferHistory.new(@text)
 	end
 
 
@@ -618,116 +621,73 @@ class FileBuffer
 
 	# these are the functions which do the mods
 	# Everything else calls these
-	def delchar(row,col,options={})
-		opts = {:flag => true}.merge(options)
+	def delchar(row,col)
 		if col == @text[row].length
 			mergerows(row,row+1)
 		else
-			c = @text[row][col].chr
+			@text[row] = @text[row].dup
 			@text[row][col] = ""
-			if opts[:flag]
-				@undo_commands << "insertchar("+row.to_s+","+col.to_s+",\""+c+"\",{:flag=>false})"
-			end
 		end
 		@status = "Modified"
 	end
-	def insertchar(row,col,c,options={})
-		opts = {:flag => true}.merge(options)
+	def insertchar(row,col,c)
+		@text[row] = @text[row].dup
 		if @insertmode || col == @text[row].length
 			@text[row].insert(col,c)
 		else
 			@text[row][col] = c
 		end
-		if opts[:flag]
-			@undo_commands << "delchar("+row.to_s+","+col.to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def delrow(row,options={})
-		opts = {:flag => true}.merge(options)
-		text = @text[row]
+	def delrow(row)
 		@text.delete_at(row)
-		if opts[:flag]
-			@undo_commands << "insertrow("+row.to_s+",\""+text+"\",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def mergerows(row1,row2,options={})
+	def mergerows(row1,row2)
 		if row2 >= @text.length
 			return
 		end
-		opts = {:flag => true}.merge(options)
 		col = @text[row1].length
+		@text[row1] = @text[row1].dup
 		@text[row1] += @text[row2]
 		@text.delete_at(row2)
-		if opts[:flag]
-			@undo_commands << "splitrow("+row1.to_s+","+col.to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def splitrow(row,col,options={})
-		opts = {:flag => true}.merge(options)
+	def splitrow(row,col)
 		text = @text[row].dup
 		@text[row] = text[(col)..-1]
 		insertrow(row,text[0..(col-1)])
-		if opts[:flag]
-			@undo_commands << "mergerows("+row.to_s+","+(row+1).to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def insertrow(row,text,options={})
-		opts = {:flag => true}.merge(options)
+	def insertrow(row,text)
 		@text.insert(row,text)
-		if opts[:flag]
-			@undo_commands << "delrow("+(row).to_s+",{:flag=>false})"
-		end
 		@status = "Modified"
 	end
-	def setrow(row,text,options={})
-		opts = {:flag => true}.merge(options)
+	def setrow(row,text)
 		old = @text[row]
 		@text[row] = text
-		if opts[:flag]
-			@undo_commands << "setrow("+row.to_s+",\""+old+"\",{:flag=>false})"
-			#@undo_commands << "@text["+row.to_s+"] = \""+old+"\""
-		end
 		@status = "Modified"
 	end
-	def append(row,text,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "setrow("+row.to_s+",\""+@text[row]+"\",{:flag=>false})"
-		end
-		#col = @text[row].length
+	def append(row,text)
+		@text[row] = @text[row].dup
 		@text[row] += text
-		#@undo_commands << "@text["+row.to_s+"] = @text["+row.to_s+"][0.."+col.to_s+"]"
 		@status = "Modified"
 	end
-	def insert(row,col,text,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "setrow("+row.to_s+",\""+@text[row]+"\",{:flag=>false})"
-		end
+	def insert(row,col,text)
+		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
 		@status = "Modified"
 	end
-	def block_indent(row1,row2,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "block_unindent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		end
+	def block_indent(row1,row2)
 		for r in row1..row2
 			if @text[r].length > 0
+				@text[r] = @text[r].dup
 				@text[r].insert(0,"\t")
 			end
 		end
 		@status = "Modified"
 	end
-	def block_unindent(row1,row2,options={})
-		opts = {:flag => true}.merge(options)
-		if opts[:flag]
-			@undo_commands << "block_indent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		end
+	def block_unindent(row1,row2)
 		for r in row1..row2
 			if @text[r].length == 0
 				next
@@ -740,16 +700,13 @@ class FileBuffer
 		end
 		for r in row1..row2
 			if @text[r][0] != nil
+				@text[r] = @text[r].dup
 				@text[r][0] = ""
 			end
 		end
 		@status = "Modified"
 	end
-	def block_unspace(row1,row2,options={})
-		#opts = {:flag => true}.merge(options)
-		#if opts[:flag]
-		#	@undo_commands << "block_indent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		#end
+	def block_unspace(row1,row2)
 		for r in row1..row2
 			if @text[r].length == 0
 				next
@@ -762,16 +719,13 @@ class FileBuffer
 		end
 		for r in row1..row2
 			if @text[r][0] != nil
+				@text[r] = @text[r].dup
 				@text[r][0] = ""
 			end
 		end
 		@status = "Modified"
 	end
-	def block_uncomment(row1,row2,options={})
-		#opts = {:flag => true}.merge(options)
-		#if opts[:flag]
-		#	@undo_commands << "block_indent("+row1.to_s+",\""+row2.to_s+"\",{:flag=>false})"
-		#end
+	def block_uncomment(row1,row2)
 		c = ""
 		ftype = @filename.split(".")[-1]
 		case ftype
@@ -790,17 +744,41 @@ class FileBuffer
 		end
 		for r in row1..row2
 			if @text[r][0] != nil
+				@text[r] = @text[r].dup
 				@text[r][0] = ""
 			end
 		end
 		@status = "Modified"
 	end
 
+
+	#
+	# Undo / redo
+	#
 	def undo
-		if @undo_commands.length >= 1
-			command = @undo_commands.pop
-			eval(command)
-			$screen.write_message(command)
+		if @buffer_history.prev != nil
+			#$screen.write_message(@text[0])
+			#Curses.getch
+			@buffer_history.tree = @buffer_history.prev
+			@text = @buffer_history.copy(@text)
+			#$screen.write_message(@text[0])
+			#Curses.getch
+		end
+	end
+	def redo
+#		temp = @buffer_history
+#		while @buffer_history.prev != nil
+#			@buffer_history = @buffer_history.prev
+#		end
+#		while @buffer_history != nil
+#			$screen.write_message(@buffer_history.text[0])
+#			Curses.getch
+#			@buffer_history = @buffer_history.next
+#		end
+#		$screen.write_message("Done.")
+		if @buffer_history.next != nil
+			@buffer_history.tree = @buffer_history.next
+			@text = @buffer_history.copy(@text)
 		end
 	end
 
@@ -1500,6 +1478,114 @@ end
 
 
 
+
+
+
+#
+# Linked list of buffer text states
+# for undo/redo
+#
+class BufferHistory
+	attr_accessor :tree
+	def initialize(text)
+		@tree = Node.new(text)
+		@tree.next = nil
+		@tree.prev = nil
+	end
+	class Node
+		attr_accessor :next, :prev, :text
+		def initialize(text)
+			@text = []
+			for k in 0..(text.length-1)
+				@text[k] = text[k]
+			end
+		end
+		def delete
+			@text = nil
+			if @next != nil then @next.prev = @prev end
+			if @prev != nil then @prev.next = @next end
+		end
+	end
+	def add(text)
+		old = @tree
+		@tree = Node.new(text)
+		@tree.next = old.next
+		if old.next != nil
+			old.next.prev = @tree
+		end
+		@tree.prev = old
+		old.next = @tree
+		# prune the tree, so it doesn't get too big
+		n=0
+		x = @tree
+		while x != nil
+			n += 1
+			x0 = x
+			x = x.prev
+		end
+		x = x0
+		while n > 500
+			n -= 1
+			x = x.next
+			x.prev.delete
+		end
+		# now forward
+		n=0
+		x = @tree
+		while x != nil
+			n += 1
+			x0 = x
+			x = x.next
+		end
+		x = x0
+		while n > 500
+			n -= 1
+			x = x.prev
+			x.next.delete
+		end
+	end
+	def text
+		@tree.text
+	end
+	def copy(atext)
+		atext = []
+		for k in 0..(@tree.text.length-1)
+			atext[k] = @tree.text[k]
+		end
+		return(atext)
+	end
+	def prev
+		if @tree.prev == nil
+			return(@tree)
+		else
+			return(@tree.prev)
+		end
+	end
+	def next
+		if @tree.next == nil
+			return(@tree)
+		else
+			return(@tree.next)
+		end
+	end
+	def delete
+		if (@tree.next==nil)&&(@tree.prev==nil)
+			return(@tree)
+		else
+			@tree.delete
+			if @tree.next == nil
+				return(@tree.prev)
+			else
+				return(@tree.next)
+			end
+		end
+	end
+end
+
+
+
+
+
 #
 # this is a list of buffers
 #
@@ -1634,6 +1720,12 @@ $screen.init_screen do
 		# display the current buffer
 		buffer = buffers.current
 		buffer.dump_to_screen($screen)
+
+		# take a snapshot of the buffer text,
+		# for undo/redo purposes
+		if buffer.buffer_history.text != buffer.text
+			buffer.buffer_history.add(buffer.text)
+		end
 
 		# wait for a key press
 		c = Curses.getch
