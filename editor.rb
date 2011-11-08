@@ -306,6 +306,7 @@ class Screen
 	def write_message(message)
 		update_screen_size
 		xpos = (@cols - message.length)/2
+		@screen.attroff Curses::A_REVERSE
 		write_str(@rows-1,0," "*@cols)
 		@screen.attron Curses::A_REVERSE
 		write_str(@rows-1,xpos,message)
