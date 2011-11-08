@@ -16,6 +16,10 @@ Features:
 
 
 To do:
+- block unindent -- only require that all lines start with
+  same string.
+- block indent -- what if previous two lines start ith same string?
+- comments should color over everything
 - line wrap
 - diffs
 - regular expression searches

@@ -234,12 +234,14 @@ class Screen
 		s = colfeed
 		# start at edge of screen
 		s = colfeed
+		# write up to first color escape
 		write_str(row,0,a[0][s,(@cols-pos)])
 		pos += a[0].length
 		a = a[1..-1]
 		if a == nil
 			return
 		end
+		# loop over remaining parts, and process colors
 		a.each{|str|
 			c = str[0,1]
 			d = str[1..-1]
@@ -285,15 +287,13 @@ class Screen
 		ll = lstr.length
 		lr = rstr.length
 		xx = @cols - ll - lr
-		#x1 = ((@cols/2-ll)).floor
-		#lllc = lstr + (" "*x1) + cstr
-		#x2 = @cols - lllc.length - lr
 		all = lstr + (" "*xx) + rstr
 		@screen.attron Curses::A_REVERSE
 		write_str(0,0,all)
 		@screen.attroff Curses::A_REVERSE
 	end
 
+	# toggle reverse text
 	def text_reverse(val)
 		if val
 			@screen.attron Curses::A_REVERSE
@@ -313,6 +313,8 @@ class Screen
 		@screen.attroff Curses::A_REVERSE
 	end
 
+	# get a string from the user, allowing for cancellation,
+	# and weird character stuff
 	def getstr
 		answer=""
 		loop do
@@ -335,6 +337,7 @@ class Screen
 		return(answer)
 	end
 
+	# get the name of a file, allowing for tab completion
 	def getstr_file(ll)
 		answer=""
 		glob=answer
@@ -354,6 +357,7 @@ class Screen
 					answer += c.chr
 					glob = answer
 				when ?\t, $ctrl_i
+					# circulate through possible file matches
 					list = Dir.glob(glob+"*")
 					if list.length == 0
 						next
@@ -392,6 +396,9 @@ class Screen
 		return(answer)
 	end
 
+
+	# ask for a string, allowing for choosing from past values
+	# Used for search/replace.
 	def askhist(question,hist)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
@@ -435,6 +442,8 @@ class Screen
 		return(token)
 	end
 
+
+	# ask a yes or no question
 	def ask_yesno(question)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
@@ -510,6 +519,7 @@ class FileBuffer
 	end
 
 
+	# toggle one of many states
 	def toggle
 		$screen.write_message("e,v,a,m,i,o,w,l")
 		c = Curses.getch
@@ -597,6 +607,7 @@ class FileBuffer
 	end
 
 
+	# make sure file position is valid
 	def sanitize
 		if @text.length == 0
 			@text = [""]
@@ -622,6 +633,8 @@ class FileBuffer
 
 	# these are the functions which do the mods
 	# Everything else calls these
+
+	# delete a character
 	def delchar(row,col)
 		if col == @text[row].length
 			mergerows(row,row+1)
@@ -631,6 +644,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
+	# insert a character
 	def insertchar(row,col,c)
 		@text[row] = @text[row].dup
 		if @insertmode || col == @text[row].length
@@ -640,10 +654,12 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
+	# delete a row
 	def delrow(row)
 		@text.delete_at(row)
 		@status = "Modified"
 	end
+	# merge two consecutive rows
 	def mergerows(row1,row2)
 		if row2 >= @text.length
 			return
@@ -654,31 +670,37 @@ class FileBuffer
 		@text.delete_at(row2)
 		@status = "Modified"
 	end
+	# split a row into two
 	def splitrow(row,col)
 		text = @text[row].dup
 		@text[row] = text[(col)..-1]
 		insertrow(row,text[0..(col-1)])
 		@status = "Modified"
 	end
+	# new row
 	def insertrow(row,text)
 		@text.insert(row,text)
 		@status = "Modified"
 	end
+	# completely change a row's text
 	def setrow(row,text)
 		old = @text[row]
 		@text[row] = text
 		@status = "Modified"
 	end
+	# add to the end of a line
 	def append(row,text)
 		@text[row] = @text[row].dup
 		@text[row] += text
 		@status = "Modified"
 	end
+	# insert a string
 	def insert(row,col,text)
 		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
 		@status = "Modified"
 	end
+	# indent a block of text
 	def block_indent(row1,row2)
 		for r in row1..row2
 			if @text[r].length > 0
@@ -688,6 +710,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
+	# unindent a block of text
 	def block_unindent(row1,row2)
 		for r in row1..row2
 			if @text[r].length == 0
@@ -707,6 +730,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
+	# same as above, but if spaces are used
 	def block_unspace(row1,row2)
 		for r in row1..row2
 			if @text[r].length == 0
@@ -726,6 +750,7 @@ class FileBuffer
 		end
 		@status = "Modified"
 	end
+	# uncomment a block
 	def block_uncomment(row1,row2)
 		c = ""
 		ftype = @filename.split(".")[-1]
@@ -758,25 +783,11 @@ class FileBuffer
 	#
 	def undo
 		if @buffer_history.prev != nil
-			#$screen.write_message(@text[0])
-			#Curses.getch
 			@buffer_history.tree = @buffer_history.prev
 			@text = @buffer_history.copy(@text)
-			#$screen.write_message(@text[0])
-			#Curses.getch
 		end
 	end
 	def redo
-#		temp = @buffer_history
-#		while @buffer_history.prev != nil
-#			@buffer_history = @buffer_history.prev
-#		end
-#		while @buffer_history != nil
-#			$screen.write_message(@buffer_history.text[0])
-#			Curses.getch
-#			@buffer_history = @buffer_history.next
-#		end
-#		$screen.write_message("Done.")
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
 			@text = @buffer_history.copy(@text)
@@ -786,9 +797,13 @@ class FileBuffer
 
 
 	# these functions all call the mod function
+	# but don't modify the buffer directly
+
+	# delete a character
 	def delete
 		delchar(@row,@col)
 	end
+	# backspace over a character
 	def backspace
 		if @marked
 			if @row < @mark_row
@@ -812,6 +827,7 @@ class FileBuffer
 		cursor_left
 		delchar(@row,@col)
 	end
+	# indent a line or block of text
 	def indent
 		if @marked
 			if @row < @mark_row
@@ -826,6 +842,7 @@ class FileBuffer
 			addchar(?\t)
 		end
 	end
+	# comment a block of text
 	def block_comment
 		if @marked == false
 			return
@@ -858,10 +875,12 @@ class FileBuffer
 		end
 		$screen.write_message("done")
 	end
+	# insert a char and move to the right
 	def addchar(c)
 		insertchar(@row,@col,c.chr)
 		cursor_right
 	end
+	# add a line-break
 	def newline
 		if @col == 0
 			insertrow(@row,"")
@@ -888,6 +907,7 @@ class FileBuffer
 		end
 	end
 
+	# justify a block of text
 	def justify
 		ans = $screen.ask_yesno("Justify?")
 		if ans != "yes" then
@@ -916,12 +936,8 @@ class FileBuffer
 		r = mark_row
 		loop do
 			c2 = text.index(/\s./,c)
-			#$screen.write_message(c.to_s+","+c2.to_s)
-			#Curses.getch
 			if c2 == nil then break end
 			if c2 >= (cols-1)
-				#$screen.write_message(r.to_s+":"+text[0,c]+":")
-				#Curses.getch
 				insertrow(r,text[0,c].chomp(" ").chomp(" "))
 				text = text[c..-1]
 				r += 1
@@ -992,9 +1008,6 @@ class FileBuffer
 			@row = @text.length-1
 		end
 		@col = sc2bc(@row,sc)
-		#if @col >= @text[@row].length
-		#	@col = @text[@row].length-1
-		#end
 	end
 	def cursor_up(n)
 		sc = bc2sc(@row,@col)
@@ -1003,9 +1016,6 @@ class FileBuffer
 			@row = 0
 		end
 		@col = sc2bc(@row,sc)
-		#if @col >= @text[@row].length
-		#	@col = @text[@row].length - 1
-		#end
 	end
 	def goto_line
 		num = $screen.ask("go to line: ")
@@ -1066,8 +1076,6 @@ class FileBuffer
 			text = @text[row]
 			tl = text.length
 			ridx = text.reverse.index(token.reverse,(tl-@col))
-			#$screen.write_message(text.reverse+","+token.reverse+","+(tl-@col+1).to_s)
-			#Curses.getch
 			while(ridx==nil)
 				row = (row-1)
 				if row < 0 then row = nlines-1 end
@@ -1152,9 +1160,10 @@ class FileBuffer
 	end
 	def cut
 		if @marked
-			@marked = false
 			# single line stuff
+			@marked = false
 			if @row == @mark_row
+				# single row
 				if @col < @mark_col
 					temp = @col
 					@col = @mark_col
@@ -1168,6 +1177,7 @@ class FileBuffer
 				setrow(@row,@text[@row][0..@mark_col].chop+@text[@row][(@col+1)..-1])
 				@col = @mark_col
 			else
+				# multiple rows
 				if @row < @mark_row
 					temp = @row
 					@row = @mark_row
@@ -1197,6 +1207,7 @@ class FileBuffer
 				end
 			end
 		else
+			# unmarked text (check for consecutive lines)
 			if @row == (@cutrow)
 				$copy_buffer += @text[@row] + "\n"
 			else
@@ -1207,6 +1218,7 @@ class FileBuffer
 			@col = 0
 		end
 	end
+	# same as cut, but no cutting
 	def copy
 		if @marked
 			@marked = false
@@ -1272,6 +1284,8 @@ class FileBuffer
 	#
 	# display text
 	#
+
+	# write everything, including status lines
 	def dump_to_screen(screen)
 		# get cursor position
 		ypos = @row - @linefeed
@@ -1682,7 +1696,7 @@ $replace_hist = [""]
 $copy_buffer = ""
 
 
-
+# create the case statement from list of keybindings
 $case_then = "case c\n"
 $commandlist.each{|key|
 	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
@@ -1732,6 +1746,7 @@ $screen.init_screen do
 		c = Curses.getch
 		if c.is_a?(String) then c = c.unpack('C')[0] end
 
+		# execute case statement
 		eval $case_then
 
 		buffer.sanitize
