@@ -25,6 +25,8 @@ To do:
 - regular expression searches
 - multi-line syntax coloring?
 - record & replay keypresses
+- sometimes cursor ends up in weird places
+- move to place where undo/redo occurs
 
 
 Description of code and methods
