@@ -8,7 +8,7 @@ require 'curses'
 #	Screen -- for reading and writing to the screen (Curses)
 #	FileBuffer -- for holding and manipulating the text of a file
 #	BufferList -- for managing multiple file buffers
-
+#	BufferHistory -- for undo/redo
 #
 
 
@@ -224,16 +224,16 @@ class Screen
 			return
 		end
 
-		# handle colors
+		# split at color escape
 		a = line.split($color)
-		pos = 0
-		s = 0
-		if pos < colfeed
-			s = colfeed - pos
-		end
+		# don't do anything for empty rows
 		if a[0] == nil
 			return
 		end
+		pos = 0
+		s = colfeed
+		# start at edge of screen
+		s = colfeed
 		write_str(row,0,a[0][s,(@cols-pos)])
 		pos += a[0].length
 		a = a[1..-1]
