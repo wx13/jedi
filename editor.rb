@@ -948,14 +948,16 @@ class FileBuffer
 		c = 0
 		r = mark_row
 		loop do
-			c2 = text.index(/(\s.)|($)/,c)  # location of next whitespace
+			c2 = text.index(/([^\s]\s)|($)/,c)  # end of next word
 			if c2 == nil then break end  # end, if no more words
 			# if we are past the edge, then put it in the next row
 			# Otherwise, keep going.
 			if c2 >= (cols-1)
-				if c == 0 then c = c2 end  # careful about long words
-				insertrow(r,text[0..c].chomp(" ").chomp(" "))
-				text = text[(c+1)..-1]
+				if c == 0 then c = c2+1 end  # careful about long words
+				insertrow(r,text[0,c])
+				text = text[c..-1]
+				if text == nil then text = "" end
+				text.lstrip!
 				r += 1
 				c = 0
 			else
