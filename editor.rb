@@ -909,11 +909,21 @@ class FileBuffer
 
 	# justify a block of text
 	def justify
-		ans = $screen.ask_yesno("Justify?")
-		if ans != "yes" then
+
+		# ask for screen width
+		# nil means cancel, empty means screen width
+		ans = $screen.ask("Justify width ["+$screen.cols.to_s+"]:")
+		if ans == nil
 			$screen.write_message("Cancelled")
 			return
 		end
+		if ans == ""
+			cols = $screen.cols
+		else
+			cols = ans.to_i
+		end
+
+		# set start & end rows
 		if @marked
 			if @row < @mark_row
 				row = @mark_row
@@ -927,17 +937,23 @@ class FileBuffer
 			mark_row = @row
 		end
 		nl = row - mark_row + 1
+
+		# make one long line out of multiple lines
 		text = @text[mark_row..row].join(" ")
 		for r in mark_row..row
 			delrow(mark_row)
 		end
-		cols = $screen.cols
+
+		# loop through words and check length
 		c = 0
 		r = mark_row
 		loop do
-			c2 = text.index(/\s./,c)
-			if c2 == nil then break end
+			c2 = text.index(/(\s.)|($)/,c)  # location of next whitespace
+			if c2 == nil then break end  # end, if no more words
+			# if we are past the edge, then put it in the next row
+			# Otherwise, keep going.
 			if c2 >= (cols-1)
+				if c == 0 then c = c2 end  # careful about long words
 				insertrow(r,text[0,c].chomp(" ").chomp(" "))
 				text = text[c..-1]
 				r += 1
