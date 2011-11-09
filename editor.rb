@@ -954,19 +954,20 @@ class FileBuffer
 			# Otherwise, keep going.
 			if c2 >= (cols-1)
 				if c == 0 then c = c2 end  # careful about long words
-				insertrow(r,text[0,c].chomp(" ").chomp(" "))
-				text = text[c..-1]
+				insertrow(r,text[0..c].chomp(" ").chomp(" "))
+				text = text[(c+1)..-1]
 				r += 1
 				c = 0
 			else
 				c = c2+1
 			end
 			if text == nil || text == ""
+				text = ""
 				break
 			end
 		end
 		insertrow(r,text)
-		$screen.write_message("Justified")
+		$screen.write_message("Justified to "+cols.to_s+" columns")
 		@marked = false
 		@row = r
 		@col = 0
