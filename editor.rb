@@ -326,7 +326,7 @@ class Screen
 					break
 				when $ctrl_m then break
 				when $ctrl_h, $backspace, $backspace2
-					answer.chop
+					answer.chop!
 				when 32..127
 					answer += c.chr
 				when /[a-zA-Z0-9]/ then answer += (c.unpack('C')[0])
