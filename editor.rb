@@ -785,13 +785,27 @@ class FileBuffer
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev
 			@text = @buffer_history.copy(@text)
+			@col = 0
+			@row = row_changed(@text,@buffer_history.next.text,@row)
 		end
 	end
 	def redo
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
 			@text = @buffer_history.copy(@text)
+			@col = 0
+			@row = row_changed(@text,@buffer_history.prev.text,@row)
 		end
+	end
+	def row_changed(text1,text2,r)
+		n = [text1.length,text2.length].min
+		text1.each_index{|i|
+			if i >= n then break end
+			if text1[i] != text2[i]
+				return(i)
+			end
+		}
+		return(r)
 	end
 
 
