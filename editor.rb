@@ -1110,8 +1110,6 @@ class FileBuffer
 				idx = @text[row].index(token)
 			end
 		else
-			#text = @text[row]
-			#tl = text.length
 			if @col > 0
 				idx = @text[row].rindex(token,@col-1)
 			else
@@ -1124,8 +1122,6 @@ class FileBuffer
 					$screen.write_message("No matches")
 					return
 				end
-				#text = @text[row]
-				#tl = text.length
 				idx = @text[row].rindex(token)
 			end
 		end
@@ -1140,9 +1136,13 @@ class FileBuffer
 			$screen.write_message("Cancelled")
 			return
 		end
+		# is it a regexp
+		if token.match(/^\/.*\/$/) != nil
+			token = eval(token)
+		end
 		# get replace string from user
 		replacement = $screen.askhist("Replace:",$replace_hist)
-		if token == nil
+		if replacement == nil
 			$screen.write_message("Cancelled")
 			return
 		end
@@ -1154,22 +1154,23 @@ class FileBuffer
 			nlines = @text.length
 			idx = @text[row].index(token,col)
 			while(idx!=nil)
+				str = @text[row][idx..-1].match(token)
 				@row = row
 				@col = idx
 				dump_to_screen($screen)
-				highlight(row,idx,idx+token.length-1)
+				highlight(row,idx,idx+str.length-1)
 				yn = $screen.ask_yesno("Replace this occurance?")
-				l = token.length
+				l = str.length
 				if yn == "yes"
 					temp = @text[row].dup
 					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
 					@status = "Modified"
-					col = idx+l
+					col = idx+replacement.length
 				elsif yn == "cancel"
 					$screen.write_message("Cancelled")
 					return
 				else
-					col = idx+l
+					col = idx+replacement.length
 				end
 				if col > @text[row].length
 					break
