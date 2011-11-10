@@ -1091,6 +1091,10 @@ class FileBuffer
 			$screen.write_message("Cancelled")
 			return
 		end
+		# is it a regexp
+		if token.match(/^\/.*\/$/) != nil
+			token = eval(token)
+		end
 		nlines = @text.length
 		row = @row
 		if p >= 0
@@ -1106,21 +1110,24 @@ class FileBuffer
 				idx = @text[row].index(token)
 			end
 		else
-			text = @text[row]
-			tl = text.length
-			ridx = text.reverse.index(token.reverse,(tl-@col))
-			while(ridx==nil)
+			#text = @text[row]
+			#tl = text.length
+			if @col > 0
+				idx = @text[row].rindex(token,@col-1)
+			else
+				idx = nil
+			end
+			while(idx==nil)
 				row = (row-1)
 				if row < 0 then row = nlines-1 end
 				if row == @row
 					$screen.write_message("No matches")
 					return
 				end
-				text = @text[row]
-				tl = text.length
-				ridx = text.reverse.index(token.reverse)
+				#text = @text[row]
+				#tl = text.length
+				idx = @text[row].rindex(token)
 			end
-			idx = tl - ridx - token.length
 		end
 		$screen.write_message("Found match")
 		@row = row
