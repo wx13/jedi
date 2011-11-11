@@ -13,6 +13,7 @@ Features:
 - autoindent
 - block comment & indent
 - justify text
+- regular expression searches
 
 
 To do:
@@ -22,11 +23,9 @@ To do:
 - comments should color over everything
 - line wrap
 - diffs
-- regular expression searches
 - multi-line syntax coloring?
 - record & replay keypresses
 - sometimes cursor ends up in weird places
-- move to place where undo/redo occurs
 
 
 Description of code and methods

@@ -326,7 +326,7 @@ class Screen
 					break
 				when $ctrl_m then break
 				when $ctrl_h, $backspace, $backspace2
-					answer.chop
+					answer.chop!
 				when 32..127
 					answer += c.chr
 				when /[a-zA-Z0-9]/ then answer += (c.unpack('C')[0])
@@ -785,13 +785,27 @@ class FileBuffer
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev
 			@text = @buffer_history.copy(@text)
+			@col = 0
+			@row = row_changed(@text,@buffer_history.next.text,@row)
 		end
 	end
 	def redo
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
 			@text = @buffer_history.copy(@text)
+			@col = 0
+			@row = row_changed(@text,@buffer_history.prev.text,@row)
 		end
+	end
+	def row_changed(text1,text2,r)
+		n = [text1.length,text2.length].min
+		text1.each_index{|i|
+			if i >= n then break end
+			if text1[i] != text2[i]
+				return(i)
+			end
+		}
+		return(r)
 	end
 
 
@@ -909,11 +923,21 @@ class FileBuffer
 
 	# justify a block of text
 	def justify
-		ans = $screen.ask_yesno("Justify?")
-		if ans != "yes" then
+
+		# ask for screen width
+		# nil means cancel, empty means screen width
+		ans = $screen.ask("Justify width ["+$screen.cols.to_s+"]:")
+		if ans == nil
 			$screen.write_message("Cancelled")
 			return
 		end
+		if ans == ""
+			cols = $screen.cols
+		else
+			cols = ans.to_i
+		end
+
+		# set start & end rows
 		if @marked
 			if @row < @mark_row
 				row = @mark_row
@@ -927,30 +951,39 @@ class FileBuffer
 			mark_row = @row
 		end
 		nl = row - mark_row + 1
+
+		# make one long line out of multiple lines
 		text = @text[mark_row..row].join(" ")
 		for r in mark_row..row
 			delrow(mark_row)
 		end
-		cols = $screen.cols
+
+		# loop through words and check length
 		c = 0
 		r = mark_row
 		loop do
-			c2 = text.index(/\s./,c)
-			if c2 == nil then break end
+			c2 = text.index(/([^\s]\s)|($)/,c)  # end of next word
+			if c2 == nil then break end  # end, if no more words
+			# if we are past the edge, then put it in the next row
+			# Otherwise, keep going.
 			if c2 >= (cols-1)
-				insertrow(r,text[0,c].chomp(" ").chomp(" "))
+				if c == 0 then c = c2+1 end  # careful about long words
+				insertrow(r,text[0,c])
 				text = text[c..-1]
+				if text == nil then text = "" end
+				text.lstrip!
 				r += 1
 				c = 0
 			else
 				c = c2+1
 			end
 			if text == nil || text == ""
+				text = ""
 				break
 			end
 		end
 		insertrow(r,text)
-		$screen.write_message("Justified")
+		$screen.write_message("Justified to "+cols.to_s+" columns")
 		@marked = false
 		@row = r
 		@col = 0
@@ -1058,6 +1091,10 @@ class FileBuffer
 			$screen.write_message("Cancelled")
 			return
 		end
+		# is it a regexp
+		if token.match(/^\/.*\/$/) != nil
+			token = eval(token)
+		end
 		nlines = @text.length
 		row = @row
 		if p >= 0
@@ -1073,21 +1110,20 @@ class FileBuffer
 				idx = @text[row].index(token)
 			end
 		else
-			text = @text[row]
-			tl = text.length
-			ridx = text.reverse.index(token.reverse,(tl-@col))
-			while(ridx==nil)
+			if @col > 0
+				idx = @text[row].rindex(token,@col-1)
+			else
+				idx = nil
+			end
+			while(idx==nil)
 				row = (row-1)
 				if row < 0 then row = nlines-1 end
 				if row == @row
 					$screen.write_message("No matches")
 					return
 				end
-				text = @text[row]
-				tl = text.length
-				ridx = text.reverse.index(token.reverse)
+				idx = @text[row].rindex(token)
 			end
-			idx = tl - ridx - token.length
 		end
 		$screen.write_message("Found match")
 		@row = row
@@ -1100,9 +1136,13 @@ class FileBuffer
 			$screen.write_message("Cancelled")
 			return
 		end
+		# is it a regexp
+		if token.match(/^\/.*\/$/) != nil
+			token = eval(token)
+		end
 		# get replace string from user
 		replacement = $screen.askhist("Replace:",$replace_hist)
-		if token == nil
+		if replacement == nil
 			$screen.write_message("Cancelled")
 			return
 		end
@@ -1114,22 +1154,23 @@ class FileBuffer
 			nlines = @text.length
 			idx = @text[row].index(token,col)
 			while(idx!=nil)
+				str = @text[row][idx..-1].match(token)
 				@row = row
 				@col = idx
 				dump_to_screen($screen)
-				highlight(row,idx,idx+token.length-1)
+				highlight(row,idx,idx+str.length-1)
 				yn = $screen.ask_yesno("Replace this occurance?")
-				l = token.length
+				l = str.length
 				if yn == "yes"
 					temp = @text[row].dup
 					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
 					@status = "Modified"
-					col = idx+l
+					col = idx+replacement.length
 				elsif yn == "cancel"
 					$screen.write_message("Cancelled")
 					return
 				else
-					col = idx+l
+					col = idx+replacement.length
 				end
 				if col > @text[row].length
 					break
