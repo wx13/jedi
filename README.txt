@@ -27,6 +27,9 @@ To do:
 - record & replay keypresses
 - sometimes cursor ends up in weird places
 
+- column editing:
+	+ Let ctrl-d delete highlighted text
+	+ Let ctrl-s select columns
 
 Description of code and methods
 ===============================
