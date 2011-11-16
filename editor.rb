@@ -266,7 +266,7 @@ class Screen
 			if d == nil
 				next
 			end
-			write_str(row,c,d[s,(@cols-pos)])
+			write_str(row,c,d[s,(@cols-c)])
 			pos += d.length
 		}
 	end
