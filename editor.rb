@@ -708,6 +708,18 @@ class FileBuffer
 		@text[row].insert(col,text)
 		@status = "Modified"
 	end
+	# backspace a column of text
+	def column_backspace(row1,row2)
+		sc = bc2sc(@row,@col)
+		for r in row1..row2
+			c = sc2bc(r,sc)
+			if c<=0 then next end
+			@text[r] = @text[r].dup
+			@text[r][c-1] = ""
+		end
+		cursor_left
+		@status = "Modified"
+	end
 	# indent a block of text
 	def block_indent(row1,row2)
 		for r in row1..row2
@@ -835,7 +847,11 @@ class FileBuffer
 				row = @row
 				mark_row = @mark_row
 			end
-			block_unindent(mark_row,row)
+			if @colmode
+				column_backspace(mark_row,row)
+			else
+				block_unindent(mark_row,row)
+			end
 			return
 		end
 		if (@col+@row)==0
@@ -893,7 +909,14 @@ class FileBuffer
 			if (@text[r].length == 0)&&(s=~/^\s*$/)
 				next
 			end
-			insertchar(r,0,s)
+			if @colmode
+				sc = bc2sc(@row,@col)
+				c = sc2bc(r,sc)
+				if(c>=@text[r].length) then next end
+				insertchar(r,c,s)
+			else
+				insertchar(r,0,s)
+			end
 		end
 		$screen.write_message("done")
 	end
@@ -1424,8 +1447,6 @@ class FileBuffer
 					sc = bc2sc(@row,@col)
 					for r in mark_row..row
 						c = sc2bc(r,sc)
-						#$screen.write_message(r.to_s+","+@col.to_s+","+sc.to_s+","+c.to_s)
-						#Curses.getch
 						highlight(r,c,c)
 					end
 				else
