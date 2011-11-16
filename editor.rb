@@ -110,6 +110,7 @@ $commandlist = {
 	$ctrl_f => "buffer = buffers.open",
 	$ctrl_z => "$screen.suspend",
 	$ctrl_6 => "buffer.toggle"
+	#$ctrl_s => "buffer.mark_columns"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
@@ -122,7 +123,7 @@ $editmode_commandlist = {
 	$ctrl_m => "buffer.newline",
 	$ctrl_j => "buffer.newline",
 	$ctrl_d => "buffer.delete",
-	$ctrl_s => "buffer.search_and_replace",
+	$ctrl_r => "buffer.search_and_replace",
 	$ctrl_t => "buffer.block_comment",
 	$ctrl_l => "buffer.justify",
 	$ctrl_i => "buffer.indent",
@@ -514,6 +515,7 @@ class FileBuffer
 		@editmode = true
 		@insertmode = true
 		@linewrap = false
+		@colmode = false
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 	end
@@ -521,7 +523,7 @@ class FileBuffer
 
 	# toggle one of many states
 	def toggle
-		$screen.write_message("e,v,a,m,i,o,w,l")
+		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row")
 		c = Curses.getch
 		case c
 			when ?e
@@ -548,6 +550,12 @@ class FileBuffer
 			when ?l
 				@linewrap = false
 				$screen.write_message("No line wrapping")
+			when ?c
+				@colmode = true
+				$screen.write_message("Column mode")
+			when ?r
+				@colmode = false
+				$screen.write_message("Row mode")
 		end
 	end
 
@@ -1397,7 +1405,9 @@ class FileBuffer
 					col = @col
 					mark_col = @mark_col
 				end
-				highlight(@row,mark_col,col)
+				if @colmode == false
+					highlight(@row,mark_col,col)
+				end
 			else
 				if @row < @mark_row
 					row = @mark_row
@@ -1410,13 +1420,23 @@ class FileBuffer
 					col = @col
 					mark_col = @mark_col
 				end
-				sl = @text[mark_row].length-1
-				highlight(mark_row,mark_col,sl)
-				for r in (mark_row+1)..(row-1)
-					sl = @text[r].length-1
-					highlight(r,0,sl)
+				if @colmode
+					sc = bc2sc(@row,@col)
+					for r in mark_row..row
+						c = sc2bc(r,sc)
+						#$screen.write_message(r.to_s+","+@col.to_s+","+sc.to_s+","+c.to_s)
+						#Curses.getch
+						highlight(r,c,c)
+					end
+				else
+					sl = @text[mark_row].length-1
+					highlight(mark_row,mark_col,sl)
+					for r in (mark_row+1)..(row-1)
+						sl = @text[r].length-1
+						highlight(r,0,sl)
+					end
+					highlight(row,0,col)
 				end
-				highlight(row,0,col)
 			end
 		end
 	end
