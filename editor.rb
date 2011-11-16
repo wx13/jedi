@@ -1503,7 +1503,7 @@ class FileBuffer
 	def sc2bc(row,col)
 		bc = 0
 		sc = 0
-		@text[@row].each_char{|c|
+		@text[row].each_char{|c|
 			if c == "\t"
 				sc += 4
 				sc -= sc.modulo(4)
