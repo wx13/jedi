@@ -110,6 +110,7 @@ $commandlist = {
 	$ctrl_f => "buffer = buffers.open",
 	$ctrl_z => "$screen.suspend",
 	$ctrl_6 => "buffer.toggle"
+	#$ctrl_s => "buffer.mark_columns"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
@@ -122,7 +123,7 @@ $editmode_commandlist = {
 	$ctrl_m => "buffer.newline",
 	$ctrl_j => "buffer.newline",
 	$ctrl_d => "buffer.delete",
-	$ctrl_s => "buffer.search_and_replace",
+	$ctrl_r => "buffer.search_and_replace",
 	$ctrl_t => "buffer.block_comment",
 	$ctrl_l => "buffer.justify",
 	$ctrl_i => "buffer.indent",
@@ -265,7 +266,7 @@ class Screen
 			if d == nil
 				next
 			end
-			write_str(row,c,d[s,(@cols-pos)])
+			write_str(row,c,d[s,(@cols-c)])
 			pos += d.length
 		}
 	end
@@ -514,6 +515,7 @@ class FileBuffer
 		@editmode = true
 		@insertmode = true
 		@linewrap = false
+		@colmode = false
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 	end
@@ -521,7 +523,7 @@ class FileBuffer
 
 	# toggle one of many states
 	def toggle
-		$screen.write_message("e,v,a,m,i,o,w,l")
+		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row")
 		c = Curses.getch
 		case c
 			when ?e
@@ -548,6 +550,12 @@ class FileBuffer
 			when ?l
 				@linewrap = false
 				$screen.write_message("No line wrapping")
+			when ?c
+				@colmode = true
+				$screen.write_message("Column mode")
+			when ?r
+				@colmode = false
+				$screen.write_message("Row mode")
 		end
 	end
 
@@ -700,6 +708,18 @@ class FileBuffer
 		@text[row].insert(col,text)
 		@status = "Modified"
 	end
+	# backspace a column of text
+	def column_backspace(row1,row2)
+		sc = bc2sc(@row,@col)
+		for r in row1..row2
+			c = sc2bc(r,sc)
+			if c<=0 then next end
+			@text[r] = @text[r].dup
+			@text[r][c-1] = ""
+		end
+		cursor_left
+		@status = "Modified"
+	end
 	# indent a block of text
 	def block_indent(row1,row2)
 		for r in row1..row2
@@ -827,7 +847,11 @@ class FileBuffer
 				row = @row
 				mark_row = @mark_row
 			end
-			block_unindent(mark_row,row)
+			if @colmode
+				column_backspace(mark_row,row)
+			else
+				block_unindent(mark_row,row)
+			end
 			return
 		end
 		if (@col+@row)==0
@@ -885,7 +909,14 @@ class FileBuffer
 			if (@text[r].length == 0)&&(s=~/^\s*$/)
 				next
 			end
-			insertchar(r,0,s)
+			if @colmode
+				sc = bc2sc(@row,@col)
+				c = sc2bc(r,sc)
+				if(c>=@text[r].length) then next end
+				insertchar(r,c,s)
+			else
+				insertchar(r,0,s)
+			end
 		end
 		$screen.write_message("done")
 	end
@@ -1397,7 +1428,9 @@ class FileBuffer
 					col = @col
 					mark_col = @mark_col
 				end
-				highlight(@row,mark_col,col)
+				if @colmode == false
+					highlight(@row,mark_col,col)
+				end
 			else
 				if @row < @mark_row
 					row = @mark_row
@@ -1410,13 +1443,21 @@ class FileBuffer
 					col = @col
 					mark_col = @mark_col
 				end
-				sl = @text[mark_row].length-1
-				highlight(mark_row,mark_col,sl)
-				for r in (mark_row+1)..(row-1)
-					sl = @text[r].length-1
-					highlight(r,0,sl)
+				if @colmode
+					sc = bc2sc(@row,@col)
+					for r in mark_row..row
+						c = sc2bc(r,sc)
+						highlight(r,c,c)
+					end
+				else
+					sl = @text[mark_row].length-1
+					highlight(mark_row,mark_col,sl)
+					for r in (mark_row+1)..(row-1)
+						sl = @text[r].length-1
+						highlight(r,0,sl)
+					end
+					highlight(row,0,col)
 				end
-				highlight(row,0,col)
 			end
 		end
 	end
@@ -1503,7 +1544,7 @@ class FileBuffer
 	def sc2bc(row,col)
 		bc = 0
 		sc = 0
-		@text[@row].each_char{|c|
+		@text[row].each_char{|c|
 			if c == "\t"
 				sc += 4
 				sc -= sc.modulo(4)

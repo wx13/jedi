@@ -14,6 +14,13 @@ Features:
 - block comment & indent
 - justify text
 - regular expression searches
+- column editing:
+	+ ctrl-6,c/r toggles column/row editing
+	+ in col editing:
+		- single column highlighted (elongated cursor)
+		- ctrl-t inserts arb text before cursor
+		- backspace delets before long cursor
+		- ctrl-d is still single-line
 
 
 To do:
