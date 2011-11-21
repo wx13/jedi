@@ -1335,13 +1335,17 @@ class FileBuffer
 		@cutrow = -2
 		n = @text[@row].count("\n")
 		temp = @text[@row].split("\n")
+		if temp[0] == nil
+			temp[0] = ""
+		end
 		setrow(@row,temp[0])
 		temp[1..-1].each{|line|
 			@row += 1
 			insertrow(@row,line)
 		}
-		if n >= temp.length
+		while n >= temp.length
 			@row += 1
+			n -= 1
 			insertrow(@row,"")
 		end
 		if n > 0
