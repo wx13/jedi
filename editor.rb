@@ -1748,16 +1748,11 @@ class BuffersList
 			$screen.write_message("cancelled")
 			return(@buffers[@ibuf])
 		end
-		if File.exists? ans
-			@buffers[@nbuf] = FileBuffer.new(ans)
-			@nbuf += 1
-			@ibuf = @nbuf-1
-			$screen.write_message("")
-			return(@buffers[@ibuf])
-		else
-			$screen.write_message("File doens't exist: "+ans)
-			return(@buffers[@ibuf])
-		end
+		@buffers[@nbuf] = FileBuffer.new(ans)
+		@nbuf += 1
+		@ibuf = @nbuf-1
+		$screen.write_message("Opened file: "+ans)
+		return(@buffers[@ibuf])
 	end
 
 end
