@@ -316,10 +316,12 @@ class Screen
 
 	# get a string from the user, allowing for cancellation,
 	# and weird character stuff
-	def getstr
-		answer=""
+	def getstr(question,instring="")
+		answer = instring.dup
+		$screen.write_str(@rows-1,question.length,answer)
 		loop do
 			c = Curses.getch
+			$screen.write_str(@rows-1,question.length," "*(answer.length))
 			if c.is_a?(String) then c = c.unpack('C')[0] end
 			case c
 				when $ctrl_c
@@ -334,6 +336,7 @@ class Screen
 				when /[`~!@\#$%^&*()-_=+]/ then answer += (c.unpack('C')[0])
 				when /[\[\]{}|\\;':",.<>\/?]/ then answer += (c.unpack('C')[0])
 			end
+			$screen.write_str(@rows-1,question.length,answer)
 		end
 		return(answer)
 	end
@@ -374,14 +377,12 @@ class Screen
 	end
 
 	# ask a question of the user
-	def ask(question)
+	def ask(question,answer="")
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
 		write_str(@rows-1,0," "*@cols)
 		write_str(@rows-1,0,question)
-		Curses.echo
-		answer = getstr
-		Curses.noecho
+		answer = getstr(question,answer)
 		@screen.attroff Curses::A_REVERSE
 		return(answer)
 	end
@@ -592,12 +593,13 @@ class FileBuffer
 	end
 
 	def save
-		ans = $screen.ask("save to ["+@filename+"]: ")
+		ans = $screen.ask("save to: ",@filename)
 		if ans == nil
 			$screen.write_message("Cancelled")
 			return
 		end
-		if ans != ""
+		if ans == "" then ans = @filename end
+		if ans != @filename
 			yn = $screen.ask_yesno("save to different file: "+ans+" ? [y/n]")
 			if yn == "yes"
 				@filename = ans
@@ -957,7 +959,7 @@ class FileBuffer
 
 		# ask for screen width
 		# nil means cancel, empty means screen width
-		ans = $screen.ask("Justify width ["+$screen.cols.to_s+"]:")
+		ans = $screen.ask("Justify width: ",$screen.cols.to_s)
 		if ans == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1748,16 +1750,11 @@ class BuffersList
 			$screen.write_message("cancelled")
 			return(@buffers[@ibuf])
 		end
-		if File.exists? ans
-			@buffers[@nbuf] = FileBuffer.new(ans)
-			@nbuf += 1
-			@ibuf = @nbuf-1
-			$screen.write_message("")
-			return(@buffers[@ibuf])
-		else
-			$screen.write_message("File doens't exist: "+ans)
-			return(@buffers[@ibuf])
-		end
+		@buffers[@nbuf] = FileBuffer.new(ans)
+		@nbuf += 1
+		@ibuf = @nbuf-1
+		$screen.write_message("Opened file: "+ans)
+		return(@buffers[@ibuf])
 	end
 
 end
