@@ -2,21 +2,21 @@
 editor
 ======
 
-Text editor writen in ruby/curses.  Designed to be easy to modify.
+Text editor writen in ruby/curses.  Designed to do things the way I want.
 
 Features:
 - syntax coloring
 - multiple buffers
 	- tab completion file selection
 - search & replace
-	+ with search term history
+	- with search term history
 - autoindent
 - block comment & indent
 - justify text
 - regular expression searches
 - column editing:
-	+ ctrl-6,c/r toggles column/row editing
-	+ in col editing:
+	- ctrl-6,c/r toggles column/row editing
+	- in col editing:
 		- single column highlighted (elongated cursor)
 		- ctrl-t inserts arb text before cursor
 		- backspace delets before long cursor
@@ -33,6 +33,13 @@ To do:
 - multi-line syntax coloring?
 - record & replay keypresses
 - sometimes cursor ends up in weird places
+
+diff view:
+- toggle btw regular and diff view.
+- diff view is unified diff, with infinite lines of context
+- editing (-) lines not allowed.
+- editing (+) lines fine.
+- editing other lines causes (-+) to form
 
 
 Description of code and methods
