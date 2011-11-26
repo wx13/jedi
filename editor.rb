@@ -490,6 +490,7 @@ class FileBuffer
 	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
+		@tabsize = 4
 		@filename = filename
 		@status = ""
 		read_file
@@ -519,6 +520,22 @@ class FileBuffer
 		@colmode = false
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
+		# file type for syntax coloring
+		get_filetype(@filename)
+	end
+
+
+	# get the file type from the extension
+	def get_filetype(filename)
+		extension = filename.split(".")[-1]
+		case extension
+			when "sh","csh" then @filetype = "shell"
+			when "c","cpp","cc","C" then @filetype = "c"
+			when "f","F","fort" then @filetype = "f"
+			when "m" then @filetype = "m"
+			when "rb" then @filetype = "ruby"
+			else @filetype = ""
+		end
 	end
 
 
@@ -603,6 +620,7 @@ class FileBuffer
 			yn = $screen.ask_yesno("save to different file: "+ans+" ? [y/n]")
 			if yn == "yes"
 				@filename = ans
+				@filetype = get_filetype(@filename)
 			else
 				$screen.write_message("aborted")
 				return
@@ -775,11 +793,10 @@ class FileBuffer
 	# uncomment a block
 	def block_uncomment(row1,row2)
 		c = ""
-		ftype = @filename.split(".")[-1]
-		case ftype
-			when "sh","csh","m","rb" then c = "#"
-			when "c","cpp","cc","C" then c = "//"
-			when "f","F","fort" then c = "!"
+		case @filetype
+			when "shell","m","ruby" then c = "#"
+			when "c" then c = "//"
+			when "f" then c = "!"
 		end
 		for r in row1..row2
 			if @text[r].length == 0
@@ -900,11 +917,10 @@ class FileBuffer
 			return
 		end
 		if s == ""
-			ftype = @filename.split(".")[-1]
-			case ftype
-				when "sh","csh","m","rb" then s = "#"
-				when "c","cpp","cc","C" then s = "//"
-				when "f","F","fort" then s = "!"
+			case @filetype
+				when "shell","m","ruby" then s = "#"
+				when "c" then s = "//"
+				when "f" then s = "!"
 			end
 		end
 		for r in mark_row..row
@@ -936,13 +952,12 @@ class FileBuffer
 			splitrow(@row,@col)
 			ws = ""
 			if @autoindent
-				ftype = @filename.split(".")[-1]
-				case ftype
-					when "sh","csh","m","rb"
+				case @filetype
+					when "shell","m","ruby"
 						ws = @text[@row].match(/^[\s#]*/)[0]
-					when "f","F"
+					when "f"
 						ws = @text[@row].match(/^c?[\s!&]*/)[0]
-					when "c","cpp","C","cc"
+					when "c"
 						ws = @text[@row].match(/^[\s\/*]*/)[0]
 					else
 						ws = @text[@row].match(/^\s*/)[0]
@@ -1501,22 +1516,17 @@ class FileBuffer
 
 	def syntax_color(sline)
 		aline = sline.dup
-		ftype = @filename.split(".")[-1]
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$white)
 		aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$white)
 		aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$white)
-		case ftype
-			when "sh", "csh"
+		case @filetype
+			when "shell","ruby","m"
 				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$white)
-			when "rb"
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$white)
-			when "m"
-				aline.gsub!(/[#%].*$/,$color+$cyan+"\\0"+$color+$white)
-			when "f", "F", "fort", "FORT"
+			when "f"
 				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$white)
 				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$white)
-			when "c", "cc", "cpp", "C"
+			when "c"
 				# // style comments
 				aline.gsub!(/\/\/.*$/,$color+$cyan+"\\0"+$color+$white)
 				# /* comment */
@@ -1552,8 +1562,8 @@ class FileBuffer
 		sc = 0
 		@text[row].each_char{|c|
 			if c == "\t"
-				sc += 4
-				sc -= sc.modulo(4)
+				sc += @tabsize
+				sc -= sc.modulo(@tabsize)
 			else
 				sc += 1
 			end
@@ -1571,7 +1581,7 @@ class FileBuffer
 		if a == nil then return(ans) end
 		a.each{|str|
 			n = ans.length
-			m = 4 - (n+4).modulo(4)
+			m = @tabsize - (n+@tabsize).modulo(@tabsize)
 			ans += " "*m + str
 		}
 		return(ans)
