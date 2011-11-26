@@ -490,6 +490,7 @@ class FileBuffer
 	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
+		@tabsize = 2
 		@filename = filename
 		@status = ""
 		read_file
@@ -520,7 +521,7 @@ class FileBuffer
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
-		@filetype = get_filetype(@filename)
+		get_filetype(@filename)
 	end
 
 
@@ -1561,8 +1562,8 @@ class FileBuffer
 		sc = 0
 		@text[row].each_char{|c|
 			if c == "\t"
-				sc += 4
-				sc -= sc.modulo(4)
+				sc += @tabsize
+				sc -= sc.modulo(@tabsize)
 			else
 				sc += 1
 			end
@@ -1580,7 +1581,7 @@ class FileBuffer
 		if a == nil then return(ans) end
 		a.each{|str|
 			n = ans.length
-			m = 4 - (n+4).modulo(4)
+			m = @tabsize - (n+@tabsize).modulo(@tabsize)
 			ans += " "*m + str
 		}
 		return(ans)
