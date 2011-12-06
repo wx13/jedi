@@ -110,7 +110,6 @@ $commandlist = {
 	$ctrl_f => "buffer = buffers.open",
 	$ctrl_z => "$screen.suspend",
 	$ctrl_6 => "buffer.toggle"
-	#$ctrl_s => "buffer.mark_columns"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
@@ -150,7 +149,8 @@ $viewmode_commandlist = {
 	?K => "buffer.screen_up",
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
-	?L => "buffer.screen_right"
+	?L => "buffer.screen_right",
+	?: => "buffer.enter_command"
 }
 
 
@@ -522,6 +522,14 @@ class FileBuffer
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
 		get_filetype(@filename)
+	end
+
+	def enter_command
+		answer = $screen.ask(":")
+		eval(answer)
+		$screen.write_message("done")
+	rescue
+		$screen.write_message("Unknown command")
 	end
 
 
