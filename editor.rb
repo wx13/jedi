@@ -60,19 +60,22 @@ $space = 32
 
 # color escape
 $color = "\300"
-$white = "\301"
-$red = "\302"
-$green = "\303"
-$blue = "\304"
-$cyan = "\305"
-$magenta = "\306"
-$yellow = "\307"
-$black = "\308"
+$color_white = "\301"
+$color_red = "\302"
+$color_green = "\303"
+$color_blue = "\304"
+$color_cyan = "\305"
+$color_magenta = "\306"
+$color_yellow = "\307"
+$color_black = "\308"
 # highlighting
-$normal = "\310"
-$reverse = "\311"
-
-
+$color_normal = "\310"
+$color_reverse = "\311"
+# text colors
+$color_default = $color_white
+$color_comment = $color_cyan
+$color_string = $color_yellow
+$color_whitespace = $color_red
 
 
 
@@ -152,8 +155,6 @@ $viewmode_commandlist = {
 	?L => "buffer.screen_right",
 	?: => "buffer.enter_command"
 }
-
-
 
 
 
@@ -244,18 +245,18 @@ class Screen
 		end
 		# loop over remaining parts, and process colors
 		a.each{|str|
-			c = str[0,1]
+			c = str[0].chr
 			d = str[1..-1]
 			case c
-				when $white then set_color(Curses::COLOR_WHITE)
-				when $red then set_color(Curses::COLOR_RED)
-				when $green then set_color(Curses::COLOR_GREEN)
-				when $yellow then set_color(Curses::COLOR_YELLOW)
-				when $blue then set_color(Curses::COLOR_BLUE)
-				when $magenta then set_color(Curses::COLOR_MAGENTA)
-				when $cyan then set_color(Curses::COLOR_CYAN)
-				when $reverse then @screen.attron(Curses::A_REVERSE)
-				when $normal then @screen.attroff(Curses::A_REVERSE)
+				when $color_white then set_color(Curses::COLOR_WHITE)
+				when $color_red then set_color(Curses::COLOR_RED)
+				when $color_green then set_color(Curses::COLOR_GREEN)
+				when $color_yellow then set_color(Curses::COLOR_YELLOW)
+				when $color_blue then set_color(Curses::COLOR_BLUE)
+				when $color_magenta then set_color(Curses::COLOR_MAGENTA)
+				when $color_cyan then set_color(Curses::COLOR_CYAN)
+				when $color_reverse then @screen.attron(Curses::A_REVERSE)
+				when $color_normal then @screen.attroff(Curses::A_REVERSE)
 			end
 			s = 0
 			c = pos - colfeed
@@ -1522,27 +1523,105 @@ class FileBuffer
 		$screen.text_reverse(false)
 	end
 
+
+	def syntax_color_string_comment(aline,comchar,comchar2=nil)
+
+		dquote = false
+		squote = false
+		comment = false
+		bline = ""
+		escape = false
+
+		i = -1
+		aline.each_char{|c|
+			i+=1
+			if escape
+				escape = false
+				bline += c
+				next
+			end
+			if comment
+				bline += c
+				next
+			end
+			case c
+				when "\\"
+					escape = true
+					bline += c
+				when comchar,comchar2
+					if !(squote|dquote)
+						comment=true
+						bline += $color+$color_comment+c
+					else
+						bline += c
+					end
+				when "\'"
+					if squote
+						squote=false
+						bline += c+$color+$color_default
+					elsif !(dquote)
+						if aline[(i+1)..-1].match(/\'/)
+							squote = true
+							bline += $color+$color_string+c
+						else
+							bline += c
+						end
+					else
+						bline += c
+					end
+				when "\""
+					if dquote
+						dquote=false
+						bline += c+$color+$color_default
+					elsif !(squote)
+						if aline[(i+1)..-1].match(/\"/)
+							dquote = true
+							bline += $color+$color_string+c
+						else
+							bline += c
+						end
+					else
+						bline += c
+					end
+				else
+					bline += c
+				end
+		}
+		aline = bline + $color+$color_default
+		return aline
+	end
+
+
+
+
 	def syntax_color(sline)
 		aline = sline.dup
 		# trailing whitespace
-		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$white)
-		aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$white)
-		aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$white)
+		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
 		case @filetype
-			when "shell","ruby","m"
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$white)
+			when "shell","ruby"
+				aline = syntax_color_string_comment(aline,"#")
+			when "m"
+				aline = syntax_color_string_comment(aline,"#","%")
 			when "f"
-				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$white)
-				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$white)
+				if aline[0] == ?c
+					aline = $color+$color_comment+aline+$color+$color_default
+				else
+					aline = syntax_color_string_comment(aline,"!")
+				end
 			when "c"
+				aline.gsub!(/['][^']*[']/,$color+$color_string+"\\0"+$color+$color_default)
+				aline.gsub!(/["][^"]*["]/,$color+$color_string+"\\0"+$color+$color_default)
 				# // style comments
-				aline.gsub!(/\/\/.*$/,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\/\/.*$/,$color+$color_comment+"\\0"+$color+$color_default)
 				# /* comment */
-				aline.gsub!(/\/\*.*\*\//,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\/\*.*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
 				# /* comment
-				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$color_comment+"\\0"+$color+$color_default)
 				# comment */
-				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
+			else
+				aline = syntax_color_string_comment(aline,nil)
 		end
 		return(aline)
 	end
@@ -1776,6 +1855,7 @@ class BuffersList
 	end
 
 end
+
 
 
 
