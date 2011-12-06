@@ -68,7 +68,7 @@ $cyan = "\305"
 $magenta = "\306"
 $yellow = "\307"
 $black = "\308"
-$origcolor = "\312"
+$default = $white
 # highlighting
 $normal = "\310"
 $reverse = "\311"
@@ -249,12 +249,12 @@ class Screen
 			c = str[0].chr
 			d = str[1..-1]
 			color_stack.push(c)
-			if c == $origcolor
+			if c == $default
 				color_stack.pop
 				color_stack.pop
+				c = color_stack[0]
+				if c == nil then c = $white end
 			end
-			c = color_stack[0]
-			if c == nil then c = $white end
 			case c
 				when $white then set_color(Curses::COLOR_WHITE)
 				when $red then set_color(Curses::COLOR_RED)
@@ -1525,27 +1525,36 @@ class FileBuffer
 	def syntax_color(sline)
 		aline = sline.dup
 		# trailing whitespace
-		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$origcolor)
-		aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$origcolor)
-		aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$origcolor)
+		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$default)
 		case @filetype
 			when "shell","ruby"
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$default)
 			when "m"
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$origcolor)
-				aline.gsub!(/\%.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$default)
+				aline.gsub!(/\%.*$/,$color+$cyan+"\\0"+$color+$default)
 			when "f"
-				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$origcolor)
-				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$default)
+				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$default)
 			when "c"
+				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
 				# // style comments
-				aline.gsub!(/\/\/.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/\/\/.*$/,$color+$cyan+"\\0"+$color+$default)
 				# /* comment */
-				aline.gsub!(/\/\*.*\*\//,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/\/\*.*\*\//,$color+$cyan+"\\0"+$color+$default)
 				# /* comment
-				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$cyan+"\\0"+$color+$default)
 				# comment */
-				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$cyan+"\\0"+$color+$default)
+			else
+				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
+				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
 		end
 		return(aline)
 	end
