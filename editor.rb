@@ -1532,7 +1532,9 @@ class FileBuffer
 		bline = ""
 		escape = false
 
+		i = -1
 		aline.each_char{|c|
+			i+=1
 			if escape
 				escape = false
 				bline += c
@@ -1558,8 +1560,12 @@ class FileBuffer
 						squote=false
 						bline += c+$color+$color_default
 					elsif !(dquote)
-						squote = true
-						bline += $color+$color_string+c
+						if aline[(i+1)..-1].match(/\'/)
+							squote = true
+							bline += $color+$color_string+c
+						else
+							bline += c
+						end
 					else
 						bline += c
 					end
@@ -1568,8 +1574,12 @@ class FileBuffer
 						dquote=false
 						bline += c+$color+$color_default
 					elsif !(squote)
-						dquote = true
-						bline += $color+$color_string+c
+						if aline[(i+1)..-1].match(/\"/)
+							dquote = true
+							bline += $color+$color_string+c
+						else
+							bline += c
+						end
 					else
 						bline += c
 					end
