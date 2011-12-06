@@ -492,7 +492,7 @@ class FileBuffer
 	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
-		@tabsize = 2
+		@tabsize = 4
 		@filename = filename
 		@status = ""
 		read_file
