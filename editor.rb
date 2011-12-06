@@ -1516,6 +1516,66 @@ class FileBuffer
 		$screen.text_reverse(false)
 	end
 
+
+	def syntax_color_string_comment(aline,comchar,comchar2=nil)
+
+		dquote = false
+		squote = false
+		comment = false
+		bline = ""
+		escape = false
+
+		aline.each_char{|c|
+			if escape
+				escape = false
+				bline += c
+				next
+			end
+			case c
+				when "\\"
+					escape = true
+					bline += c
+				when comchar,comchar2
+					if comment
+						comment=false
+						bline += c+$color+$default
+					elsif !(squote|dquote)
+						comment=true
+						bline += $color+$cyan+c
+					else
+						bline += c
+					end
+				when "\'"
+					if squote
+						squote=false
+						bline += c+$color+$default
+					elsif !(dquote|comment)
+						squote = true
+						bline += $color+$yellow+c
+					else
+						bline += c
+					end
+				when "\""
+					if dquote
+						dquote=false
+						bline += c+$color+$default
+					elsif !(squote|comment)
+						dquote = true
+						bline += $color+$yellow+c
+					else
+						bline += c
+					end
+				else
+					bline += c
+				end
+		}
+		aline = bline + $color+$default
+		return aline
+	end
+
+
+
+
 	def syntax_color(sline)
 		aline = sline.dup
 		# trailing whitespace
@@ -1526,56 +1586,7 @@ class FileBuffer
 				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
 				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$default)
 			when "m"
-				dquote = false
-				squote = false
-				comment = false
-				bline = ""
-				escape = false
-				aline.each_char{|c|
-					if escape
-						escape = false
-						bline += c
-						next
-					end
-					case c
-						when "\\"
-							escape = true
-							bline += c
-						when "%", "#"
-							if comment
-								comment=false
-								bline += c+$color+$default
-							elsif !(squote|dquote)
-								comment=true
-								bline += $color+$cyan+c
-							else
-								bline += c
-							end
-						when "\'"
-							if squote
-								squote=false
-								bline += c+$color+$default
-							elsif !(dquote|comment)
-								squote = true
-								bline += $color+$yellow+c
-							else
-								bline += c
-							end
-						when "\""
-							if dquote
-								dquote=false
-								bline += c+$color+$default
-							elsif !(squote|comment)
-								dquote = true
-								bline += $color+$yellow+c
-							else
-								bline += c
-							end
-						else
-							bline += c
-						end
-				}
-				aline = bline + $color+$default
+				aline = syntax_color_string_comment(aline,"#","%")
 			when "f"
 				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
 				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
