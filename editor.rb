@@ -248,13 +248,6 @@ class Screen
 		a.each{|str|
 			c = str[0].chr
 			d = str[1..-1]
-			color_stack.push(c)
-			if c == $default
-				color_stack.pop
-				color_stack.pop
-				c = color_stack[0]
-				if c == nil then c = $white end
-			end
 			case c
 				when $white then set_color(Curses::COLOR_WHITE)
 				when $red then set_color(Curses::COLOR_RED)
@@ -1533,10 +1526,56 @@ class FileBuffer
 				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
 				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$default)
 			when "m"
-				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$default)
-				aline.gsub!(/\%.*$/,$color+$cyan+"\\0"+$color+$default)
+				dquote = false
+				squote = false
+				comment = false
+				bline = ""
+				escape = false
+				aline.each_char{|c|
+					if escape
+						escape = false
+						bline += c
+						next
+					end
+					case c
+						when "\\"
+							escape = true
+							bline += c
+						when "%", "#"
+							if comment
+								comment=false
+								bline += c+$color+$default
+							elsif !(squote|dquote)
+								comment=true
+								bline += $color+$cyan+c
+							else
+								bline += c
+							end
+						when "\'"
+							if squote
+								squote=false
+								bline += c+$color+$default
+							elsif !(dquote|comment)
+								squote = true
+								bline += $color+$yellow+c
+							else
+								bline += c
+							end
+						when "\""
+							if dquote
+								dquote=false
+								bline += c+$color+$default
+							elsif !(squote|comment)
+								dquote = true
+								bline += $color+$yellow+c
+							else
+								bline += c
+							end
+						else
+							bline += c
+						end
+				}
+				aline = bline + $color+$default
 			when "f"
 				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
 				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
