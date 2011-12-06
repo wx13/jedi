@@ -1531,15 +1531,16 @@ class FileBuffer
 				bline += c
 				next
 			end
+			if comment
+				bline += c
+				next
+			end
 			case c
 				when "\\"
 					escape = true
 					bline += c
 				when comchar,comchar2
-					if comment
-						comment=false
-						bline += c+$color+$default
-					elsif !(squote|dquote)
+					if !(squote|dquote)
 						comment=true
 						bline += $color+$cyan+c
 					else
@@ -1549,7 +1550,7 @@ class FileBuffer
 					if squote
 						squote=false
 						bline += c+$color+$default
-					elsif !(dquote|comment)
+					elsif !(dquote)
 						squote = true
 						bline += $color+$yellow+c
 					else
@@ -1559,7 +1560,7 @@ class FileBuffer
 					if dquote
 						dquote=false
 						bline += c+$color+$default
-					elsif !(squote|comment)
+					elsif !(squote)
 						dquote = true
 						bline += $color+$yellow+c
 					else
@@ -1586,10 +1587,11 @@ class FileBuffer
 			when "m"
 				aline = syntax_color_string_comment(aline,"#","%")
 			when "f"
-				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$default)
-				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$default)
+				if aline[0] == ?c
+					aline = $color+$cyan+aline+$color+$default
+				else
+					aline = syntax_color_string_comment(aline,"!")
+				end
 			when "c"
 				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
 				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
