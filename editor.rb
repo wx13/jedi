@@ -252,9 +252,9 @@ class Screen
 			if c == $origcolor
 				color_stack.pop
 				color_stack.pop
-				c = color_stack[-1]
-				if c == nil then c = $white end
 			end
+			c = color_stack[0]
+			if c == nil then c = $white end
 			case c
 				when $white then set_color(Curses::COLOR_WHITE)
 				when $red then set_color(Curses::COLOR_RED)
@@ -1529,8 +1529,11 @@ class FileBuffer
 		aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$origcolor)
 		aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$origcolor)
 		case @filetype
-			when "shell","ruby","m"
+			when "shell","ruby"
 				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+			when "m"
+				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/\%.*$/,$color+$cyan+"\\0"+$color+$origcolor)
 			when "f"
 				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$origcolor)
 				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$origcolor)
