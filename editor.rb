@@ -68,6 +68,7 @@ $cyan = "\305"
 $magenta = "\306"
 $yellow = "\307"
 $black = "\308"
+$origcolor = "\312"
 # highlighting
 $normal = "\310"
 $reverse = "\311"
@@ -243,9 +244,17 @@ class Screen
 			return
 		end
 		# loop over remaining parts, and process colors
+		color_stack = []
 		a.each{|str|
-			c = str[0,1]
+			c = str[0].chr
 			d = str[1..-1]
+			color_stack.push(c)
+			if c == $origcolor
+				color_stack.pop
+				color_stack.pop
+				c = color_stack[-1]
+				if c == nil then c = $white end
+			end
 			case c
 				when $white then set_color(Curses::COLOR_WHITE)
 				when $red then set_color(Curses::COLOR_RED)
@@ -1516,24 +1525,24 @@ class FileBuffer
 	def syntax_color(sline)
 		aline = sline.dup
 		# trailing whitespace
-		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$white)
-		aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$white)
-		aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$white)
+		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$origcolor)
+		aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$origcolor)
+		aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$origcolor)
 		case @filetype
 			when "shell","ruby","m"
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$origcolor)
 			when "f"
-				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$white)
-				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/^c.*$/,$color+$cyan+"\\0"+$color+$origcolor)
+				aline.gsub!(/!.*$/,$color+$cyan+"\\0"+$color+$origcolor)
 			when "c"
 				# // style comments
-				aline.gsub!(/\/\/.*$/,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\/\/.*$/,$color+$cyan+"\\0"+$color+$origcolor)
 				# /* comment */
-				aline.gsub!(/\/\*.*\*\//,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\/\*.*\*\//,$color+$cyan+"\\0"+$color+$origcolor)
 				# /* comment
-				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$cyan+"\\0"+$color+$origcolor)
 				# comment */
-				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$cyan+"\\0"+$color+$white)
+				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$cyan+"\\0"+$color+$origcolor)
 		end
 		return(aline)
 	end
