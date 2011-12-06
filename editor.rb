@@ -1582,9 +1582,7 @@ class FileBuffer
 		aline.gsub!(/\s+$/,$color+$red+$color+$reverse+"\\0"+$color+$normal+$color+$default)
 		case @filetype
 			when "shell","ruby"
-				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/\#.*$/,$color+$cyan+"\\0"+$color+$default)
+				aline = syntax_color_string_comment(aline,"#")
 			when "m"
 				aline = syntax_color_string_comment(aline,"#","%")
 			when "f"
@@ -1604,8 +1602,7 @@ class FileBuffer
 				# comment */
 				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$cyan+"\\0"+$color+$default)
 			else
-				aline.gsub!(/['][^']*[']/,$color+$yellow+"\\0"+$color+$default)
-				aline.gsub!(/["][^"]*["]/,$color+$yellow+"\\0"+$color+$default)
+				aline = syntax_color_string_comment(aline,nil)
 		end
 		return(aline)
 	end
