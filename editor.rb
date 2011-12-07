@@ -410,6 +410,7 @@ class Screen
 		ih = 0
 		write_str(@rows-1,0,question+" ["+hist[-1]+"]: ")
 		token = ""
+		token0 = token.dup
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -420,18 +421,24 @@ class Screen
 					if ih >= hist.length
 						ih = hist.length-1
 					end
-					token = hist[-ih]
+					token = hist[-ih].dup
 				when Curses::Key::DOWN
 					ih -= 1
-					if ih < 1
-						ih = 1
+					if ih < 0
+						ih = 0
 					end
-					token = hist[-ih].dup
+					if ih == 0
+						token = token0
+					else
+						token = hist[-ih].dup
+					end
 				when $ctrl_m, Curses::Key::ENTER then break
 				when 9..127
 					token += c.chr
+					token0 = token.dup
 				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
 					token.chop!
+					token0 = token.dup
 			end
 			write_str(@rows-1,0," "*$cols)
 			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token)
