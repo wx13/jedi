@@ -411,6 +411,7 @@ class Screen
 		write_str(@rows-1,0,question+" ["+hist[-1]+"]: ")
 		token = ""
 		token0 = token.dup
+		col = token.length
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -422,6 +423,7 @@ class Screen
 						ih = hist.length-1
 					end
 					token = hist[-ih].dup
+					col = token.length
 				when Curses::Key::DOWN
 					ih -= 1
 					if ih < 0
@@ -432,16 +434,37 @@ class Screen
 					else
 						token = hist[-ih].dup
 					end
+					col = token.length
+				when Curses::Key::LEFT
+					col -= 1
+					if col<0 then col=0 end
+				when Curses::Key::RIGHT
+					col += 1
+					if col>token.length then col = token.length end
+				when $ctrl_e then col=token.length
+				when $ctrl_a then col=0
+				when $ctrl_d
+					if col < token.length
+						token[col] = ""
+					end
+					token0 = token.dup
+				when $ctrl_u
+					token.insert(col,$copy_buffer)
 				when $ctrl_m, Curses::Key::ENTER then break
 				when 9..127
-					token += c.chr
+					token.insert(col,c.chr)
 					token0 = token.dup
+					col += 1
 				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
-					token.chop!
+					if col > 0
+						token[col-1] = ""
+						col -= 1
+					end
 					token0 = token.dup
 			end
 			write_str(@rows-1,0," "*$cols)
 			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token)
+			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token[0,col])
 		end
 		@screen.attroff Curses::A_REVERSE
 		if token == ""
