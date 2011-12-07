@@ -284,11 +284,13 @@ class Screen
 		lr = rstr.length
 		if (ll+lr+3) > @cols
 			xxx = @cols - lr - 8
+			if xxx < 0 then return end
 			lstr = "..." + lstr[(-xxx)..-1]
 		end
 		ll = lstr.length
 		lr = rstr.length
 		xx = @cols - ll - lr
+		if xx < 0 then return end
 		all = lstr + (" "*xx) + rstr
 		@screen.attron Curses::A_REVERSE
 		write_str(0,0,all)
@@ -1443,13 +1445,13 @@ class FileBuffer
 		r = (@linefeed+@cursrow-1)
 		c = (@colfeed+@curscol)
 		r0 = @text.length - 1
-		position = r.to_s + "," + c.to_s + "/" + r0.to_s
+		position = r.to_s + "/" + r0.to_s + "," + c.to_s
 		if @editmode
 			status = @status
 		else
 			status = @status + "  VIEW"
 		end
-		screen.write_top_line(@filename,position,status)
+		screen.write_top_line(@filename,status,position)
 		# write the text to the screen
 		dump_text(screen)
 		# set cursor position
