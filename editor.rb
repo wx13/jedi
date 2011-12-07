@@ -333,6 +333,7 @@ class Screen
 					answer.chop!
 				when 32..127
 					answer += c.chr
+				when ?\t, $ctrl_i then answer += "\t"
 				when /[a-zA-Z0-9]/ then answer += (c.unpack('C')[0])
 				when /[`~!@\#$%^&*()-_=+]/ then answer += (c.unpack('C')[0])
 				when /[\[\]{}|\\;':",.<>\/?]/ then answer += (c.unpack('C')[0])
@@ -409,6 +410,8 @@ class Screen
 		ih = 0
 		write_str(@rows-1,0,question+" ["+hist[-1]+"]: ")
 		token = ""
+		token0 = token.dup
+		col = token.length
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -419,21 +422,49 @@ class Screen
 					if ih >= hist.length
 						ih = hist.length-1
 					end
-					token = hist[-ih]
+					token = hist[-ih].dup
+					col = token.length
 				when Curses::Key::DOWN
 					ih -= 1
-					if ih < 1
-						ih = 1
+					if ih < 0
+						ih = 0
 					end
-					token = hist[-ih].dup
+					if ih == 0
+						token = token0
+					else
+						token = hist[-ih].dup
+					end
+					col = token.length
+				when Curses::Key::LEFT
+					col -= 1
+					if col<0 then col=0 end
+				when Curses::Key::RIGHT
+					col += 1
+					if col>token.length then col = token.length end
+				when $ctrl_e then col=token.length
+				when $ctrl_a then col=0
+				when $ctrl_d
+					if col < token.length
+						token[col] = ""
+					end
+					token0 = token.dup
+				when $ctrl_u
+					token.insert(col,$copy_buffer)
 				when $ctrl_m, Curses::Key::ENTER then break
 				when 9..127
-					token += c.chr
+					token.insert(col,c.chr)
+					token0 = token.dup
+					col += 1
 				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
-					token.chop!
+					if col > 0
+						token[col-1] = ""
+						col -= 1
+					end
+					token0 = token.dup
 			end
 			write_str(@rows-1,0," "*$cols)
 			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token)
+			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token[0,col])
 		end
 		@screen.attroff Curses::A_REVERSE
 		if token == ""
@@ -526,7 +557,7 @@ class FileBuffer
 	end
 
 	def enter_command
-		answer = $screen.ask(":")
+		answer = $screen.askhist("command",$command_hist)
 		eval(answer)
 		$screen.write_message("done")
 	rescue
@@ -920,7 +951,7 @@ class FileBuffer
 			row = @row
 			mark_row = @mark_row
 		end
-		s = $screen.ask("Indent string: ")
+		s = $screen.askhist("Indent string: ",$indent_hist)
 		if s == nil then
 			$screen.write_message("Cancelled")
 			return
@@ -1108,7 +1139,7 @@ class FileBuffer
 		@col = sc2bc(@row,sc)
 	end
 	def goto_line
-		num = $screen.ask("go to line: ")
+		num = $screen.askhist("go to line: ",$lineno_hist)
 		if num == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1872,6 +1903,9 @@ buffers = BuffersList.new(ARGV)
 # store up search history
 $search_hist = [""]
 $replace_hist = [""]
+$indent_hist = [""]
+$lineno_hist = [""]
+$command_hist = [""]
 
 # copy buffer
 $copy_buffer = ""
