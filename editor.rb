@@ -534,7 +534,7 @@ class FileBuffer
 	end
 
 	def enter_command
-		answer = $screen.ask(":")
+		answer = $screen.askhist("command",$command_hist)
 		eval(answer)
 		$screen.write_message("done")
 	rescue
@@ -928,7 +928,7 @@ class FileBuffer
 			row = @row
 			mark_row = @mark_row
 		end
-		s = $screen.ask("Indent string: ")
+		s = $screen.askhist("Indent string: ",$indent_hist)
 		if s == nil then
 			$screen.write_message("Cancelled")
 			return
@@ -1116,7 +1116,7 @@ class FileBuffer
 		@col = sc2bc(@row,sc)
 	end
 	def goto_line
-		num = $screen.ask("go to line: ")
+		num = $screen.askhist("go to line: ",$lineno_hist)
 		if num == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1880,6 +1880,9 @@ buffers = BuffersList.new(ARGV)
 # store up search history
 $search_hist = [""]
 $replace_hist = [""]
+$indent_hist = [""]
+$lineno_hist = [""]
+$command_hist = [""]
 
 # copy buffer
 $copy_buffer = ""
