@@ -333,6 +333,7 @@ class Screen
 					answer.chop!
 				when 32..127
 					answer += c.chr
+				when ?\t, $ctrl_i then answer += "\t"
 				when /[a-zA-Z0-9]/ then answer += (c.unpack('C')[0])
 				when /[`~!@\#$%^&*()-_=+]/ then answer += (c.unpack('C')[0])
 				when /[\[\]{}|\\;':",.<>\/?]/ then answer += (c.unpack('C')[0])
