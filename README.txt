@@ -10,10 +10,10 @@ Features:
 	- tab completion file selection
 - search & replace
 	- with search term history
+	- optionaly regular expressions
 - autoindent
 - block comment & indent
 - justify text
-- regular expression searches
 - column editing:
 	- ctrl-6,c/r toggles column/row editing
 	- in col editing:
@@ -21,25 +21,26 @@ Features:
 		- ctrl-t inserts arb text before cursor
 		- backspace delets before long cursor
 		- ctrl-d is still single-line
+- arbitrary ruby commands
+	- in view mode, hit ":"
+	- then type in any ruby commands
+	- will be exectured in context of the current buffer class
+	- example:
+		- @tabsize = 4 # adjust tabsize on the fly
+		- $color_comment = $color_cyan # make comments cyan colored
+		- @text.each{|line|; line.gsub(/foo/,"bar");}
 
 
 To do:
-- block unindent -- only require that all lines start with
-  same string.
-- block indent -- what if previous two lines start ith same string?
-- comments should color over everything
+- speed up screen dump: only dump if text changes or
+  if linefeed/colfeed changes
+- autoindent -- what if previous two lines start ith same string?
 - line wrap
 - diffs
-- multi-line syntax coloring?
 - record & replay keypresses
-- sometimes cursor ends up in weird places
+	- use this to make column mode editing better
+- after search replace, cursor should go back to orig pos
 
-diff view:
-- toggle btw regular and diff view.
-- diff view is unified diff, with infinite lines of context
-- editing (-) lines not allowed.
-- editing (+) lines fine.
-- editing other lines causes (-+) to form
 
 
 Description of code and methods
