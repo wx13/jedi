@@ -772,9 +772,11 @@ class FileBuffer
 	end
 	# backspace a column of text
 	def column_backspace(row1,row2,col)
+		if col == 0 then return end
 		sc = bc2sc(@row,col)
 		for r in row1..row2
 			c = sc2bc(r,sc)
+			if @text[r].length == 0 then next end
 			if c<=0 then next end
 			@text[r] = @text[r].dup
 			@text[r][c-1] = ""
