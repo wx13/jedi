@@ -1002,13 +1002,13 @@ class FileBuffer
 		else
 			mark_row,row = ordered_mark_rows
 			for r in mark_row..row
-				if (@text[r].length==0)&&(c.chr=~/\s/)
+				if (@text[r].length==0)&&((c==?\s)||(c==?\t))
 					next
 				end
 				if @colmode
 					sc = bc2sc(@row,@col)
 					cc = sc2bc(r,sc)
-					if(cc>=@text[r].length) then next end
+					if(cc>@text[r].length) then next end
 					insertchar(r,cc,c.chr)
 				else
 					insertchar(r,0,c.chr)
