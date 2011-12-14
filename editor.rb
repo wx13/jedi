@@ -1148,8 +1148,11 @@ class FileBuffer
 		end
 		@row = num.to_i
 		@col = 0
-		if @row > @text.length
-			@row = @text.length
+		if @row < 0
+			@row = @text.length + @row
+		end
+		if @row >= @text.length
+			@row = @text.length - 1
 		end
 		$screen.write_message("went to line "+@row.to_s)
 	end
