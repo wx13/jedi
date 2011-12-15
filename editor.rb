@@ -128,8 +128,8 @@ $editmode_commandlist = {
 	$ctrl_r => "buffer.search_and_replace",
 	$ctrl_t => "buffer.block_comment",
 	$ctrl_l => "buffer.justify",
-	$ctrl_i => "buffer.indent",
-	9 => "buffer.indent",
+	$ctrl_i => "buffer.addchar(c)",
+	9 => "buffer.addchar(c)",
 	32..127 => "buffer.addchar(c)"
 }
 $viewmode_commandlist = {
@@ -771,15 +771,29 @@ class FileBuffer
 		@status = "Modified"
 	end
 	# backspace a column of text
-	def column_backspace(row1,row2)
-		sc = bc2sc(@row,@col)
+	def column_backspace(row1,row2,col)
+		if col == 0 then return end
+		sc = bc2sc(@row,col)
 		for r in row1..row2
 			c = sc2bc(r,sc)
+			if @text[r].length == 0 then next end
 			if c<=0 then next end
 			@text[r] = @text[r].dup
 			@text[r][c-1] = ""
 		end
 		cursor_left
+		@status = "Modified"
+	end
+	# delete a column of text
+	def column_delete(row1,row2,col)
+		sc = bc2sc(@row,col)
+		for r in row1..row2
+			c = sc2bc(r,sc)
+			if c<0 then next end
+			if c==@text[r].length then next end
+			@text[r] = @text[r].dup
+			@text[r][c] = ""
+		end
 		@status = "Modified"
 	end
 	# indent a block of text
@@ -894,48 +908,55 @@ class FileBuffer
 	# these functions all call the mod function
 	# but don't modify the buffer directly
 
+	def ordered_mark_rows
+		if @row < @mark_row
+			row = @mark_row
+			mark_row = @row
+		else
+			row = @row
+			mark_row = @mark_row
+		end
+		return mark_row,row
+	end
 	# delete a character
 	def delete
-		delchar(@row,@col)
+		if @marked
+			mark_row,row = ordered_mark_rows
+			if @colmode
+				column_delete(mark_row,row,@col)
+			else
+				column_delete(mark_row,row,0)
+			end
+		else
+			delchar(@row,@col)
+		end
 	end
 	# backspace over a character
 	def backspace
 		if @marked
-			if @row < @mark_row
-				row = @mark_row
-				mark_row = @row
-			else
-				row = @row
-				mark_row = @mark_row
-			end
+			mark_row,row = ordered_mark_rows
 			if @colmode
-				column_backspace(mark_row,row)
+				column_backspace(mark_row,row,@col)
 			else
-				block_unindent(mark_row,row)
+				column_backspace(mark_row,row,1)
 			end
-			return
-		end
-		if (@col+@row)==0
-			return
-		end
-		if @col == 0
+		else
+			if (@col+@row)==0
+				return
+			end
+			if @col == 0
+				cursor_left
+				mergerows(@row,@row+1)
+				return
+			end
 			cursor_left
-			mergerows(@row,@row+1)
-			return
+			delchar(@row,@col)
 		end
-		cursor_left
-		delchar(@row,@col)
 	end
 	# indent a line or block of text
 	def indent
 		if @marked
-			if @row < @mark_row
-				row = @mark_row
-				mark_row = @row
-			else
-				row = @row
-				mark_row = @mark_row
-			end
+			mark_row,row = ordered_mark_rows
 			block_indent(mark_row,row)
 		else
 			addchar(?\t)
@@ -946,13 +967,7 @@ class FileBuffer
 		if @marked == false
 			return
 		end
-		if @row < @mark_row
-			row = @mark_row
-			mark_row = @row
-		else
-			row = @row
-			mark_row = @mark_row
-		end
+		mark_row,row = ordered_mark_rows
 		s = $screen.askhist("Indent string: ",$indent_hist)
 		if s == nil then
 			$screen.write_message("Cancelled")
@@ -982,11 +997,29 @@ class FileBuffer
 	end
 	# insert a char and move to the right
 	def addchar(c)
-		insertchar(@row,@col,c.chr)
+		if @marked == false
+			insertchar(@row,@col,c.chr)
+		else
+			mark_row,row = ordered_mark_rows
+			for r in mark_row..row
+				if (@text[r].length==0)&&((c==?\s)||(c==?\t))
+					next
+				end
+				if @colmode
+					sc = bc2sc(@row,@col)
+					cc = sc2bc(r,sc)
+					if(cc>@text[r].length) then next end
+					insertchar(r,cc,c.chr)
+				else
+					insertchar(r,0,c.chr)
+				end
+			end
+		end
 		cursor_right
 	end
 	# add a line-break
 	def newline
+		if @marked then return end
 		if @col == 0
 			insertrow(@row,"")
 			cursor_down(1)
@@ -1029,16 +1062,10 @@ class FileBuffer
 
 		# set start & end rows
 		if @marked
-			if @row < @mark_row
-				row = @mark_row
-				mark_row = @row
-			else
-				row = @row
-				mark_row = @mark_row
-			end
+			mark_row, row = ordered_mark_rows
 		else
-			row = @row
 			mark_row = @row
+			row = @row
 		end
 		nl = row - mark_row + 1
 
@@ -1148,8 +1175,11 @@ class FileBuffer
 		end
 		@row = num.to_i
 		@col = 0
-		if @row > @text.length
-			@row = @text.length
+		if @row < 0
+			@row = @text.length + @row
+		end
+		if @row >= @text.length
+			@row = @text.length - 1
 		end
 		$screen.write_message("went to line "+@row.to_s)
 	end
