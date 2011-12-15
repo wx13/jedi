@@ -1063,6 +1063,9 @@ class FileBuffer
 		# set start & end rows
 		if @marked
 			mark_row, row = ordered_mark_rows
+		else
+			mark_row = @row
+			row = @row
 		end
 		nl = row - mark_row + 1
 
