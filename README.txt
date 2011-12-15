@@ -156,7 +156,7 @@ Some examples:
 
 To open a file for reading, hit "ctrl-f".  Tab key cycles through matches.
 
-Cut/copy/paste work just like in gnu-nano.
+Cut/paste work just like in gnu-nano. Copy is just like cut, but ctrl-p.
 
 To run an arbitrary ruby command, type "ctrl-6 v :". Then type the command and
 hit enter.
@@ -197,6 +197,6 @@ To change the color of comments from cyan to green
 To change a bulleted ("-") list which starts on line 47 and is 10 lines long
 to a numbered list
 
-	k=0; @text[2,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
+	k=0; @text[47,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
 
 
