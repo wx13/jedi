@@ -19,6 +19,7 @@ Features:
 	- tab completion file selection
 - search & replace
 	- with search term history
+	- optionaly regular expressions
 - autoindent
 - block comment & indent
 - justify text
@@ -30,7 +31,6 @@ Features:
 To do:
 - line wrap
 - diffs
-- multi-line syntax coloring?
 - record & replay keypresses
 - undo-redo for arbitrary commands
 
@@ -197,6 +197,6 @@ To change the color of comments from cyan to green
 To change a bulleted ("-") list which starts on line 47 and is 10 lines long
 to a numbered list
 
-	k=0; text[2,3].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
+	k=0; @text[2,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
 
 
