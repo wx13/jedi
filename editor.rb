@@ -1,6 +1,4 @@
 #!/usr/bin/ruby
-require 'curses'
-
 #
 #	editor.rb
 #
@@ -10,8 +8,16 @@ require 'curses'
 #	BufferList -- for managing multiple file buffers
 #	BufferHistory -- for undo/redo
 #
+#
+#	Copyright (C) 2011, Jason P. DeVita (jason@wx13.com)
+#
+#	Copying and distribution of this file, with or without modification,
+#	are permitted in any medium without royalty provided the copyright
+#	notice and this notice are preserved.  This file is offered as-is,
+#	without any warranty.
+#
 
-
+require 'curses'
 
 # -----------------------------------------------------------------
 # This section defines some global constants.  Don't change these
