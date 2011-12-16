@@ -584,6 +584,10 @@ class FileBuffer
 			when "rb" then @filetype = "ruby"
 			else @filetype = ""
 		end
+		name = File.basename(filename)
+		case name
+			when "COMMIT_EDITMSG" then @filetype = "shell"
+		end
 	end
 
 
