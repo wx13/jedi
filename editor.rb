@@ -700,7 +700,7 @@ class FileBuffer
 			@row = @text.length - 1
 		end
 		if @col > @text[@row].length
-			@col = @text[@row].length - 1
+			@col = @text[@row].length
 		end
 	end
 
@@ -1127,9 +1127,16 @@ class FileBuffer
 		end
 		insertrow(r,text)
 		$screen.write_message("Justified to "+cols.to_s+" columns")
+		if linewrap
+			if @col >= @text[@row].length+1
+				@col = @col - @text[@row].length - 1
+				@row += 1
+			end
+		else
+			@row = r
+			@col = 0
+		end
 		@marked = false
-		@row = r
-		@col = 0
 	end
 
 
