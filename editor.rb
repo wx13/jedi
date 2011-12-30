@@ -531,6 +531,7 @@ class FileBuffer
 
 	def initialize(filename)
 		@tabsize = 4
+		@linelength = 0
 		@filename = filename
 		@status = ""
 		read_file
@@ -1059,16 +1060,22 @@ class FileBuffer
 
 		# ask for screen width
 		# nil means cancel, empty means screen width
-		ans = $screen.ask("Justify width: ",$screen.cols.to_s)
+		if @linelength == 0 then @linelength = $screen.cols end
+		ans = $screen.ask("Justify width: ",@linelength.to_s)
 		if ans == nil
 			$screen.write_message("Cancelled")
 			return
 		end
 		if ans == ""
+			cols = @linelength
+		elsif ans == "0"
 			cols = $screen.cols
+		elsif ans.to_i < 0
+			cols = $screen.cols + ans.to_i
 		else
 			cols = ans.to_i
 		end
+		@linelength = cols
 
 		# set start & end rows
 		if @marked
