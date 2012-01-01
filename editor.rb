@@ -562,6 +562,7 @@ class FileBuffer
 		@insertmode = true
 		@linewrap = false
 		@colmode = false
+		@syntax_color = true
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
@@ -601,7 +602,7 @@ class FileBuffer
 
 	# toggle one of many states
 	def toggle
-		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row")
+		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row,scolr,bw")
 		c = Curses.getch
 		case c
 			when ?e
@@ -634,6 +635,14 @@ class FileBuffer
 			when ?r
 				@colmode = false
 				$screen.write_message("Row mode")
+			when ?s
+				@syntax_color = true
+				$screen.write_message("Syntax color enabled")
+			when ?b
+				@syntax_color = false
+				$screen.write_message("Syntax color disabled")
+			else
+				$screen.write_message("Unkown toggle")
 		end
 	end
 
@@ -1539,7 +1548,11 @@ class FileBuffer
 		text.each{ |line|
 			ir += 1
 			sline = tabs2spaces(line)
-			aline = syntax_color(sline)
+			if @syntax_color
+				aline = syntax_color(sline)
+			else
+				aline = sline
+			end
 			screen_buffer.push(aline)
 		}
 		# vi-style blank lines
