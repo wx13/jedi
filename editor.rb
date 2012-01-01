@@ -232,6 +232,9 @@ class Screen
 			return
 		end
 
+		# clear row
+		write_str(row,0," "*@cols)
+
 		# split at color escape
 		a = line.split($color)
 		# don't do anything for empty rows
@@ -563,6 +566,8 @@ class FileBuffer
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
 		get_filetype(@filename)
+		# text to be written to the screen
+		@screen_buffer = []
 	end
 
 	def enter_command
@@ -1526,24 +1531,32 @@ class FileBuffer
 	def dump_text(screen)
 		# get only the rows of interest
 		text = @text[@linefeed,screen.rows-2]
-		# clear screen
-		for ir in 1..(screen.rows-2)
-			screen.write_str(ir,0," "*screen.cols)
-		end
-		#write out the text
+		# store up lines
+		screen_buffer = []
 		ir = 0
-		text.each { |line|
+		text.each{ |line|
 			ir += 1
 			sline = tabs2spaces(line)
 			aline = syntax_color(sline)
-			screen.write_line(ir,@colfeed,aline)
+			screen_buffer.push(aline)
 		}
 		# vi-style blank lines
 		ir+=1
 		while ir < (screen.rows-1)
-			screen.write_str(ir,0,"~"+" "*(screen.cols-1))
+			screen_buffer.push("~"+" "*(screen.cols-1))
 			ir += 1
 		end
+
+		#write out the text
+		ir = 0
+		screen_buffer.each { |line|
+			ir += 1
+			if (@screen_buffer.length >= ir) && (line == @screen_buffer[ir-1])
+				next
+			end
+			screen.write_line(ir,@colfeed,line)
+		}
+		@screen_buffer = screen_buffer.dup
 		# now go back and do marked text highlighting
 		if @marked
 			if @row == @mark_row
