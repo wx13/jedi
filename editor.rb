@@ -566,8 +566,10 @@ class FileBuffer
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
 		get_filetype(@filename)
-		# text to be written to the screen
+		# save up info about screen to detect
+		# changes
 		@screen_buffer = []
+		@colfeed_old = 0
 	end
 
 	def enter_command
@@ -1551,12 +1553,13 @@ class FileBuffer
 		ir = 0
 		screen_buffer.each { |line|
 			ir += 1
-			if (@screen_buffer.length >= ir) && (line == @screen_buffer[ir-1])
+			if (@screen_buffer.length >= ir) && (line == @screen_buffer[ir-1]) && (@colfeed == @colfeed_old)
 				next
 			end
 			screen.write_line(ir,@colfeed,line)
 		}
 		@screen_buffer = screen_buffer.dup
+		@colfeed_old = @colfeed
 		# now go back and do marked text highlighting
 		if @marked
 			if @row == @mark_row
