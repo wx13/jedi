@@ -16,23 +16,22 @@ Design goals:
 Features:
 - syntax coloring (single line only)
 - multiple buffers
-	- tab completion file selection
 - search & replace
 	- with search term history
-	- optionaly regular expressions
+	- optional regular expressions
 - autoindent
 - block comment & indent
-- justify text
-- regular expression searches
+- justify text & line wrap
 - column editing (long vertical cursor)
 - undo-redo
 
 
-To do:
-- line wrap
-- diffs
-- record & replay keypresses
-- undo-redo for arbitrary commands
+Future work:
+- display & edit diffs
+- record & replay keypresses (macros)
+- undo-redo for arbitrary ruby commands
+- config/mods/extentions
+	- load files with ruby code & execute
 
 
 
@@ -156,7 +155,7 @@ Some examples:
 
 To open a file for reading, hit "ctrl-f".  Tab key cycles through matches.
 
-Cut/copy/paste work just like in gnu-nano.
+Cut/paste work just like in gnu-nano. Copy is just like cut, but ctrl-p.
 
 To run an arbitrary ruby command, type "ctrl-6 v :". Then type the command and
 hit enter.
@@ -197,12 +196,12 @@ To change the color of comments from cyan to green
 To change a bulleted ("-") list which starts on line 47 and is 10 lines long
 to a numbered list
 
-	k=0; @text[2,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
+	k=0; @text[47,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
 
 
 
 ------------------------------------------------------------------------
-Copyright (C) 2011, Jason P. DeVita (jason@wx13.com)
+Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright
