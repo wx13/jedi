@@ -18,6 +18,7 @@
 #
 
 require 'curses'
+require 'optparse'
 
 
 
@@ -1855,6 +1856,8 @@ def run_script
 	end
 	script = File.read(ans)
 	eval(script)
+rescue
+	$screen.write_message("Bad script")
 end
 # --------------------------------------------------------
 
@@ -2031,7 +2034,39 @@ $viewmode_commandlist = {
 
 
 
-
+optparse = OptionParser.new{|opts|
+	opts.banner = "Usage: editor [options] file1 file2 ..."
+	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
+		script = File.read(file)
+		eval(script)
+	}
+	opts.on('-h', '--help', 'Display this screen'){
+		puts opts
+		exit
+	}
+	opts.on('-t', '--tabsize N', 'Set tabsize'){|n|
+		$tabsize = n.to_i
+	}
+	opts.on('-a', '--autoindent', 'Turn on autoindent'){
+		$autoindent = true
+	}
+	opts.on('-m', '--manualindent', 'Turn off autoindent'){
+		$autoindent = false
+	}
+	opts.on('-w', '--linewrap', 'Turn on linewrap'){
+		$linewrap = true
+	}
+	opts.on('-l', '--longlines', 'Turn off linewrap'){
+		$linewrap = false
+	}
+	opts.on('-c', '--color', 'Turn on syntax coloring'){
+		$syntax_color = true
+	}
+	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
+		$syntax_color = false
+	}
+}
+optparse.parse!
 
 
 
