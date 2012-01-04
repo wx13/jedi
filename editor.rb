@@ -569,7 +569,6 @@ class FileBuffer
 		get_filetype(@filename)
 		# save up info about screen to detect
 		# changes
-		@screen_buffer = []
 		@colfeed_old = 0
 	end
 
@@ -1566,12 +1565,12 @@ class FileBuffer
 		ir = 0
 		screen_buffer.each { |line|
 			ir += 1
-			if (@screen_buffer.length >= ir) && (line == @screen_buffer[ir-1]) && (@colfeed == @colfeed_old)
+			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) && (@colfeed == @colfeed_old)
 				next
 			end
 			screen.write_line(ir,@colfeed,line)
 		}
-		@screen_buffer = screen_buffer.dup
+		$screen_buffer = screen_buffer.dup
 		@colfeed_old = @colfeed
 		# now go back and do marked text highlighting
 		if @marked
@@ -2004,6 +2003,8 @@ $command_hist = [""]
 # copy buffer
 $copy_buffer = ""
 
+# for detecting changes to display
+$screen_buffer = []
 
 # create the case statement from list of keybindings
 $case_then = "case c\n"
