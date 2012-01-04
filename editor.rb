@@ -1062,17 +1062,19 @@ class FileBuffer
 			splitrow(@row,@col)
 			ws = ""
 			if @autoindent
-				case @filetype
-					when "shell","m","ruby"
-						ws = @text[@row].match(/^[\s#]*/)[0]
-					when "f"
-						ws = @text[@row].match(/^c?[\s!&]*/)[0]
-					when "c"
-						ws = @text[@row].match(/^[\s\/*]*/)[0]
-					else
-						ws = @text[@row].match(/^\s*/)[0]
+				if @row > 0
+					s1 = @text[@row-1].dup
+					s2 = @text[@row].dup
+					ml = [s1.length,s2.length].min
+					s1 = s1[0,ml]
+					s2 = s2[0,ml]
+					until s1==s2
+						s1.chop!
+						s2.chop!
+					end
+					ws = s1
+					insertchar(@row+1,0,ws)
 				end
-				insertchar(@row+1,0,ws)
 			end
 			@col = ws.length
 			@row += 1
