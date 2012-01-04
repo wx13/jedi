@@ -1573,7 +1573,8 @@ class FileBuffer
 		ir = 0
 		screen_buffer.each { |line|
 			ir += 1
-			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) && (@colfeed == @colfeed_old)
+			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) \
+			&& (@colfeed == @colfeed_old) && (@marked==false)
 				next
 			end
 			screen.write_line(ir,@colfeed,line)
