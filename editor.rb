@@ -1820,6 +1820,9 @@ class BuffersList
 		@nbuf -= 1
 		@ibuf = 0
 		$screen.write_message("")
+		if @nbuf == 0 || @buffers[0] == nil
+			exit
+		end
 		@buffers[0]
 	end
 
@@ -1951,7 +1954,7 @@ $syntax_color = true
 
 
 $commandlist = {
-	$ctrl_q => "buffer = buffers.close; if buffer == nil then exit end",
+	$ctrl_q => "buffer = buffers.close",
 	Curses::Key::UP => "buffer.cursor_up(1)",
 	Curses::Key::DOWN => "buffer.cursor_down(1)",
 	Curses::Key::RIGHT => "buffer.cursor_right",
@@ -1993,7 +1996,7 @@ $editmode_commandlist = {
 	32..127 => "buffer.addchar(c)"
 }
 $viewmode_commandlist = {
-	?q => "buffer = buffers.close; if buffer == nil then exit end",
+	?q => "buffer = buffers.close",
 	?k => "buffer.cursor_up(1)",
 	?j => "buffer.cursor_down(1)",
 	?l => "buffer.cursor_right",
