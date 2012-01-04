@@ -19,159 +19,6 @@
 
 require 'curses'
 
-# -----------------------------------------------------------------
-# This section defines some global constants.  Don't change these
-# unless you know what you're doing.
-# -----------------------------------------------------------------
-
-# control & meta chracters -- the \C-a type thing seems to only
-# sometimes work
-$ctrl_space = 0
-$ctrl_a = 1
-$ctrl_b = 2
-$ctrl_c = 3
-$ctrl_d = 4
-$ctrl_e = 5
-$ctrl_f = 6
-$ctrl_g = 7
-$ctrl_h = 8
-$ctrl_i = 9
-$ctrl_j = 10
-$ctrl_k = 11
-$ctrl_l = 12
-$ctrl_m = 10
-$enter = 10
-$ctrl_n = 14
-$ctrl_o = 15
-$ctrl_p = 16
-$ctrl_q = 17
-$ctrl_r = 18
-$ctrl_s = 19
-$ctrl_t = 20
-$ctrl_u = 21
-$ctrl_v = 22
-$ctrl_w = 23
-$ctrl_x = 24
-$ctrl_y = 25
-$ctrl_z = 26
-$ctrl_3 = 27
-$ctrl_4 = 28
-$ctrl_5 = 29
-$ctrl_6 = 30
-$ctrl_7 = 31
-$ctrl_8 = 127
-$backspace = 127
-$backspace2 = 263
-$space = 32
-
-# color escape
-$color = "\300"
-$color_white = "\301"
-$color_red = "\302"
-$color_green = "\303"
-$color_blue = "\304"
-$color_cyan = "\305"
-$color_magenta = "\306"
-$color_yellow = "\307"
-$color_black = "\308"
-# highlighting
-$color_normal = "\310"
-$color_reverse = "\311"
-
-# default text colors
-$color_default = $color_white
-$color_comment = $color_cyan
-$color_string = $color_yellow
-$color_whitespace = $color_red
-
-# default config
-$tabsize = 4
-$autoindent = true
-$linewrap = false
-$colmode = false
-$syntax_color = true
-
-
-
-
-# -----------------------------------------------------------------
-# This section defines the keymapping.
-# There are 3 sections:
-#     1. commandlist -- universal keymapping
-#     2. editmode_commandlist -- keymappings when in edit mode
-#     3. viewmode_commandlist -- keymappings in view mode
-# -----------------------------------------------------------------
-
-
-$commandlist = {
-	$ctrl_q => "buffer = buffers.close; if buffer == nil then exit end",
-	Curses::Key::UP => "buffer.cursor_up(1)",
-	Curses::Key::DOWN => "buffer.cursor_down(1)",
-	Curses::Key::RIGHT => "buffer.cursor_right",
-	Curses::Key::LEFT => "buffer.cursor_left",
-	Curses::Key::NPAGE => "buffer.cursor_down($rows-3)",
-	Curses::Key::PPAGE => "buffer.cursor_up($rows-3)",
-	$ctrl_v => "buffer.cursor_down($rows-3)",
-	$ctrl_y => "buffer.cursor_up($rows-3)",
-	$ctrl_e => "buffer.cursor_eol",
-	$ctrl_a => "buffer.cursor_sol",
-	$ctrl_n => "buffer = buffers.next",
-	$ctrl_b => "buffer = buffers.prev",
-	$ctrl_x => "buffer.mark",
-	$ctrl_p => "buffer.copy",
-	$ctrl_w => "buffer.search(0)",
-	$ctrl_g => "buffer.goto_line",
-	$ctrl_o => "buffer.save",
-	$ctrl_f => "buffer = buffers.open",
-	$ctrl_z => "$screen.suspend",
-	$ctrl_6 => "buffer.toggle",
-	$ctrl_s => "run_script"
-}
-$editmode_commandlist = {
-	Curses::Key::BACKSPACE => "buffer.backspace",
-	$backspace => "buffer.backspace",
-	$backspace2 => "buffer.backspace",
-	8 => "buffer.backspace",
-	$enter => "buffer.newline",
-	$ctrl_k => "buffer.cut",
-	$ctrl_u => "buffer.paste",
-	$ctrl_m => "buffer.newline",
-	$ctrl_j => "buffer.newline",
-	$ctrl_d => "buffer.delete",
-	$ctrl_r => "buffer.search_and_replace",
-	$ctrl_t => "buffer.block_comment",
-	$ctrl_l => "buffer.justify",
-	$ctrl_i => "buffer.addchar(c)",
-	9 => "buffer.addchar(c)",
-	32..127 => "buffer.addchar(c)"
-}
-$viewmode_commandlist = {
-	?q => "buffer = buffers.close; if buffer == nil then exit end",
-	?k => "buffer.cursor_up(1)",
-	?j => "buffer.cursor_down(1)",
-	?l => "buffer.cursor_right",
-	?h => "buffer.cursor_left",
-	$space => "buffer.cursor_down($rows-3)",
-	?b => "buffer.cursor_up($rows-3)",
-	?. => "buffer = buffers.next",
-	?, => "buffer = buffers.prev",
-	?/ => "buffer.search(0)",
-	?n => "buffer.search(1)",
-	?N => "buffer.search(-1)",
-	?g => "buffer.goto_line",
-	?i => "buffer.toggle_editmode",
-	?[ => "buffer.undo",
-	?] => "buffer.redo",
-	?K => "buffer.screen_up",
-	?J => "buffer.screen_down",
-	?H => "buffer.screen_left",
-	?L => "buffer.screen_right",
-	?: => "buffer.enter_command"
-}
-
-
-
-
 
 
 #----------------------------------------------------------
@@ -1997,6 +1844,8 @@ end
 
 
 
+# ---------------- global function ----------------------
+
 # allow user scripts
 def run_script
 	ans = $screen.ask_for_file("run script file: ")
@@ -2007,11 +1856,183 @@ def run_script
 	script = File.read(ans)
 	eval(script)
 end
+# --------------------------------------------------------
 
 
 
 
-# -------------- main code ----------------
+
+
+# -----------------------------------------------------------------
+# This section defines some global constants.  Don't change these
+# unless you know what you're doing.
+# -----------------------------------------------------------------
+
+# control & meta chracters -- the \C-a type thing seems to only
+# sometimes work
+$ctrl_space = 0
+$ctrl_a = 1
+$ctrl_b = 2
+$ctrl_c = 3
+$ctrl_d = 4
+$ctrl_e = 5
+$ctrl_f = 6
+$ctrl_g = 7
+$ctrl_h = 8
+$ctrl_i = 9
+$ctrl_j = 10
+$ctrl_k = 11
+$ctrl_l = 12
+$ctrl_m = 10
+$enter = 10
+$ctrl_n = 14
+$ctrl_o = 15
+$ctrl_p = 16
+$ctrl_q = 17
+$ctrl_r = 18
+$ctrl_s = 19
+$ctrl_t = 20
+$ctrl_u = 21
+$ctrl_v = 22
+$ctrl_w = 23
+$ctrl_x = 24
+$ctrl_y = 25
+$ctrl_z = 26
+$ctrl_3 = 27
+$ctrl_4 = 28
+$ctrl_5 = 29
+$ctrl_6 = 30
+$ctrl_7 = 31
+$ctrl_8 = 127
+$backspace = 127
+$backspace2 = 263
+$space = 32
+
+# color escape
+$color = "\300"
+$color_white = "\301"
+$color_red = "\302"
+$color_green = "\303"
+$color_blue = "\304"
+$color_cyan = "\305"
+$color_magenta = "\306"
+$color_yellow = "\307"
+$color_black = "\308"
+# highlighting
+$color_normal = "\310"
+$color_reverse = "\311"
+
+# default text colors
+$color_default = $color_white
+$color_comment = $color_cyan
+$color_string = $color_yellow
+$color_whitespace = $color_red
+
+# default config
+$tabsize = 4
+$autoindent = true
+$linewrap = false
+$colmode = false
+$syntax_color = true
+
+
+
+
+# -----------------------------------------------------------------
+# This section defines the keymapping.
+# There are 3 sections:
+#     1. commandlist -- universal keymapping
+#     2. editmode_commandlist -- keymappings when in edit mode
+#     3. viewmode_commandlist -- keymappings in view mode
+# -----------------------------------------------------------------
+
+
+$commandlist = {
+	$ctrl_q => "buffer = buffers.close; if buffer == nil then exit end",
+	Curses::Key::UP => "buffer.cursor_up(1)",
+	Curses::Key::DOWN => "buffer.cursor_down(1)",
+	Curses::Key::RIGHT => "buffer.cursor_right",
+	Curses::Key::LEFT => "buffer.cursor_left",
+	Curses::Key::NPAGE => "buffer.cursor_down($rows-3)",
+	Curses::Key::PPAGE => "buffer.cursor_up($rows-3)",
+	$ctrl_v => "buffer.cursor_down($rows-3)",
+	$ctrl_y => "buffer.cursor_up($rows-3)",
+	$ctrl_e => "buffer.cursor_eol",
+	$ctrl_a => "buffer.cursor_sol",
+	$ctrl_n => "buffer = buffers.next",
+	$ctrl_b => "buffer = buffers.prev",
+	$ctrl_x => "buffer.mark",
+	$ctrl_p => "buffer.copy",
+	$ctrl_w => "buffer.search(0)",
+	$ctrl_g => "buffer.goto_line",
+	$ctrl_o => "buffer.save",
+	$ctrl_f => "buffer = buffers.open",
+	$ctrl_z => "$screen.suspend",
+	$ctrl_6 => "buffer.toggle",
+	$ctrl_s => "run_script"
+}
+$editmode_commandlist = {
+	Curses::Key::BACKSPACE => "buffer.backspace",
+	$backspace => "buffer.backspace",
+	$backspace2 => "buffer.backspace",
+	8 => "buffer.backspace",
+	$enter => "buffer.newline",
+	$ctrl_k => "buffer.cut",
+	$ctrl_u => "buffer.paste",
+	$ctrl_m => "buffer.newline",
+	$ctrl_j => "buffer.newline",
+	$ctrl_d => "buffer.delete",
+	$ctrl_r => "buffer.search_and_replace",
+	$ctrl_t => "buffer.block_comment",
+	$ctrl_l => "buffer.justify",
+	$ctrl_i => "buffer.addchar(c)",
+	9 => "buffer.addchar(c)",
+	32..127 => "buffer.addchar(c)"
+}
+$viewmode_commandlist = {
+	?q => "buffer = buffers.close; if buffer == nil then exit end",
+	?k => "buffer.cursor_up(1)",
+	?j => "buffer.cursor_down(1)",
+	?l => "buffer.cursor_right",
+	?h => "buffer.cursor_left",
+	$space => "buffer.cursor_down($rows-3)",
+	?b => "buffer.cursor_up($rows-3)",
+	?. => "buffer = buffers.next",
+	?, => "buffer = buffers.prev",
+	?/ => "buffer.search(0)",
+	?n => "buffer.search(1)",
+	?N => "buffer.search(-1)",
+	?g => "buffer.goto_line",
+	?i => "buffer.toggle_editmode",
+	?[ => "buffer.undo",
+	?] => "buffer.redo",
+	?K => "buffer.screen_up",
+	?J => "buffer.screen_down",
+	?H => "buffer.screen_left",
+	?L => "buffer.screen_right",
+	?: => "buffer.enter_command"
+}
+
+
+
+
+
+
+
+
+
+
+
+# -------------------------------------------------------
+# -------------------------------------------------------
+# --------------------- main code -----------------------
+# -------------------------------------------------------
+# -------------------------------------------------------
+
+
+
+
+
 
 
 # read specified files into buffers of buffer list
