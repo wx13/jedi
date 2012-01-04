@@ -77,13 +77,19 @@ $color_black = "\308"
 # highlighting
 $color_normal = "\310"
 $color_reverse = "\311"
-# text colors
+
+# default text colors
 $color_default = $color_white
 $color_comment = $color_cyan
 $color_string = $color_yellow
 $color_whitespace = $color_red
 
-
+# default config
+$tabsize = 4
+$autoindent = true
+$linewrap = false
+$colmode = false
+$syntax_color = true
 
 
 
@@ -533,7 +539,7 @@ class FileBuffer
 	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
-		@tabsize = 4
+		@tabsize = $tabsize
 		@linelength = 0
 		@filename = filename
 		@status = ""
@@ -557,12 +563,12 @@ class FileBuffer
 		@mark_col = 0
 		@mark_row = 0
 		# flags
-		@autoindent = true
+		@autoindent = $autoindent
 		@editmode = true
 		@insertmode = true
-		@linewrap = false
+		@linewrap = $linewrap
 		@colmode = false
-		@syntax_color = true
+		@syntax_color = $syntax_color
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
