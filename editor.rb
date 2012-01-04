@@ -124,7 +124,8 @@ $commandlist = {
 	$ctrl_o => "buffer.save",
 	$ctrl_f => "buffer = buffers.open",
 	$ctrl_z => "$screen.suspend",
-	$ctrl_6 => "buffer.toggle"
+	$ctrl_6 => "buffer.toggle",
+	$ctrl_s => "run_script"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
@@ -1993,6 +1994,20 @@ end
 
 
 #----------------------------------------------------------
+
+
+
+# allow user scripts
+def run_script
+	ans = $screen.ask_for_file("run script file: ")
+	if (ans==nil) || (ans=="")
+		$screen.write_message("cancelled")
+		return
+	end
+	script = File.read(ans)
+	eval(script)
+end
+
 
 
 
