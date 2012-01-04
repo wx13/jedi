@@ -232,6 +232,9 @@ class Screen
 			return
 		end
 
+		# clear row
+		write_str(row,0," "*@cols)
+
 		# split at color escape
 		a = line.split($color)
 		# don't do anything for empty rows
@@ -531,6 +534,7 @@ class FileBuffer
 
 	def initialize(filename)
 		@tabsize = 4
+		@linelength = 0
 		@filename = filename
 		@status = ""
 		read_file
@@ -558,10 +562,15 @@ class FileBuffer
 		@insertmode = true
 		@linewrap = false
 		@colmode = false
+		@syntax_color = true
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
 		get_filetype(@filename)
+		# save up info about screen to detect
+		# changes
+		@screen_buffer = []
+		@colfeed_old = 0
 	end
 
 	def enter_command
@@ -584,12 +593,16 @@ class FileBuffer
 			when "rb" then @filetype = "ruby"
 			else @filetype = ""
 		end
+		name = File.basename(filename)
+		case name
+			when "COMMIT_EDITMSG" then @filetype = "shell"
+		end
 	end
 
 
 	# toggle one of many states
 	def toggle
-		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row")
+		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row,scolr,bw")
 		c = Curses.getch
 		case c
 			when ?e
@@ -622,6 +635,14 @@ class FileBuffer
 			when ?r
 				@colmode = false
 				$screen.write_message("Row mode")
+			when ?s
+				@syntax_color = true
+				$screen.write_message("Syntax color enabled")
+			when ?b
+				@syntax_color = false
+				$screen.write_message("Syntax color disabled")
+			else
+				$screen.write_message("Unkown toggle")
 		end
 	end
 
@@ -695,7 +716,7 @@ class FileBuffer
 			@row = @text.length - 1
 		end
 		if @col > @text[@row].length
-			@col = @text[@row].length - 1
+			@col = @text[@row].length
 		end
 	end
 
@@ -1022,6 +1043,9 @@ class FileBuffer
 			end
 		end
 		cursor_right
+		if @linewrap
+			justify(true)
+		end
 	end
 	# add a line-break
 	def newline
@@ -1051,19 +1075,31 @@ class FileBuffer
 	end
 
 	# justify a block of text
-	def justify
+	def justify(linewrap=false)
 
-		# ask for screen width
-		# nil means cancel, empty means screen width
-		ans = $screen.ask("Justify width: ",$screen.cols.to_s)
-		if ans == nil
-			$screen.write_message("Cancelled")
-			return
-		end
-		if ans == ""
-			cols = $screen.cols
+		if @linelength == 0 then @linelength = $screen.cols end
+
+		if linewrap
+			cols = @linelength
+			if @text[@row].length < cols then return end
 		else
-			cols = ans.to_i
+			# ask for screen width
+			# nil means cancel, empty means screen width
+			ans = $screen.ask("Justify width: ",@linelength.to_s)
+			if ans == nil
+				$screen.write_message("Cancelled")
+				return
+			end
+			if ans == ""
+				cols = @linelength
+			elsif ans == "0"
+				cols = $screen.cols
+			elsif ans.to_i < 0
+				cols = $screen.cols + ans.to_i
+			else
+				cols = ans.to_i
+			end
+			@linelength = cols
 		end
 
 		# set start & end rows
@@ -1107,9 +1143,16 @@ class FileBuffer
 		end
 		insertrow(r,text)
 		$screen.write_message("Justified to "+cols.to_s+" columns")
+		if linewrap
+			if @col >= @text[@row].length+1
+				@col = @col - @text[@row].length - 1
+				@row += 1
+			end
+		else
+			@row = r
+			@col = 0
+		end
 		@marked = false
-		@row = r
-		@col = 0
 	end
 
 
@@ -1499,24 +1542,37 @@ class FileBuffer
 	def dump_text(screen)
 		# get only the rows of interest
 		text = @text[@linefeed,screen.rows-2]
-		# clear screen
-		for ir in 1..(screen.rows-2)
-			screen.write_str(ir,0," "*screen.cols)
-		end
-		#write out the text
+		# store up lines
+		screen_buffer = []
 		ir = 0
-		text.each { |line|
+		text.each{ |line|
 			ir += 1
 			sline = tabs2spaces(line)
-			aline = syntax_color(sline)
-			screen.write_line(ir,@colfeed,aline)
+			if @syntax_color
+				aline = syntax_color(sline)
+			else
+				aline = sline
+			end
+			screen_buffer.push(aline)
 		}
 		# vi-style blank lines
 		ir+=1
 		while ir < (screen.rows-1)
-			screen.write_str(ir,0,"~"+" "*(screen.cols-1))
+			screen_buffer.push("~"+" "*(screen.cols-1))
 			ir += 1
 		end
+
+		#write out the text
+		ir = 0
+		screen_buffer.each { |line|
+			ir += 1
+			if (@screen_buffer.length >= ir) && (line == @screen_buffer[ir-1]) && (@colfeed == @colfeed_old)
+				next
+			end
+			screen.write_line(ir,@colfeed,line)
+		}
+		@screen_buffer = screen_buffer.dup
+		@colfeed_old = @colfeed
 		# now go back and do marked text highlighting
 		if @marked
 			if @row == @mark_row
