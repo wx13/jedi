@@ -16,23 +16,22 @@ Design goals:
 Features:
 - syntax coloring (single line only)
 - multiple buffers
-	- tab completion file selection
 - search & replace
 	- with search term history
-	- optionaly regular expressions
+	- optional regular expressions
 - autoindent
 - block comment & indent
-- justify text
-- regular expression searches
+- justify text & line wrap
 - column editing (long vertical cursor)
 - undo-redo
 
 
-To do:
-- line wrap
-- diffs
-- record & replay keypresses
-- undo-redo for arbitrary commands
+Future work:
+- display & edit diffs
+- record & replay keypresses (macros)
+- undo-redo for arbitrary ruby commands
+- config/mods/extentions
+	- load files with ruby code & execute
 
 
 
@@ -202,7 +201,7 @@ to a numbered list
 
 
 ------------------------------------------------------------------------
-Copyright (C) 2011, Jason P. DeVita (jason@wx13.com)
+Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright
