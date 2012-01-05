@@ -421,7 +421,7 @@ class FileBuffer
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
-		get_filetype(@filename)
+		set_filetype(@filename)
 		# save up info about screen to detect
 		# changes
 		@colfeed_old = 0
@@ -437,22 +437,29 @@ class FileBuffer
 	end
 
 
-	# get the file type from the extension
-	def get_filetype(filename)
-		extension = filename.split(".")[-1]
-		case extension
-			when "sh","csh" then @filetype = "shell"
-			when "c","cpp","cc","C" then @filetype = "c"
-			when "f","F","fort" then @filetype = "f"
-			when "m" then @filetype = "m"
-			when "rb" then @filetype = "ruby"
-			else @filetype = ""
-		end
-		name = File.basename(filename)
-		case name
-			when "COMMIT_EDITMSG" then @filetype = "shell"
-		end
+	# set the file type from the filename
+	def set_filetype(filename)
+		$filetypes.each{|k,v|
+			if filename.match(k) != nil
+				@filetype = v
+			end
+		}
 	end
+
+	#	extension = filename.split(".")[-1]
+	#	case extension
+	#		when "sh","csh" then @filetype = "shell"
+	#		when "c","cpp","cc","C" then @filetype = "c"
+	#		when "f","F","fort" then @filetype = "f"
+	#		when "m" then @filetype = "m"
+	#		when "rb" then @filetype = "ruby"
+	#		else @filetype = ""
+	#	end
+	#	name = File.basename(filename)
+	#	case name
+	#		when "COMMIT_EDITMSG" then @filetype = "shell"
+	#	end
+	#end
 
 
 	# toggle one of many states
@@ -2026,13 +2033,14 @@ $viewmode_commandlist = {
 
 # define file types for syntax coloring
 $filetypes = {
-	/\.sh/ => "shell",
-	/\.csh/ => "shell",
-	/\.[cC]/ => "c",
-	/\.cpp/ => "c",
+	/\.sh$/ => "shell",
+	/\.csh$/ => "shell",
+	/\.rb$/ => "shell",
+	/\.[cC]$/ => "c",
+	/\.cpp$/ => "c",
 	"COMMIT_EDITMSG" => "shell",
-	/\.m/ => "m",
-	/\.[fF]/ => "f",
+	/\.m$/ => "m",
+	/\.[fF]$/ => "f"
 }
 
 
