@@ -439,6 +439,18 @@ class FileBuffer
 		# changes
 		@colfeed_old = 0
 		@marked_old = false
+		@bookmarks = {}
+		@bookmarks_hist = [""]
+	end
+
+	def extra_commands
+		c = Curses.getch
+		case c
+			when ?b then bookmark
+			when ?g then goto_bookmark
+			else
+				$screen.write_message("Unknown command")
+		end
 	end
 
 	def enter_command
@@ -459,21 +471,28 @@ class FileBuffer
 		}
 	end
 
-	#	extension = filename.split(".")[-1]
-	#	case extension
-	#		when "sh","csh" then @filetype = "shell"
-	#		when "c","cpp","cc","C" then @filetype = "c"
-	#		when "f","F","fort" then @filetype = "f"
-	#		when "m" then @filetype = "m"
-	#		when "rb" then @filetype = "ruby"
-	#		else @filetype = ""
-	#	end
-	#	name = File.basename(filename)
-	#	case name
-	#		when "COMMIT_EDITMSG" then @filetype = "shell"
-	#	end
-	#end
 
+	def bookmark
+		answer = $screen.askhist("bookmark:",@bookmarks_hist)
+		$screen.write_message("bookmarked");
+		@bookmarks[answer] = [@row,@col]
+	end
+
+	def goto_bookmark
+		answer = $screen.askhist("go to:",@bookmarks_hist)
+		if answer == nil
+			$screen.write_message("Cancelled")
+			return
+		end
+		rc = @bookmarks[answer]
+		if rc == nil
+			$screen.write_message("Invalid bookmark")
+			return
+		end
+		@row = rc[0]
+		@col = rc[1]
+		$screen.write_message("found it")
+	end
 
 	# toggle one of many states
 	def toggle
@@ -2014,7 +2033,8 @@ $commandlist = {
 	$ctrl_o => "buffer.save",
 	$ctrl_f => "buffer = buffers.open",
 	$ctrl_z => "$screen.suspend",
-	$ctrl_6 => "buffer.toggle",
+	$ctrl_t => "buffer.toggle",
+	$ctrl_6 => "buffer.extra_commands",
 	$ctrl_s => "run_script"
 }
 $editmode_commandlist = {
@@ -2029,7 +2049,6 @@ $editmode_commandlist = {
 	$ctrl_j => "buffer.newline",
 	$ctrl_d => "buffer.delete",
 	$ctrl_r => "buffer.search_and_replace",
-	$ctrl_t => "buffer.block_comment",
 	$ctrl_l => "buffer.justify",
 	$ctrl_i => "buffer.addchar(c)",
 	9 => "buffer.addchar(c)",
@@ -2056,6 +2075,7 @@ $viewmode_commandlist = {
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
 	?L => "buffer.screen_right",
+	?t => "buffer.block_comment",
 	?: => "buffer.enter_command"
 }
 
