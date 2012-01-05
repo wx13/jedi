@@ -1149,11 +1149,11 @@ class FileBuffer
 			idx = @text[row].index(token,@col+1)
 			while(idx==nil)
 				row = (row+1).modulo(nlines)  # next line
-				if row == @row  # stop if we wrap back around
+				idx = @text[row].index(token)
+				if (row == @row) && (idx==nil)  # stop if we wrap back around
 					$screen.write_message("No matches")
 					return
 				end
-				idx = @text[row].index(token)
 			end
 		else
 			if @col > 0
@@ -1164,11 +1164,11 @@ class FileBuffer
 			while(idx==nil)
 				row = (row-1)
 				if row < 0 then row = nlines-1 end
-				if row == @row
+				idx = @text[row].rindex(token)
+				if (row == @row) && (idx==nil)
 					$screen.write_message("No matches")
 					return
 				end
-				idx = @text[row].rindex(token)
 			end
 		end
 		$screen.write_message("Found match")
