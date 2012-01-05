@@ -1,50 +1,54 @@
-======
-editor
-======
+=========
+editor.rb
+=========
 
-Editor is a text editor writen in ruby/curses.
+editor.rb is a text editor writen in ruby/curses.
 
 Design goals:
+
 1. Simplicity
 	- single file of ruby code
 	- only use built-in libraries
-	- easy to modify
-2. Power
-	- execute arbitrary ruby commands within the editor
-	  for maximum flexibilty
+	- easy to modify, customize & extend
+2. Scriptable
+	- execute single-line ruby commands within the editor
+	- execute ruby script files from within the editor
+	- execute ruby script files at startup
+
 
 Features:
-- syntax coloring (single line only)
-- multiple buffers
-- search & replace
-	- with search term history
-	- optional regular expressions
-- autoindent
-- block comment & indent
-- justify text & line wrap
-- column editing (long vertical cursor)
-- undo-redo
-- run ruby commands from within the editor
-- configuration file can run arbitrary commands
+
++ typical text editor stuff:
+	- syntax coloring
+	- multiple buffers
+	- search & replace
+	- autoindent, linewrap, justify text
+	- column editing
+	- undo-redo
++ run arbitrary ruby scripts within the editor
+  or at startup
 
 
 Future work:
-- display & edit diffs
-- record & replay keypresses (macros)
-- undo-redo for arbitrary ruby commands
+
++ display & edit diffs
++ record & replay keypresses (macros)
++ undo-redo for arbitrary ruby scripts
 
 
 
-Installation
-============
+
+
+Usage
+=====
+
+Installing & running
+--------------------
 
 You can just run "ruby editor.rb".
 Or put is somewhere in your path and give it execute permission.
 Rename it whatever you like.
 
-
-Configuration & options
-=======================
 
 Options
 -------
@@ -53,8 +57,13 @@ A few parameters and flags, (such as tab size, and autoindent)
 can be set with command line options.  Type "editor -h" to see
 available options.
 
+
 Configuration
 -------------
+
+The code does not parse a configuration file per se.  Because ruby
+supports metaprogramming, configuration and modification/extension
+are all the same.
 
 The "-s" or "--script" option calls a script or set of scripts to
 be run at startup.  This can be used to set basic parameters, for example:
@@ -84,69 +93,23 @@ rather than just past the last character:
 		end
 	end
 
+Here are some other useful mods:
+
+Change the syntax coloring:
+
+	$color_comment = $color_green
+
+Make files that end in ".h" get c-style coloring:
+
+	$filetypes[/\.h$/] = "c"
+
 As you can see, this can be used for simple configuration, or to create
 mods/extenstions to the editor.
 
 
 
-Description of code and methods
-===============================
-
-Keybindings
------------
-
-The keybindings section is near the top of the code. It has three sections:
-commandlist, editmode_commandlist, and viewmode_commandlist.  The first is
-for universal keybindings. The second only works in editmode, and the third
-works only in viewmode.
-
-Classes
--------
-
-The code contains four classes:
-1. Screen
-2. FileBuffer
-3. BuffersList
-4. BufferHistory
-
-Screen contains methods related to curses screen output, such as:
-initialiing the screen, writing a message to the bottom of the window,
-and writing a line of text.
-
-FileBuffer stores the current state of the file text, plus things like
-position within the buffer, and marks.  It contains methods related to
-working with the file text, such as adding and deleting characters,
-cut/copy/paste, search, etc.
-
-BuffersList manages multiple buffers, and stores up the copy/paste text.
-
-BufferHistory is a linked list of buffer text state, used for undo/redo.
 
 
-Undo-redo
----------
-
-The buffer text is stored in an array of strings (lines).  Each time the user
-does something, a snapshot of the text is saved.  This snapshot is a shallow
-copy (it is a new array, but each element is pointer to the old string).
-Before a line is changed, a deep copy is made of that line (now the array has
-one differing element). These sequences of snapshots are saved in a linked
-list (BufferHistory class). The linked list format allows the possibility of
-undo-trees if I ever feel they would be useful.  Undo and redo, are as simple
-as bumping a pointer up or down the link list of text buffers.
-
-
-
-
-Usage
-=====
-
-Starting the editor
--------------------
-
-To start the editor just run "ruby editor.rb <optional list of files>".
-
-There are no command line options.
 
 
 Modes
@@ -167,7 +130,8 @@ To get to view mode, hit "ctrl-6 v". To get to edit mode, hit
 "ctrl-6 e" or just hit "i".
 
 
-Remember that all the keymappings can be easily changed.
+Remember that all the keymappings can be easily changed, and one
+could easily write a set of keybindings that are very vim-like.
 
 
 
@@ -251,6 +215,64 @@ To change a bulleted ("-") list which starts on line 47 and is 10 lines long
 to a numbered list
 
 	k=0; @text[47,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
+
+To turn a double underline to a single underline, go to the underline row:
+                 =========             ---------
+
+	@text[@row].gsub!("=","-")
+
+To underline a line of text:
+
+	@text.insert(@row+1,"-"*@text[@row].length)
+
+
+
+
+Description of code and methods
+===============================
+
+Keybindings
+-----------
+
+The keybindings section is near the top of the code. It has three sections:
+commandlist, editmode_commandlist, and viewmode_commandlist.  The first is
+for universal keybindings. The second only works in editmode, and the third
+works only in viewmode.
+
+Classes
+-------
+
+The code contains four classes:
+1. Screen
+2. FileBuffer
+3. BuffersList
+4. BufferHistory
+
+Screen contains methods related to curses screen output, such as:
+initialiing the screen, writing a message to the bottom of the window,
+and writing a line of text.
+
+FileBuffer stores the current state of the file text, plus things like
+position within the buffer, and marks.  It contains methods related to
+working with the file text, such as adding and deleting characters,
+cut/copy/paste, search, etc.
+
+BuffersList manages multiple buffers, and stores up the copy/paste text.
+
+BufferHistory is a linked list of buffer text state, used for undo/redo.
+
+
+Undo-redo
+---------
+
+The buffer text is stored in an array of strings (lines).  Each time the user
+does something, a snapshot of the text is saved.  This snapshot is a shallow
+copy (it is a new array, but each element is pointer to the old string).
+Before a line is changed, a deep copy is made of that line (now the array has
+one differing element). These sequences of snapshots are saved in a linked
+list (BufferHistory class). The linked list format allows the possibility of
+undo-trees if I ever feel they would be useful.  Undo and redo, are as simple
+as bumping a pointer up or down the link list of text buffers.
 
 
 
