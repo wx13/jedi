@@ -2,7 +2,7 @@
 #
 #	editor.rb
 #
-#	There are 3 classes:
+#	There are 4 classes:
 #	Screen -- for reading and writing to the screen (Curses)
 #	FileBuffer -- for holding and manipulating the text of a file
 #	BufferList -- for managing multiple file buffers
@@ -2020,7 +2020,16 @@ $viewmode_commandlist = {
 }
 
 
-
+# define file types for syntax coloring
+$filetypes = {
+	/\.sh/ => "shell",
+	/\.csh/ => "shell",
+	/\.[cC]/ => "c",
+	/\.cpp/ => "c",
+	"COMMIT_EDITMSG" => "shell",
+	/\.m/ => "m",
+	/\.[fF]/ => "f",
+}
 
 
 
