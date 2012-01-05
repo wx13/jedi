@@ -1851,13 +1851,15 @@ end
 # ---------------- global function ----------------------
 
 # allow user scripts
-def run_script
-	ans = $screen.ask_for_file("run script file: ")
-	if (ans==nil) || (ans=="")
-		$screen.write_message("cancelled")
-		return
+def run_script(file=nil)
+	if file == nil
+		file = $screen.ask_for_file("run script file: ")
+		if (file==nil) || (ans=="")
+			$screen.write_message("cancelled")
+			return
+		end
 	end
-	script = File.read(ans)
+	script = File.read(file)
 	eval(script)
 rescue
 	$screen.write_message("Bad script")
@@ -2049,8 +2051,7 @@ $filetypes = {
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
 	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
-		script = File.read(file)
-		eval(script)
+		run_script(file)
 	}
 	opts.on('-h', '--help', 'Display this screen'){
 		puts opts
