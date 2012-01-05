@@ -272,12 +272,17 @@ class Screen
 	def askhist(question,hist)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
-		write_str(@rows-1,0," "*@cols)
-		ih = 0
-		write_str(@rows-1,0,question+" ["+hist[-1]+"]: ")
-		token = ""
+		if hist.length == 0
+			ih = 0
+		else
+			ih = 1
+		end
+		token = hist[-ih].dup
 		token0 = token.dup
 		col = token.length
+		write_str(@rows-1,0," "*@cols)
+		write_str(@rows-1,0,question+" "+token)
+		shift = 0
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -307,8 +312,15 @@ class Screen
 				when Curses::Key::RIGHT
 					col += 1
 					if col>token.length then col = token.length end
-				when $ctrl_e then col=token.length
-				when $ctrl_a then col=0
+				when $ctrl_e
+					col = token.length
+				when $ctrl_a
+					col = 0
+				when $ctrl_u
+					token = token[col..-1]
+					col = 0
+				when $ctrl_k
+					token = token[0,col]
 				when $ctrl_d
 					if col < token.length
 						token[col] = ""
@@ -329,8 +341,13 @@ class Screen
 					token0 = token.dup
 			end
 			write_str(@rows-1,0," "*$cols)
-			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token)
-			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token[0,col])
+			if (col+question.length+2) > $cols
+				shift = col - $cols + question.length + 2
+			else
+				shift = 0
+			end
+			write_str(@rows-1,0,question+" "+token[shift..-1])
+			write_str(@rows-1,0,question+" "+token[shift,col])
 		end
 		@screen.attroff Curses::A_REVERSE
 		if token == ""
@@ -429,7 +446,7 @@ class FileBuffer
 	end
 
 	def enter_command
-		answer = $screen.askhist("command",$command_hist)
+		answer = $screen.askhist("command:",$command_hist)
 		eval(answer)
 		$screen.write_message("done")
 	rescue
@@ -857,7 +874,7 @@ class FileBuffer
 			return
 		end
 		mark_row,row = ordered_mark_rows
-		s = $screen.askhist("Indent string: ",$indent_hist)
+		s = $screen.askhist("Indent string:",$indent_hist)
 		if s == nil then
 			$screen.write_message("Cancelled")
 			return
@@ -1081,7 +1098,7 @@ class FileBuffer
 		@col = sc2bc(@row,sc)
 	end
 	def goto_line
-		num = $screen.askhist("go to line: ",$lineno_hist)
+		num = $screen.askhist("go to line:",$lineno_hist)
 		if num == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1116,7 +1133,7 @@ class FileBuffer
 	def search(p)
 		if p == 0
 			# get search string from user
-			token = $screen.askhist("Search",$search_hist)
+			token = $screen.askhist("Search:",$search_hist)
 		elsif
 			token = $search_hist[-1]
 		end
