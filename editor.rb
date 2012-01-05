@@ -1207,7 +1207,7 @@ class FileBuffer
 				str = @text[row][idx..-1].scan(token)[0]
 				@row = row
 				@col = idx
-				dump_to_screen($screen)
+				dump_to_screen($screen,true)
 				highlight(row,idx,idx+str.length-1)
 				yn = $screen.ask_yesno("Replace this occurance?")
 				l = str.length
@@ -1217,6 +1217,7 @@ class FileBuffer
 					@status = "Modified"
 					col = idx+replacement.length
 				elsif yn == "cancel"
+					dump_to_screen($screen,true)
 					$screen.write_message("Cancelled")
 					return
 				else
@@ -1231,6 +1232,7 @@ class FileBuffer
 			col = 0
 			if row == sr then break end
 		end
+		dump_to_screen($screen,true)
 		$screen.write_message("No more matches")
 	end
 
@@ -1381,7 +1383,7 @@ class FileBuffer
 	#
 
 	# write everything, including status lines
-	def dump_to_screen(screen)
+	def dump_to_screen(screen,refresh=false)
 		# get cursor position
 		ypos = @row - @linefeed
 		if ypos < 0
@@ -1413,14 +1415,14 @@ class FileBuffer
 		end
 		screen.write_top_line(@filename,status,position)
 		# write the text to the screen
-		dump_text(screen)
+		dump_text(screen,refresh)
 		# set cursor position
 		Curses.setpos(@cursrow,@curscol)
 	end
 	#
 	# just dump the buffer text to the screen
 	#
-	def dump_text(screen)
+	def dump_text(screen,refresh=false)
 		# get only the rows of interest
 		text = @text[@linefeed,screen.rows-2]
 		# store up lines
@@ -1445,14 +1447,21 @@ class FileBuffer
 
 		#write out the text
 		ir = 0
-		screen_buffer.each { |line|
-			ir += 1
-			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) \
-			&& (@colfeed == @colfeed_old) && (@marked==false) && (@marked_old==false)
-				next
-			end
-			screen.write_line(ir,@colfeed,line)
-		}
+		if (@colfeed==@colfeed_old) && (@marked==false) \
+		&& (@marked_old==false) && (refresh==false)
+			screen_buffer.each { |line|
+				ir += 1
+				if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1])
+					next
+				end
+				screen.write_line(ir,@colfeed,line)
+			}
+		else
+			screen_buffer.each { |line|
+				ir += 1
+				screen.write_line(ir,@colfeed,line)
+			}
+		end
 		$screen_buffer = screen_buffer.dup
 		@colfeed_old = @colfeed
 		@marked_old = @marked
