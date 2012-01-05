@@ -1204,7 +1204,7 @@ class FileBuffer
 			nlines = @text.length
 			idx = @text[row].index(token,col)
 			while(idx!=nil)
-				str = @text[row][idx..-1].match(token)[0]
+				str = @text[row][idx..-1].scan(token)[0]
 				@row = row
 				@col = idx
 				dump_to_screen($screen)
