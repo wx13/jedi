@@ -9,7 +9,7 @@
 #	BufferHistory -- for undo/redo
 #
 #
-#	Copyright (C) 2011, Jason P. DeVita (jason@wx13.com)
+#	Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
 #
 #	Copying and distribution of this file, with or without modification,
 #	are permitted in any medium without royalty provided the copyright
@@ -18,152 +18,7 @@
 #
 
 require 'curses'
-
-# -----------------------------------------------------------------
-# This section defines some global constants.  Don't change these
-# unless you know what you're doing.
-# -----------------------------------------------------------------
-
-# control & meta chracters -- the \C-a type thing seems to only
-# sometimes work
-$ctrl_space = 0
-$ctrl_a = 1
-$ctrl_b = 2
-$ctrl_c = 3
-$ctrl_d = 4
-$ctrl_e = 5
-$ctrl_f = 6
-$ctrl_g = 7
-$ctrl_h = 8
-$ctrl_i = 9
-$ctrl_j = 10
-$ctrl_k = 11
-$ctrl_l = 12
-$ctrl_m = 10
-$enter = 10
-$ctrl_n = 14
-$ctrl_o = 15
-$ctrl_p = 16
-$ctrl_q = 17
-$ctrl_r = 18
-$ctrl_s = 19
-$ctrl_t = 20
-$ctrl_u = 21
-$ctrl_v = 22
-$ctrl_w = 23
-$ctrl_x = 24
-$ctrl_y = 25
-$ctrl_z = 26
-$ctrl_3 = 27
-$ctrl_4 = 28
-$ctrl_5 = 29
-$ctrl_6 = 30
-$ctrl_7 = 31
-$ctrl_8 = 127
-$backspace = 127
-$backspace2 = 263
-$space = 32
-
-# color escape
-$color = "\300"
-$color_white = "\301"
-$color_red = "\302"
-$color_green = "\303"
-$color_blue = "\304"
-$color_cyan = "\305"
-$color_magenta = "\306"
-$color_yellow = "\307"
-$color_black = "\308"
-# highlighting
-$color_normal = "\310"
-$color_reverse = "\311"
-# text colors
-$color_default = $color_white
-$color_comment = $color_cyan
-$color_string = $color_yellow
-$color_whitespace = $color_red
-
-
-
-
-
-
-# -----------------------------------------------------------------
-# This section defines the keymapping.
-# There are 3 sections:
-#     1. commandlist -- universal keymapping
-#     2. editmode_commandlist -- keymappings when in edit mode
-#     3. viewmode_commandlist -- keymappings in view mode
-# -----------------------------------------------------------------
-
-
-$commandlist = {
-	$ctrl_q => "buffer = buffers.close; if buffer == nil then exit end",
-	Curses::Key::UP => "buffer.cursor_up(1)",
-	Curses::Key::DOWN => "buffer.cursor_down(1)",
-	Curses::Key::RIGHT => "buffer.cursor_right",
-	Curses::Key::LEFT => "buffer.cursor_left",
-	Curses::Key::NPAGE => "buffer.cursor_down($rows-3)",
-	Curses::Key::PPAGE => "buffer.cursor_up($rows-3)",
-	$ctrl_v => "buffer.cursor_down($rows-3)",
-	$ctrl_y => "buffer.cursor_up($rows-3)",
-	$ctrl_e => "buffer.cursor_eol",
-	$ctrl_a => "buffer.cursor_sol",
-	$ctrl_n => "buffer = buffers.next",
-	$ctrl_b => "buffer = buffers.prev",
-	$ctrl_x => "buffer.mark",
-	$ctrl_p => "buffer.copy",
-	$ctrl_w => "buffer.search(0)",
-	$ctrl_g => "buffer.goto_line",
-	$ctrl_o => "buffer.save",
-	$ctrl_f => "buffer = buffers.open",
-	$ctrl_z => "$screen.suspend",
-	$ctrl_6 => "buffer.toggle"
-}
-$editmode_commandlist = {
-	Curses::Key::BACKSPACE => "buffer.backspace",
-	$backspace => "buffer.backspace",
-	$backspace2 => "buffer.backspace",
-	8 => "buffer.backspace",
-	$enter => "buffer.newline",
-	$ctrl_k => "buffer.cut",
-	$ctrl_u => "buffer.paste",
-	$ctrl_m => "buffer.newline",
-	$ctrl_j => "buffer.newline",
-	$ctrl_d => "buffer.delete",
-	$ctrl_r => "buffer.search_and_replace",
-	$ctrl_t => "buffer.block_comment",
-	$ctrl_l => "buffer.justify",
-	$ctrl_i => "buffer.addchar(c)",
-	9 => "buffer.addchar(c)",
-	32..127 => "buffer.addchar(c)"
-}
-$viewmode_commandlist = {
-	?q => "buffer = buffers.close; if buffer == nil then exit end",
-	?k => "buffer.cursor_up(1)",
-	?j => "buffer.cursor_down(1)",
-	?l => "buffer.cursor_right",
-	?h => "buffer.cursor_left",
-	$space => "buffer.cursor_down($rows-3)",
-	?b => "buffer.cursor_up($rows-3)",
-	?. => "buffer = buffers.next",
-	?, => "buffer = buffers.prev",
-	?/ => "buffer.search(0)",
-	?n => "buffer.search(1)",
-	?N => "buffer.search(-1)",
-	?g => "buffer.goto_line",
-	?i => "buffer.toggle_editmode",
-	?[ => "buffer.undo",
-	?] => "buffer.redo",
-	?K => "buffer.screen_up",
-	?J => "buffer.screen_down",
-	?H => "buffer.screen_left",
-	?L => "buffer.screen_right",
-	?: => "buffer.enter_command"
-}
-
-
-
+require 'optparse'
 
 
 
@@ -533,7 +388,7 @@ class FileBuffer
 	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
-		@tabsize = 4
+		@tabsize = $tabsize
 		@linelength = 0
 		@filename = filename
 		@status = ""
@@ -557,19 +412,18 @@ class FileBuffer
 		@mark_col = 0
 		@mark_row = 0
 		# flags
-		@autoindent = true
+		@autoindent = $autoindent
 		@editmode = true
 		@insertmode = true
-		@linewrap = false
+		@linewrap = $linewrap
 		@colmode = false
-		@syntax_color = true
+		@syntax_color = $syntax_color
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
 		get_filetype(@filename)
 		# save up info about screen to detect
 		# changes
-		@screen_buffer = []
 		@colfeed_old = 0
 	end
 
@@ -1057,17 +911,19 @@ class FileBuffer
 			splitrow(@row,@col)
 			ws = ""
 			if @autoindent
-				case @filetype
-					when "shell","m","ruby"
-						ws = @text[@row].match(/^[\s#]*/)[0]
-					when "f"
-						ws = @text[@row].match(/^c?[\s!&]*/)[0]
-					when "c"
-						ws = @text[@row].match(/^[\s\/*]*/)[0]
-					else
-						ws = @text[@row].match(/^\s*/)[0]
+				if @row > 0
+					s1 = @text[@row-1].dup
+					s2 = @text[@row].dup
+					ml = [s1.length,s2.length].min
+					s1 = s1[0,ml]
+					s2 = s2[0,ml]
+					until s1==s2
+						s1.chop!
+						s2.chop!
+					end
+					ws = s1
+					insertchar(@row+1,0,ws)
 				end
-				insertchar(@row+1,0,ws)
 			end
 			@col = ws.length
 			@row += 1
@@ -1566,12 +1422,13 @@ class FileBuffer
 		ir = 0
 		screen_buffer.each { |line|
 			ir += 1
-			if (@screen_buffer.length >= ir) && (line == @screen_buffer[ir-1]) && (@colfeed == @colfeed_old)
+			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) \
+			&& (@colfeed == @colfeed_old) && (@marked==false)
 				next
 			end
 			screen.write_line(ir,@colfeed,line)
 		}
-		@screen_buffer = screen_buffer.dup
+		$screen_buffer = screen_buffer.dup
 		@colfeed_old = @colfeed
 		# now go back and do marked text highlighting
 		if @marked
@@ -1963,6 +1820,9 @@ class BuffersList
 		@nbuf -= 1
 		@ibuf = 0
 		$screen.write_message("")
+		if @nbuf == 0 || @buffers[0] == nil
+			exit
+		end
 		@buffers[0]
 	end
 
@@ -1988,7 +1848,229 @@ end
 
 
 
-# -------------- main code ----------------
+# ---------------- global function ----------------------
+
+# allow user scripts
+def run_script
+	ans = $screen.ask_for_file("run script file: ")
+	if (ans==nil) || (ans=="")
+		$screen.write_message("cancelled")
+		return
+	end
+	script = File.read(ans)
+	eval(script)
+rescue
+	$screen.write_message("Bad script")
+end
+# --------------------------------------------------------
+
+
+
+
+
+
+# -----------------------------------------------------------------
+# This section defines some global constants.  Don't change these
+# unless you know what you're doing.
+# -----------------------------------------------------------------
+
+# control & meta chracters -- the \C-a type thing seems to only
+# sometimes work
+$ctrl_space = 0
+$ctrl_a = 1
+$ctrl_b = 2
+$ctrl_c = 3
+$ctrl_d = 4
+$ctrl_e = 5
+$ctrl_f = 6
+$ctrl_g = 7
+$ctrl_h = 8
+$ctrl_i = 9
+$ctrl_j = 10
+$ctrl_k = 11
+$ctrl_l = 12
+$ctrl_m = 10
+$enter = 10
+$ctrl_n = 14
+$ctrl_o = 15
+$ctrl_p = 16
+$ctrl_q = 17
+$ctrl_r = 18
+$ctrl_s = 19
+$ctrl_t = 20
+$ctrl_u = 21
+$ctrl_v = 22
+$ctrl_w = 23
+$ctrl_x = 24
+$ctrl_y = 25
+$ctrl_z = 26
+$ctrl_3 = 27
+$ctrl_4 = 28
+$ctrl_5 = 29
+$ctrl_6 = 30
+$ctrl_7 = 31
+$ctrl_8 = 127
+$backspace = 127
+$backspace2 = 263
+$space = 32
+
+# color escape
+$color = "\300"
+$color_white = "\301"
+$color_red = "\302"
+$color_green = "\303"
+$color_blue = "\304"
+$color_cyan = "\305"
+$color_magenta = "\306"
+$color_yellow = "\307"
+$color_black = "\308"
+# highlighting
+$color_normal = "\310"
+$color_reverse = "\311"
+
+# default text colors
+$color_default = $color_white
+$color_comment = $color_cyan
+$color_string = $color_yellow
+$color_whitespace = $color_red
+
+# default config
+$tabsize = 4
+$autoindent = true
+$linewrap = false
+$colmode = false
+$syntax_color = true
+
+
+
+
+# -----------------------------------------------------------------
+# This section defines the keymapping.
+# There are 3 sections:
+#     1. commandlist -- universal keymapping
+#     2. editmode_commandlist -- keymappings when in edit mode
+#     3. viewmode_commandlist -- keymappings in view mode
+# -----------------------------------------------------------------
+
+
+$commandlist = {
+	$ctrl_q => "buffer = buffers.close",
+	Curses::Key::UP => "buffer.cursor_up(1)",
+	Curses::Key::DOWN => "buffer.cursor_down(1)",
+	Curses::Key::RIGHT => "buffer.cursor_right",
+	Curses::Key::LEFT => "buffer.cursor_left",
+	Curses::Key::NPAGE => "buffer.cursor_down($rows-3)",
+	Curses::Key::PPAGE => "buffer.cursor_up($rows-3)",
+	$ctrl_v => "buffer.cursor_down($rows-3)",
+	$ctrl_y => "buffer.cursor_up($rows-3)",
+	$ctrl_e => "buffer.cursor_eol",
+	$ctrl_a => "buffer.cursor_sol",
+	$ctrl_n => "buffer = buffers.next",
+	$ctrl_b => "buffer = buffers.prev",
+	$ctrl_x => "buffer.mark",
+	$ctrl_p => "buffer.copy",
+	$ctrl_w => "buffer.search(0)",
+	$ctrl_g => "buffer.goto_line",
+	$ctrl_o => "buffer.save",
+	$ctrl_f => "buffer = buffers.open",
+	$ctrl_z => "$screen.suspend",
+	$ctrl_6 => "buffer.toggle",
+	$ctrl_s => "run_script"
+}
+$editmode_commandlist = {
+	Curses::Key::BACKSPACE => "buffer.backspace",
+	$backspace => "buffer.backspace",
+	$backspace2 => "buffer.backspace",
+	8 => "buffer.backspace",
+	$enter => "buffer.newline",
+	$ctrl_k => "buffer.cut",
+	$ctrl_u => "buffer.paste",
+	$ctrl_m => "buffer.newline",
+	$ctrl_j => "buffer.newline",
+	$ctrl_d => "buffer.delete",
+	$ctrl_r => "buffer.search_and_replace",
+	$ctrl_t => "buffer.block_comment",
+	$ctrl_l => "buffer.justify",
+	$ctrl_i => "buffer.addchar(c)",
+	9 => "buffer.addchar(c)",
+	32..127 => "buffer.addchar(c)"
+}
+$viewmode_commandlist = {
+	?q => "buffer = buffers.close",
+	?k => "buffer.cursor_up(1)",
+	?j => "buffer.cursor_down(1)",
+	?l => "buffer.cursor_right",
+	?h => "buffer.cursor_left",
+	$space => "buffer.cursor_down($rows-3)",
+	?b => "buffer.cursor_up($rows-3)",
+	?. => "buffer = buffers.next",
+	?, => "buffer = buffers.prev",
+	?/ => "buffer.search(0)",
+	?n => "buffer.search(1)",
+	?N => "buffer.search(-1)",
+	?g => "buffer.goto_line",
+	?i => "buffer.toggle_editmode",
+	?[ => "buffer.undo",
+	?] => "buffer.redo",
+	?K => "buffer.screen_up",
+	?J => "buffer.screen_down",
+	?H => "buffer.screen_left",
+	?L => "buffer.screen_right",
+	?: => "buffer.enter_command"
+}
+
+
+
+
+
+
+
+
+
+
+
+# -------------------------------------------------------
+# -------------------------------------------------------
+# --------------------- main code -----------------------
+# -------------------------------------------------------
+# -------------------------------------------------------
+
+
+
+optparse = OptionParser.new{|opts|
+	opts.banner = "Usage: editor [options] file1 file2 ..."
+	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
+		script = File.read(file)
+		eval(script)
+	}
+	opts.on('-h', '--help', 'Display this screen'){
+		puts opts
+		exit
+	}
+	opts.on('-t', '--tabsize N', 'Set tabsize'){|n|
+		$tabsize = n.to_i
+	}
+	opts.on('-a', '--autoindent', 'Turn on autoindent'){
+		$autoindent = true
+	}
+	opts.on('-m', '--manualindent', 'Turn off autoindent'){
+		$autoindent = false
+	}
+	opts.on('-w', '--linewrap', 'Turn on linewrap'){
+		$linewrap = true
+	}
+	opts.on('-l', '--longlines', 'Turn off linewrap'){
+		$linewrap = false
+	}
+	opts.on('-c', '--color', 'Turn on syntax coloring'){
+		$syntax_color = true
+	}
+	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
+		$syntax_color = false
+	}
+}
+optparse.parse!
+
 
 
 # read specified files into buffers of buffer list
@@ -2004,6 +2086,8 @@ $command_hist = [""]
 # copy buffer
 $copy_buffer = ""
 
+# for detecting changes to display
+$screen_buffer = []
 
 # create the case statement from list of keybindings
 $case_then = "case c\n"

@@ -2,7 +2,7 @@
 editor
 ======
 
-Text editor writen in ruby/curses.
+Editor is a text editor writen in ruby/curses.
 
 Design goals:
 1. Simplicity
@@ -24,14 +24,68 @@ Features:
 - justify text & line wrap
 - column editing (long vertical cursor)
 - undo-redo
+- run ruby commands from within the editor
+- configuration file can run arbitrary commands
 
 
 Future work:
 - display & edit diffs
 - record & replay keypresses (macros)
 - undo-redo for arbitrary ruby commands
-- config/mods/extentions
-	- load files with ruby code & execute
+
+
+
+Installation
+============
+
+You can just run "ruby editor.rb".
+Or put is somewhere in your path and give it execute permission.
+Rename it whatever you like.
+
+
+Configuration & options
+=======================
+
+Options
+-------
+
+A few parameters and flags, (such as tab size, and autoindent)
+can be set with command line options.  Type "editor -h" to see
+available options.
+
+Configuration
+-------------
+
+The "-s" or "--script" option calls a script or set of scripts to
+be run at startup.  This can be used to set basic parameters, for example:
+
+Create a file called "config.rb" containing:
+
+	$tabsize = 8
+	$autoindent = true
+	$syntax_color = false
+
+And start the editor with "-s config.rb" set.
+
+One can do more complex configurations, such as swapping keybindings.
+Suppose you like to use nano's "ctrl-x" for quit, rather than
+"ctrl-q":
+
+	$commandlist[$ctrl_x] = "buffer = buffers.close"
+	$commandlist[$ctrl_q] = "buffer = buffers.mark"
+
+One can go even further, and modify/create class methods.  For example,
+if you prefer that ctrl-e take you to the last character of the line,
+rather than just past the last character:
+
+	class FileBuffer
+		def cursor_eol
+			@col = @text[@row].length-1
+		end
+	end
+
+As you can see, this can be used for simple configuration, or to create
+mods/extenstions to the editor.
 
 
 
