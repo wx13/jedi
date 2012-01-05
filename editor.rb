@@ -272,12 +272,8 @@ class Screen
 	def askhist(question,hist)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
-		if hist.length == 0
-			ih = 0
-		else
-			ih = 1
-		end
-		token = hist[-ih].dup
+		ih = 0
+		token = ""
 		token0 = token.dup
 		col = token.length
 		write_str(@rows-1,0," "*@cols)
