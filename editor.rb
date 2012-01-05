@@ -1180,6 +1180,9 @@ class FileBuffer
 		@col = idx
 	end
 	def search_and_replace
+		# get starting point, so we can return
+		row0 = @row
+		col0 = @col
 		# get search string from user
 		token = $screen.askhist("Search:",$search_hist)
 		if token == nil
@@ -1219,6 +1222,8 @@ class FileBuffer
 				elsif yn == "cancel"
 					dump_to_screen($screen,true)
 					$screen.write_message("Cancelled")
+					@row = row0
+					@col = col0
 					return
 				else
 					col = idx+replacement.length
@@ -1232,6 +1237,8 @@ class FileBuffer
 			col = 0
 			if row == sr then break end
 		end
+		@row = row0
+		@col = col0
 		dump_to_screen($screen,true)
 		$screen.write_message("No more matches")
 	end
