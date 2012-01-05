@@ -425,6 +425,7 @@ class FileBuffer
 		# save up info about screen to detect
 		# changes
 		@colfeed_old = 0
+		@marked_old = false
 	end
 
 	def enter_command
@@ -1423,13 +1424,14 @@ class FileBuffer
 		screen_buffer.each { |line|
 			ir += 1
 			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) \
-			&& (@colfeed == @colfeed_old) && (@marked==false)
+			&& (@colfeed == @colfeed_old) && (@marked==false) && (@marked_old==false)
 				next
 			end
 			screen.write_line(ir,@colfeed,line)
 		}
 		$screen_buffer = screen_buffer.dup
 		@colfeed_old = @colfeed
+		@marked_old = @marked
 		# now go back and do marked text highlighting
 		if @marked
 			if @row == @mark_row
