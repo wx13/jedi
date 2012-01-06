@@ -474,8 +474,12 @@ class FileBuffer
 
 	def bookmark
 		answer = $screen.askhist("bookmark:",@bookmarks_hist)
-		$screen.write_message("bookmarked");
-		@bookmarks[answer] = [@row,@col]
+		if answer == nil
+			$screen.write_message("Cancelled");
+		else
+			$screen.write_message("Bookmarked");
+			@bookmarks[answer] = [@row,@col]
+		end
 	end
 
 	def goto_bookmark
@@ -2194,15 +2198,18 @@ $screen.init_screen do
 		$cols = $screen.cols
 		$rows = $screen.rows
 
-		# display the current buffer
+		# make sure we are on the current buffer
 		buffer = buffers.current
-		buffer.dump_to_screen($screen)
 
 		# take a snapshot of the buffer text,
 		# for undo/redo purposes
 		if buffer.buffer_history.text != buffer.text
 			buffer.buffer_history.add(buffer.text)
+			buffer.status = "Modified"
 		end
+
+		# display the current buffer
+		buffer.dump_to_screen($screen)
 
 		# wait for a key press
 		c = Curses.getch

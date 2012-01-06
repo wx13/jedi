@@ -34,6 +34,8 @@ Future work:
 + display & edit diffs
 + record & replay keypresses (macros)
 + undo-redo for arbitrary ruby scripts
+	- challenging: how to know what has changed?
+	- currently: make sure to .dup lines before changing
 
 
 
@@ -126,8 +128,8 @@ and there are some shorcuts for navigation, such as:
 	- ",","." (unshifted >,<) to change buffers
 	- g to goto a line
 
-To get to view mode, hit "ctrl-6 v". To get to edit mode, hit
-"ctrl-6 e" or just hit "i".
+To get to view mode, hit "ctrl-t v". To get to edit mode, hit
+"ctrl-t e" or just hit "i".
 
 
 Remember that all the keymappings can be easily changed, and one
@@ -143,6 +145,7 @@ Basic editing is verys simlar to gnu-nano.
 	- Arrow keys & page up/down to move around.
 	- Ctrl-{v,y} are also page down/up.
 	- Ctrl-w to search
+	- Ctrl-r search & replace
 	- Ctrl-o to save
 	- Ctrl-q to close file (quit if only one file open)
 	- Ctrl-e end of line
@@ -150,14 +153,13 @@ Basic editing is verys simlar to gnu-nano.
 	- Ctrl-d delete character
 	- Ctrl-{b,n} previous/next text buffer
 	- Ctrl-f open file
-	- Ctrl-r search & replace
 	- Ctrl-g go to line number (empty=0, negative = up from bottom)
 	- Ctrl-l justify text
 	- Ctrl-p copy
 	- Ctrl-k cut
 	- Ctrl-u paste
 	- Ctrl-c cancel operation
-	- Ctrl-6 toggle various things
+	- Ctrl-t toggle various things
 		- e = edit mode
 		- v = view mode
 		- a = autoindent
@@ -166,6 +168,8 @@ Basic editing is verys simlar to gnu-nano.
 		- o = overwrite mode
 		- c = column mode
 		- r = row mode
+		- s = syntax coloring on
+		- b = syntax coloring off
 	- Ctrl-x mark text
 
 
@@ -175,7 +179,7 @@ To open a file for reading, hit "ctrl-f".  Tab key cycles through matches.
 
 Cut/paste work just like in gnu-nano. Copy is just like cut, but ctrl-p.
 
-To run an arbitrary ruby command, type "ctrl-6 v :". Then type the command and
+To run an arbitrary ruby command, type "ctrl-t v :". Then type the command and
 hit enter.
 
 To indent a block of text
@@ -183,19 +187,16 @@ To indent a block of text
 	2. navigate to last line (or first)
 	3. type tabs or spaces
 
-To comment a block of text, do the same as indent, but type "ctrl-t <enter>"
+To comment a block of text, do the same as indent, but type "ctrl-t v t <enter>"
 
-To insert arbitrary text at the start of a set of lines, to the same as
-above, but type "ctrl-t <text> <enter>".
-
-Alternatively, enter column mode "ctrl-6 c".  Then "ctrl-x" to make a long cursor
+Alternatively, enter column mode "ctrl-t c".  Then "ctrl-x" to make a long cursor
 that you can type anything at (other than enter).
 
 
 Entering ruby commands
 ----------------------
 
-Type "ctrl-6 v : <ruby commands> <enter>".
+Type "ctrl-t v : <ruby commands> <enter>".
 
 For example:
 
@@ -211,21 +212,34 @@ To change the color of comments from cyan to green
 
 	$color_comment = $color_green
 
-To change a bulleted ("-") list which starts on line 47 and is 10 lines long
-to a numbered list
+To change a bulleted ("-") list which starts on the current line and
+is 10 lines long to a numbered list
 
-	k=0; @text[47,10].each{|line|; k+=1; line.sub!(/^(\s*)-/,"\\1#{k}.")}
+	k=0; @text[@row,10].each{|line|; k+=1; line=line.sub(/^(\s*)-/,"\\1#{k}.")}
 
 To turn a double underline to a single underline, go to the underline row:
                  =========             ---------
 
-	@text[@row].gsub!("=","-")
+	@text[@row] = @text[@row].gsub("=","-")
 
 To underline a line of text:
 
 	@text.insert(@row+1,"-"*@text[@row].length)
 
+**Important**:
+Notice in each of the above examples, when modifying the text buffer,
+I am careful to do stuff like:
 
+	@text[@row] = @text[@row].gsub(...
+
+instead of the more compact:
+
+	@text[@row].gsub!(...
+
+These are not the same command!  The first replaces the array element
+with a new element; the second modifies the existing element.  This
+is important because of undo-redo change detection.  The first is
+undo-able; the second is not.
 
 
 Description of code and methods
