@@ -587,7 +587,7 @@ class FileBuffer
 			yn = $screen.ask_yesno("save to different file: "+ans+" ? [y/n]")
 			if yn == "yes"
 				@filename = ans
-				@filetype = get_filetype(@filename)
+				set_filetype(@filename)
 			else
 				$screen.write_message("aborted")
 				return
