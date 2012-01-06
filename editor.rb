@@ -2,7 +2,7 @@
 #
 #	editor.rb
 #
-#	There are 3 classes:
+#	There are 4 classes:
 #	Screen -- for reading and writing to the screen (Curses)
 #	FileBuffer -- for holding and manipulating the text of a file
 #	BufferList -- for managing multiple file buffers
@@ -272,12 +272,13 @@ class Screen
 	def askhist(question,hist)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
-		write_str(@rows-1,0," "*@cols)
 		ih = 0
-		write_str(@rows-1,0,question+" ["+hist[-1]+"]: ")
 		token = ""
 		token0 = token.dup
 		col = token.length
+		write_str(@rows-1,0," "*@cols)
+		write_str(@rows-1,0,question+" "+token)
+		shift = 0
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -307,8 +308,15 @@ class Screen
 				when Curses::Key::RIGHT
 					col += 1
 					if col>token.length then col = token.length end
-				when $ctrl_e then col=token.length
-				when $ctrl_a then col=0
+				when $ctrl_e
+					col = token.length
+				when $ctrl_a
+					col = 0
+				when $ctrl_u
+					token = token[col..-1]
+					col = 0
+				when $ctrl_k
+					token = token[0,col]
 				when $ctrl_d
 					if col < token.length
 						token[col] = ""
@@ -329,8 +337,13 @@ class Screen
 					token0 = token.dup
 			end
 			write_str(@rows-1,0," "*$cols)
-			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token)
-			write_str(@rows-1,0,question+" ["+hist[-1]+"]: "+token[0,col])
+			if (col+question.length+2) > $cols
+				shift = col - $cols + question.length + 2
+			else
+				shift = 0
+			end
+			write_str(@rows-1,0,question+" "+token[shift..-1])
+			write_str(@rows-1,0,question+" "+token[shift,col])
 		end
 		@screen.attroff Curses::A_REVERSE
 		if token == ""
@@ -421,14 +434,27 @@ class FileBuffer
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
 		# file type for syntax coloring
-		get_filetype(@filename)
+		set_filetype(@filename)
 		# save up info about screen to detect
 		# changes
 		@colfeed_old = 0
+		@marked_old = false
+		@bookmarks = {}
+		@bookmarks_hist = [""]
+	end
+
+	def extra_commands
+		c = Curses.getch
+		case c
+			when ?b then bookmark
+			when ?g then goto_bookmark
+			else
+				$screen.write_message("Unknown command")
+		end
 	end
 
 	def enter_command
-		answer = $screen.askhist("command",$command_hist)
+		answer = $screen.askhist("command:",$command_hist)
 		eval(answer)
 		$screen.write_message("done")
 	rescue
@@ -436,23 +462,37 @@ class FileBuffer
 	end
 
 
-	# get the file type from the extension
-	def get_filetype(filename)
-		extension = filename.split(".")[-1]
-		case extension
-			when "sh","csh" then @filetype = "shell"
-			when "c","cpp","cc","C" then @filetype = "c"
-			when "f","F","fort" then @filetype = "f"
-			when "m" then @filetype = "m"
-			when "rb" then @filetype = "ruby"
-			else @filetype = ""
-		end
-		name = File.basename(filename)
-		case name
-			when "COMMIT_EDITMSG" then @filetype = "shell"
-		end
+	# set the file type from the filename
+	def set_filetype(filename)
+		$filetypes.each{|k,v|
+			if filename.match(k) != nil
+				@filetype = v
+			end
+		}
 	end
 
+
+	def bookmark
+		answer = $screen.askhist("bookmark:",@bookmarks_hist)
+		$screen.write_message("bookmarked");
+		@bookmarks[answer] = [@row,@col]
+	end
+
+	def goto_bookmark
+		answer = $screen.askhist("go to:",@bookmarks_hist)
+		if answer == nil
+			$screen.write_message("Cancelled")
+			return
+		end
+		rc = @bookmarks[answer]
+		if rc == nil
+			$screen.write_message("Invalid bookmark")
+			return
+		end
+		@row = rc[0]
+		@col = rc[1]
+		$screen.write_message("found it")
+	end
 
 	# toggle one of many states
 	def toggle
@@ -849,7 +889,7 @@ class FileBuffer
 			return
 		end
 		mark_row,row = ordered_mark_rows
-		s = $screen.askhist("Indent string: ",$indent_hist)
+		s = $screen.askhist("Indent string:",$indent_hist)
 		if s == nil then
 			$screen.write_message("Cancelled")
 			return
@@ -1073,7 +1113,7 @@ class FileBuffer
 		@col = sc2bc(@row,sc)
 	end
 	def goto_line
-		num = $screen.askhist("go to line: ",$lineno_hist)
+		num = $screen.askhist("go to line:",$lineno_hist)
 		if num == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1108,7 +1148,7 @@ class FileBuffer
 	def search(p)
 		if p == 0
 			# get search string from user
-			token = $screen.askhist("Search",$search_hist)
+			token = $screen.askhist("Search:",$search_hist)
 		elsif
 			token = $search_hist[-1]
 		end
@@ -1128,11 +1168,11 @@ class FileBuffer
 			idx = @text[row].index(token,@col+1)
 			while(idx==nil)
 				row = (row+1).modulo(nlines)  # next line
-				if row == @row  # stop if we wrap back around
+				idx = @text[row].index(token)
+				if (row == @row) && (idx==nil)  # stop if we wrap back around
 					$screen.write_message("No matches")
 					return
 				end
-				idx = @text[row].index(token)
 			end
 		else
 			if @col > 0
@@ -1143,11 +1183,11 @@ class FileBuffer
 			while(idx==nil)
 				row = (row-1)
 				if row < 0 then row = nlines-1 end
-				if row == @row
+				idx = @text[row].rindex(token)
+				if (row == @row) && (idx==nil)
 					$screen.write_message("No matches")
 					return
 				end
-				idx = @text[row].rindex(token)
 			end
 		end
 		$screen.write_message("Found match")
@@ -1155,6 +1195,9 @@ class FileBuffer
 		@col = idx
 	end
 	def search_and_replace
+		# get starting point, so we can return
+		row0 = @row
+		col0 = @col
 		# get search string from user
 		token = $screen.askhist("Search:",$search_hist)
 		if token == nil
@@ -1179,10 +1222,10 @@ class FileBuffer
 			nlines = @text.length
 			idx = @text[row].index(token,col)
 			while(idx!=nil)
-				str = @text[row][idx..-1].match(token)[0]
+				str = @text[row][idx..-1].scan(token)[0]
 				@row = row
 				@col = idx
-				dump_to_screen($screen)
+				dump_to_screen($screen,true)
 				highlight(row,idx,idx+str.length-1)
 				yn = $screen.ask_yesno("Replace this occurance?")
 				l = str.length
@@ -1192,7 +1235,10 @@ class FileBuffer
 					@status = "Modified"
 					col = idx+replacement.length
 				elsif yn == "cancel"
+					dump_to_screen($screen,true)
 					$screen.write_message("Cancelled")
+					@row = row0
+					@col = col0
 					return
 				else
 					col = idx+replacement.length
@@ -1206,6 +1252,9 @@ class FileBuffer
 			col = 0
 			if row == sr then break end
 		end
+		@row = row0
+		@col = col0
+		dump_to_screen($screen,true)
 		$screen.write_message("No more matches")
 	end
 
@@ -1356,7 +1405,7 @@ class FileBuffer
 	#
 
 	# write everything, including status lines
-	def dump_to_screen(screen)
+	def dump_to_screen(screen,refresh=false)
 		# get cursor position
 		ypos = @row - @linefeed
 		if ypos < 0
@@ -1388,14 +1437,14 @@ class FileBuffer
 		end
 		screen.write_top_line(@filename,status,position)
 		# write the text to the screen
-		dump_text(screen)
+		dump_text(screen,refresh)
 		# set cursor position
 		Curses.setpos(@cursrow,@curscol)
 	end
 	#
 	# just dump the buffer text to the screen
 	#
-	def dump_text(screen)
+	def dump_text(screen,refresh=false)
 		# get only the rows of interest
 		text = @text[@linefeed,screen.rows-2]
 		# store up lines
@@ -1420,16 +1469,24 @@ class FileBuffer
 
 		#write out the text
 		ir = 0
-		screen_buffer.each { |line|
-			ir += 1
-			if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1]) \
-			&& (@colfeed == @colfeed_old) && (@marked==false)
-				next
-			end
-			screen.write_line(ir,@colfeed,line)
-		}
+		if (@colfeed==@colfeed_old) && (@marked==false) \
+		&& (@marked_old==false) && (refresh==false)
+			screen_buffer.each { |line|
+				ir += 1
+				if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1])
+					next
+				end
+				screen.write_line(ir,@colfeed,line)
+			}
+		else
+			screen_buffer.each { |line|
+				ir += 1
+				screen.write_line(ir,@colfeed,line)
+			}
+		end
 		$screen_buffer = screen_buffer.dup
 		@colfeed_old = @colfeed
+		@marked_old = @marked
 		# now go back and do marked text highlighting
 		if @marked
 			if @row == @mark_row
@@ -1851,13 +1908,15 @@ end
 # ---------------- global function ----------------------
 
 # allow user scripts
-def run_script
-	ans = $screen.ask_for_file("run script file: ")
-	if (ans==nil) || (ans=="")
-		$screen.write_message("cancelled")
-		return
+def run_script(file=nil)
+	if file == nil
+		file = $screen.ask_for_file("run script file: ")
+		if (file==nil) || (ans=="")
+			$screen.write_message("cancelled")
+			return
+		end
 	end
-	script = File.read(ans)
+	script = File.read(file)
 	eval(script)
 rescue
 	$screen.write_message("Bad script")
@@ -1974,7 +2033,8 @@ $commandlist = {
 	$ctrl_o => "buffer.save",
 	$ctrl_f => "buffer = buffers.open",
 	$ctrl_z => "$screen.suspend",
-	$ctrl_6 => "buffer.toggle",
+	$ctrl_t => "buffer.toggle",
+	$ctrl_6 => "buffer.extra_commands",
 	$ctrl_s => "run_script"
 }
 $editmode_commandlist = {
@@ -1989,7 +2049,6 @@ $editmode_commandlist = {
 	$ctrl_j => "buffer.newline",
 	$ctrl_d => "buffer.delete",
 	$ctrl_r => "buffer.search_and_replace",
-	$ctrl_t => "buffer.block_comment",
 	$ctrl_l => "buffer.justify",
 	$ctrl_i => "buffer.addchar(c)",
 	9 => "buffer.addchar(c)",
@@ -2016,11 +2075,22 @@ $viewmode_commandlist = {
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
 	?L => "buffer.screen_right",
+	?t => "buffer.block_comment",
 	?: => "buffer.enter_command"
 }
 
 
-
+# define file types for syntax coloring
+$filetypes = {
+	/\.sh$/ => "shell",
+	/\.csh$/ => "shell",
+	/\.rb$/ => "shell",
+	/\.[cC]$/ => "c",
+	/\.cpp$/ => "c",
+	"COMMIT_EDITMSG" => "shell",
+	/\.m$/ => "m",
+	/\.[fF]$/ => "f"
+}
 
 
 
@@ -2040,8 +2110,7 @@ $viewmode_commandlist = {
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
 	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
-		script = File.read(file)
-		eval(script)
+		run_script(file)
 	}
 	opts.on('-h', '--help', 'Display this screen'){
 		puts opts
