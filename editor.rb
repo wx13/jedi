@@ -474,8 +474,12 @@ class FileBuffer
 
 	def bookmark
 		answer = $screen.askhist("bookmark:",@bookmarks_hist)
-		$screen.write_message("bookmarked");
-		@bookmarks[answer] = [@row,@col]
+		if answer == nil
+			$screen.write_message("Cancelled");
+		else
+			$screen.write_message("Bookmarked");
+			@bookmarks[answer] = [@row,@col]
+		end
 	end
 
 	def goto_bookmark
