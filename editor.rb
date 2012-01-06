@@ -2198,15 +2198,18 @@ $screen.init_screen do
 		$cols = $screen.cols
 		$rows = $screen.rows
 
-		# display the current buffer
+		# make sure we are on the current buffer
 		buffer = buffers.current
-		buffer.dump_to_screen($screen)
 
 		# take a snapshot of the buffer text,
 		# for undo/redo purposes
 		if buffer.buffer_history.text != buffer.text
 			buffer.buffer_history.add(buffer.text)
+			buffer.status = "Modified"
 		end
+
+		# display the current buffer
+		buffer.dump_to_screen($screen)
 
 		# wait for a key press
 		c = Curses.getch
