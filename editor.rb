@@ -349,11 +349,18 @@ class FileBuffer
 	attr_accessor :filename, :text, :status, :editmode, :buffer_history
 
 	def initialize(filename)
+
+		# set some parameters
 		@tabsize = $tabsize
-		@linelength = 0
+		@linelength = 0  # 0 means full screen width
+		@status = ""  # empty string means unmodified
+
+		# read in the file
 		@filename = filename
-		@status = ""
 		read_file
+		# file type for syntax coloring
+		set_filetype(@filename)
+
 		# position of cursor in buffer
 		@row = 0
 		@col = 0
@@ -363,15 +370,16 @@ class FileBuffer
 		# shifts of the buffer
 		@linefeed = 0
 		@colfeed = 0
-		# where we are in the linear file text buffer
-		@filepos = 0
+
 		# remember if file was CRLF
 		@eol = "\n"
+
 		# copy,cut,paste stuff
 		@marked = false
-		@cutrow = -2
+		@cutrow = -2  # keep track of last cut row, to check for consecutiveness
 		@mark_col = 0
 		@mark_row = 0
+
 		# flags
 		@autoindent = $autoindent
 		@editmode = true
@@ -379,18 +387,23 @@ class FileBuffer
 		@linewrap = $linewrap
 		@colmode = false
 		@syntax_color = $syntax_color
+
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
-		# file type for syntax coloring
-		set_filetype(@filename)
 		# save up info about screen to detect
 		# changes
 		@colfeed_old = 0
 		@marked_old = false
+
+		# bookmarking stuff
 		@bookmarks = {}
 		@bookmarks_hist = [""]
+
 	end
 
+
+	# not enough ctrl keys => extra stuff here.
+	# Should define this in a list as well.
 	def extra_commands
 		c = Curses.getch
 		case c
@@ -401,6 +414,7 @@ class FileBuffer
 		end
 	end
 
+	# Enter arbitrary ruby command.
 	def enter_command
 		answer = $screen.ask("command:",$command_hist)
 		eval(answer)
@@ -446,7 +460,8 @@ class FileBuffer
 		$screen.write_message("found it")
 	end
 
-	# toggle one of many states
+	# Toggle one of many states.
+	# These keys should be a keybinding.
 	def toggle
 		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row,scolr,bw")
 		c = Curses.getch
@@ -492,15 +507,16 @@ class FileBuffer
 		end
 	end
 
+	# Go back to edit mode.
 	def toggle_editmode
 		@editmode = true
 		$screen.write_message("Edit mode")
 	end
 
 
-	# read into buffer array
+	# Read into buffer array.
 	# Called by initialize -- shouldn't need to call
-	# this directly
+	# this directly.
 	def read_file
 		if @filename == ""
 			@text = [""]
@@ -524,6 +540,7 @@ class FileBuffer
 		@text = text.split("\n",-1)
 	end
 
+	# Save buffer to a file.
 	def save
 		ans = $screen.ask("save to: ",[@filename],true,true)
 		if ans == nil
@@ -574,8 +591,8 @@ class FileBuffer
 	# Modifying text
 	#
 
-	# these are the functions which do the mods
-	# Everything else calls these
+	# These are the functions which do the mods.
+	# Everything else calls these.
 
 	# delete a character
 	def delchar(row,col)
@@ -2110,7 +2127,9 @@ $copy_buffer = ""
 # for detecting changes to display
 $screen_buffer = []
 
-# create the case statement from list of keybindings
+# Create the case statement from list of keybindings.
+# The variable $case_then contains a string to be executed.
+# It has three sections: all, editmode, viewmode.
 $case_then = "case c\n"
 $commandlist.each{|key|
 	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
