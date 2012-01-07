@@ -181,95 +181,12 @@ class Screen
 		@screen.attroff Curses::A_REVERSE
 	end
 
-	# get a string from the user, allowing for cancellation,
-	# and weird character stuff
-	def getstr(question,instring="")
-		answer = instring.dup
-		$screen.write_str(@rows-1,question.length,answer)
-		loop do
-			c = Curses.getch
-			$screen.write_str(@rows-1,question.length," "*(answer.length))
-			if c.is_a?(String) then c = c.unpack('C')[0] end
-			case c
-				when $ctrl_c
-					answer=nil
-					break
-				when $ctrl_m then break
-				when $ctrl_h, $backspace, $backspace2
-					answer.chop!
-				when 32..127
-					answer += c.chr
-				when ?\t, $ctrl_i then answer += "\t"
-				when /[a-zA-Z0-9]/ then answer += (c.unpack('C')[0])
-				when /[`~!@\#$%^&*()-_=+]/ then answer += (c.unpack('C')[0])
-				when /[\[\]{}|\\;':",.<>\/?]/ then answer += (c.unpack('C')[0])
-			end
-			$screen.write_str(@rows-1,question.length,answer)
-		end
-		return(answer)
-	end
-
-	# get the name of a file, allowing for tab completion
-	def getstr_file(ll)
-		answer=""
-		glob=answer
-		idx = 0
-		loop do
-			c = Curses.getch
-			if c.is_a?(String) then c = c.unpack('C')[0] end
-			case c
-				when $ctrl_c
-					answer=nil
-					break
-				when $ctrl_m then break
-				when $ctrl_h, $backspace, 263
-					answer.chop!
-					glob = answer
-				when 32..127
-					answer += c.chr
-					glob = answer
-				when ?\t, $ctrl_i
-					# circulate through possible file matches
-					list = Dir.glob(glob+"*")
-					if list.length == 0
-						next
-					end
-					idx = idx.modulo(list.length)
-					answer = list[idx]
-					idx += 1
-			end
-			write_str(@rows-1,ll," "*(@cols-ll))
-			write_str(@rows-1,ll,answer)
-		end
-		return(answer)
-	end
-
-	# ask a question of the user
-	def ask(question,answer="")
-		update_screen_size
-		@screen.attron Curses::A_REVERSE
-		write_str(@rows-1,0," "*@cols)
-		write_str(@rows-1,0,question)
-		answer = getstr(question,answer)
-		@screen.attroff Curses::A_REVERSE
-		return(answer)
-	end
-
-	# ask for a file to open
-	def ask_for_file(question)
-		update_screen_size
-		@screen.attron Curses::A_REVERSE
-		write_str(@rows-1,0," "*@cols)
-		write_str(@rows-1,0,question)
-		answer = getstr_file(question.length)
-		@screen.attroff Curses::A_REVERSE
-		return(answer)
-	end
-
-
-	# ask for a string, allowing for choosing from past values
-	# Used for search/replace.
-	def askhist(question,hist)
+	# ask th user a question
+	# INPUT:
+	#   question  = "string" (written to the screen)
+	#   history = ["string1","string2"]
+	#   file = true/false
+	def ask(question,hist=[""],display=false,file=false)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
 		ih = 0
@@ -277,8 +194,14 @@ class Screen
 		token0 = token.dup
 		col = token.length
 		write_str(@rows-1,0," "*@cols)
+		if display
+			token = hist[-1].dup
+		end
+		col = token.length
 		write_str(@rows-1,0,question+" "+token)
 		shift = 0
+		idx = 0
+		glob = token
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -290,6 +213,7 @@ class Screen
 						ih = hist.length-1
 					end
 					token = hist[-ih].dup
+					glob = token
 					col = token.length
 				when Curses::Key::DOWN
 					ih -= 1
@@ -301,40 +225,62 @@ class Screen
 					else
 						token = hist[-ih].dup
 					end
+					glob = token
 					col = token.length
 				when Curses::Key::LEFT
 					col -= 1
 					if col<0 then col=0 end
+					glob = token
 				when Curses::Key::RIGHT
 					col += 1
 					if col>token.length then col = token.length end
+					glob = token
 				when $ctrl_e
 					col = token.length
+					glob = token
 				when $ctrl_a
 					col = 0
+					glob = token
 				when $ctrl_u
 					token = token[col..-1]
+					glob = token
 					col = 0
 				when $ctrl_k
 					token = token[0,col]
+					glob = token
 				when $ctrl_d
 					if col < token.length
 						token[col] = ""
 					end
 					token0 = token.dup
+					glob = token
 				when $ctrl_u
 					token.insert(col,$copy_buffer)
+					glob = token
 				when $ctrl_m, Curses::Key::ENTER then break
-				when 9..127
+				when 10..127
 					token.insert(col,c.chr)
 					token0 = token.dup
 					col += 1
+					glob = token
 				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
 					if col > 0
 						token[col-1] = ""
 						col -= 1
 					end
 					token0 = token.dup
+					glob = token
+				when ?\t, $ctrl_i
+					if file
+						list = Dir.glob(glob+"*")
+						if list.length == 0
+							next
+						end
+						idx = idx.modulo(list.length)
+						token = list[idx]
+						col = token.length
+						idx += 1
+					end
 			end
 			write_str(@rows-1,0," "*$cols)
 			if (col+question.length+2) > $cols
@@ -354,6 +300,9 @@ class Screen
 		end
 		return(token)
 	end
+
+
+
 
 
 	# ask a yes or no question
@@ -454,7 +403,7 @@ class FileBuffer
 	end
 
 	def enter_command
-		answer = $screen.askhist("command:",$command_hist)
+		answer = $screen.ask("command:",$command_hist)
 		eval(answer)
 		$screen.write_message("done")
 	rescue
@@ -473,7 +422,7 @@ class FileBuffer
 
 
 	def bookmark
-		answer = $screen.askhist("bookmark:",@bookmarks_hist)
+		answer = $screen.ask("bookmark:",@bookmarks_hist)
 		if answer == nil
 			$screen.write_message("Cancelled");
 		else
@@ -483,7 +432,7 @@ class FileBuffer
 	end
 
 	def goto_bookmark
-		answer = $screen.askhist("go to:",@bookmarks_hist)
+		answer = $screen.ask("go to:",@bookmarks_hist)
 		if answer == nil
 			$screen.write_message("Cancelled")
 			return
@@ -577,7 +526,7 @@ class FileBuffer
 	end
 
 	def save
-		ans = $screen.ask("save to: ",@filename)
+		ans = $screen.ask("save to: ",[@filename],true,true)
 		if ans == nil
 			$screen.write_message("Cancelled")
 			return
@@ -893,7 +842,7 @@ class FileBuffer
 			return
 		end
 		mark_row,row = ordered_mark_rows
-		s = $screen.askhist("Indent string:",$indent_hist)
+		s = $screen.ask("Indent string:",$indent_hist)
 		if s == nil then
 			$screen.write_message("Cancelled")
 			return
@@ -985,7 +934,7 @@ class FileBuffer
 		else
 			# ask for screen width
 			# nil means cancel, empty means screen width
-			ans = $screen.ask("Justify width: ",@linelength.to_s)
+			ans = $screen.ask("Justify width: ",[@linelength.to_s],true)
 			if ans == nil
 				$screen.write_message("Cancelled")
 				return
@@ -1117,7 +1066,7 @@ class FileBuffer
 		@col = sc2bc(@row,sc)
 	end
 	def goto_line
-		num = $screen.askhist("go to line:",$lineno_hist)
+		num = $screen.ask("go to line:",$lineno_hist)
 		if num == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1152,7 +1101,7 @@ class FileBuffer
 	def search(p)
 		if p == 0
 			# get search string from user
-			token = $screen.askhist("Search:",$search_hist)
+			token = $screen.ask("Search:",$search_hist)
 		elsif
 			token = $search_hist[-1]
 		end
@@ -1203,7 +1152,7 @@ class FileBuffer
 		row0 = @row
 		col0 = @col
 		# get search string from user
-		token = $screen.askhist("Search:",$search_hist)
+		token = $screen.ask("Search:",$search_hist)
 		if token == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1213,7 +1162,7 @@ class FileBuffer
 			token = eval(token)
 		end
 		# get replace string from user
-		replacement = $screen.askhist("Replace:",$replace_hist)
+		replacement = $screen.ask("Replace:",$replace_hist)
 		if replacement == nil
 			$screen.write_message("Cancelled")
 			return
@@ -1888,7 +1837,7 @@ class BuffersList
 	end
 
 	def open
-		ans = $screen.ask_for_file("open file: ")
+		ans = $screen.ask("open file: ",[""],false,true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
 			return(@buffers[@ibuf])
@@ -1914,7 +1863,7 @@ end
 # allow user scripts
 def run_script(file=nil)
 	if file == nil
-		file = $screen.ask_for_file("run script file: ")
+		file = $screen.ask("run script file: ",[""],false,true)
 		if (file==nil) || (ans=="")
 			$screen.write_message("cancelled")
 			return
