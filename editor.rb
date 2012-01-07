@@ -109,8 +109,9 @@ class Screen
 		end
 		# loop over remaining parts, and process colors
 		a.each{|str|
-			c = str[0].chr
-			d = str[1..-1]
+			c = str[0].chr  # color code
+			d = str[1..-1]  # rest of the string
+			next if d == nil
 			case c
 				when $color_white then set_color(Curses::COLOR_WHITE)
 				when $color_red then set_color(Curses::COLOR_RED)
@@ -127,9 +128,6 @@ class Screen
 			if pos < colfeed
 				s = colfeed - pos
 				c = 0
-			end
-			if d == nil
-				next
 			end
 			write_str(row,c,d[s,(@cols-c)])
 			pos += d.length
@@ -189,19 +187,18 @@ class Screen
 	def ask(question,hist=[""],display=false,file=false)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
-		ih = 0
-		token = ""
-		token0 = token.dup
-		col = token.length
-		write_str(@rows-1,0," "*@cols)
+		ih = 0  # history index
+		token = ""  # potential answer
 		if display
 			token = hist[-1].dup
 		end
-		col = token.length
+		token0 = token.dup  # remember typed string, even if we move away
+		col = token.length  # put cursor at end of string
+		write_str(@rows-1,0," "*@cols)  # blank the line
 		write_str(@rows-1,0,question+" "+token)
-		shift = 0
-		idx = 0
-		glob = token
+		shift = 0  # shift: in case we go past edge of screen
+		idx = 0  # for tabbing through files
+		glob = token  # for file globbing
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -271,6 +268,8 @@ class Screen
 					token0 = token.dup
 					glob = token
 				when ?\t, $ctrl_i
+					# find files that match typed string
+					# Cycle through matches.
 					if file
 						list = Dir.glob(glob+"*")
 						if list.length == 0
@@ -289,7 +288,7 @@ class Screen
 				shift = 0
 			end
 			write_str(@rows-1,0,question+" "+token[shift..-1])
-			write_str(@rows-1,0,question+" "+token[shift,col])
+			Curses.setpos(@rows-1,(col-shift)+question.length+1)
 		end
 		@screen.attroff Curses::A_REVERSE
 		if token == ""
