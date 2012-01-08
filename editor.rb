@@ -60,10 +60,11 @@ class Screen
 		end
 	end
 
-	def suspend
+	def suspend(buffer)
 		Curses.close_screen
 		Process.kill("SIGSTOP",0)
 		Curses.refresh
+		buffer.dump_to_screen($screen,true)
 	end
 
 	# write a string at a position
@@ -2001,7 +2002,7 @@ $commandlist = {
 	$ctrl_g => "buffer.goto_line",
 	$ctrl_o => "buffer.save",
 	$ctrl_f => "buffer = buffers.open",
-	$ctrl_z => "$screen.suspend",
+	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extra_commands",
 	$ctrl_s => "run_script"
