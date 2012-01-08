@@ -1886,10 +1886,20 @@ def run_script(file=nil)
 			return
 		end
 	end
-	script = File.read(file)
-	eval(script)
+	if File.directory?(file)
+		list = Dir.glob(file+"/*.rb")
+		list.each{|f|
+			script = File.read(f)
+			eval(script)
+		}
+	elsif File.exist?(file)
+		script = File.read(file)
+		eval(script)
+	end
 rescue
-	$screen.write_message("Bad script")
+	if $screen != nil
+		$screen.write_message("Bad script")
+	end
 end
 # --------------------------------------------------------
 
