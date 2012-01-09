@@ -268,7 +268,7 @@ class Screen
 					end
 					token0 = token.dup
 					glob = token
-				when ?\t, $ctrl_i
+				when ?\t, $ctrl_i, 9
 					# find files that match typed string
 					# Cycle through matches.
 					if file
@@ -280,6 +280,11 @@ class Screen
 						token = list[idx]
 						col = token.length
 						idx += 1
+					else
+						token.insert(col,c.chr)
+						token0 = token.dup
+						col += 1
+						glob = token
 					end
 			end
 			write_str(@rows-1,0," "*$cols)
