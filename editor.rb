@@ -5,7 +5,7 @@
 #	There are 4 classes:
 #	Screen -- for reading and writing to the screen (Curses)
 #	FileBuffer -- for holding and manipulating the text of a file
-#	BufferList -- for managing multiple file buffers
+#	BuffersList -- for managing multiple file buffers
 #	BufferHistory -- for undo/redo
 #
 #
@@ -1410,7 +1410,15 @@ class FileBuffer
 		else
 			status = @status + "  VIEW"
 		end
-		screen.write_top_line(@filename,status,position)
+		# report on number of open buffers
+		if $buffers.nbuf <= 1
+			lstr = @filename
+		else
+			nb = $buffers.nbuf
+			ib = $buffers.ibuf
+			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
+		end
+		screen.write_top_line(lstr,status,position)
 		# write the text to the screen
 		dump_text(screen,refresh)
 		# set cursor position
@@ -1805,7 +1813,7 @@ end
 #
 class BuffersList
 
-	attr_accessor :copy_buffer
+	attr_accessor :copy_buffer, :nbuf, :ibuf
 
 	# Read in all input files into buffers.
 	# One buffer for each file.
@@ -1998,7 +2006,7 @@ $syntax_color = true
 
 
 $commandlist = {
-	$ctrl_q => "buffer = buffers.close",
+	$ctrl_q => "buffer = $buffers.close",
 	Curses::Key::UP => "buffer.cursor_up(1)",
 	Curses::Key::DOWN => "buffer.cursor_down(1)",
 	Curses::Key::RIGHT => "buffer.cursor_right",
@@ -2009,14 +2017,14 @@ $commandlist = {
 	$ctrl_y => "buffer.cursor_up($rows-3)",
 	$ctrl_e => "buffer.cursor_eol",
 	$ctrl_a => "buffer.cursor_sol",
-	$ctrl_n => "buffer = buffers.next",
-	$ctrl_b => "buffer = buffers.prev",
+	$ctrl_n => "buffer = $buffers.next",
+	$ctrl_b => "buffer = $buffers.prev",
 	$ctrl_x => "buffer.mark",
 	$ctrl_p => "buffer.copy",
 	$ctrl_w => "buffer.search(0)",
 	$ctrl_g => "buffer.goto_line",
 	$ctrl_o => "buffer.save",
-	$ctrl_f => "buffer = buffers.open",
+	$ctrl_f => "buffer = $buffers.open",
 	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extra_commands",
@@ -2040,15 +2048,15 @@ $editmode_commandlist = {
 	32..127 => "buffer.addchar(c)"
 }
 $viewmode_commandlist = {
-	?q => "buffer = buffers.close",
+	?q => "buffer = $buffers.close",
 	?k => "buffer.cursor_up(1)",
 	?j => "buffer.cursor_down(1)",
 	?l => "buffer.cursor_right",
 	?h => "buffer.cursor_left",
 	$space => "buffer.cursor_down($rows-3)",
 	?b => "buffer.cursor_up($rows-3)",
-	?. => "buffer = buffers.next",
-	?, => "buffer = buffers.prev",
+	?. => "buffer = $buffers.next",
+	?, => "buffer = $buffers.prev",
 	?/ => "buffer.search(0)",
 	?n => "buffer.search(1)",
 	?N => "buffer.search(-1)",
@@ -2128,7 +2136,7 @@ optparse.parse!
 
 
 # read specified files into buffers of buffer list
-buffers = BuffersList.new(ARGV)
+$buffers = BuffersList.new(ARGV)
 
 # store up search history
 $search_hist = [""]
@@ -2182,7 +2190,7 @@ $screen.init_screen do
 		$rows = $screen.rows
 
 		# make sure we are on the current buffer
-		buffer = buffers.current
+		buffer = $buffers.current
 
 		# take a snapshot of the buffer text,
 		# for undo/redo purposes
