@@ -1704,16 +1704,21 @@ end
 
 
 #
-# Linked list of buffer text states
-# for undo/redo
+# Linked list of buffer text states for undo/redo
+#
+# Whole thing is a wrapper around a linked list of Node objects,
+# which are defined inside this BufferHistory class.
 #
 class BufferHistory
+
 	attr_accessor :tree
+
 	def initialize(text)
 		@tree = Node.new(text)
 		@tree.next = nil
 		@tree.prev = nil
 	end
+
 	class Node
 		attr_accessor :next, :prev, :text
 		def initialize(text)
@@ -1728,7 +1733,11 @@ class BufferHistory
 			if @prev != nil then @prev.next = @next end
 		end
 	end
+
+	# add a new snapshot
 	def add(text)
+
+		# create a new node and set navigation pointers
 		old = @tree
 		@tree = Node.new(text)
 		@tree.next = old.next
@@ -1737,7 +1746,9 @@ class BufferHistory
 		end
 		@tree.prev = old
 		old.next = @tree
-		# prune the tree, so it doesn't get too big
+
+		# Prune the tree, so it doesn't get too big.
+		# Start by going back.
 		n=0
 		x = @tree
 		while x != nil
@@ -1766,6 +1777,8 @@ class BufferHistory
 			x.next.delete
 		end
 	end
+
+	# get the current text state
 	def text
 		@tree.text
 	end
