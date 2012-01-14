@@ -775,7 +775,7 @@ class FileBuffer
 	def undo
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev
-			@text = @buffer_history.copy(@text)
+			@text = @buffer_history.copy
 			@col = 0
 			@row = row_changed(@text,@buffer_history.next.text,@row)
 		end
@@ -783,7 +783,7 @@ class FileBuffer
 	def redo
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
-			@text = @buffer_history.copy(@text)
+			@text = @buffer_history.copy
 			@col = 0
 			@row = row_changed(@text,@buffer_history.prev.text,@row)
 		end
@@ -1769,7 +1769,9 @@ class BufferHistory
 	def text
 		@tree.text
 	end
-	def copy(atext)
+
+	# Shallow copy
+	def copy
 		atext = []
 		for k in 0..(@tree.text.length-1)
 			atext[k] = @tree.text[k]
