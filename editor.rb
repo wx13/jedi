@@ -1908,10 +1908,18 @@ def run_script(file=nil)
 	elsif File.exist?(file)
 		script = File.read(file)
 		eval(script)
+	else
+		puts "Script file #{file} doesn't exist."
+		puts "Press any key to continue anyway."
+		STDIN.getc
 	end
 rescue
 	if $screen != nil
 		$screen.write_message("Bad script")
+	else
+		puts "Bad script file: #{file}"
+		puts "Press any key to continue anyway."
+		STDIN.getc
 	end
 end
 # --------------------------------------------------------
