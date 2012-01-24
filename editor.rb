@@ -898,7 +898,7 @@ class FileBuffer
 		else
 			mark_row,row = ordered_mark_rows
 			for r in mark_row..row
-				if (@text[r].length==0)&&((c==?\s)||(c==?\t))
+				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c==$ctrl_i)||(c==$space))
 					next
 				end
 				if @colmode
