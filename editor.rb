@@ -319,6 +319,9 @@ class Screen
 		answer = "cancel"
 		loop do
 			c = Curses.getch
+			if c > 255
+				next
+			end
 			if c.chr.downcase == "y"
 				answer = "yes"
 				break
@@ -352,7 +355,7 @@ end
 #
 class FileBuffer
 
-	attr_accessor :filename, :text, :status, :editmode, :buffer_history
+	attr_accessor :filename, :text, :status, :editmode, :buffer_history, :extramode
 
 	def initialize(filename)
 
@@ -388,7 +391,8 @@ class FileBuffer
 
 		# flags
 		@autoindent = $autoindent
-		@editmode = true
+		@editmode = $editmode
+		@extramode = false
 		@insertmode = true
 		@linewrap = $linewrap
 		@colmode = false
@@ -414,18 +418,6 @@ class FileBuffer
 	def perbuffer_userscript
 	end
 
-
-	# not enough ctrl keys => extra stuff here.
-	# Should define this in a list as well.
-	def extra_commands
-		c = Curses.getch
-		case c
-			when ?b then bookmark
-			when ?g then goto_bookmark
-			else
-				$screen.write_message("Unknown command")
-		end
-	end
 
 	# Enter arbitrary ruby command.
 	def enter_command
@@ -1452,6 +1444,9 @@ class FileBuffer
 		screen.write_top_line(lstr,status,position)
 		# write the text to the screen
 		dump_text(screen,refresh)
+		if @extramode
+			$screen.write_message("EXTRAMODE")
+		end
 		# set cursor position
 		Curses.setpos(@cursrow,@curscol)
 	end
@@ -2048,16 +2043,18 @@ $autoindent = true
 $linewrap = false
 $colmode = false
 $syntax_color = true
+$editmode = true
 
 
 
 
 # -----------------------------------------------------------------
 # This section defines the keymapping.
-# There are 3 sections:
+# There are 4 sections:
 #     1. commandlist -- universal keymapping
 #     2. editmode_commandlist -- keymappings when in edit mode
 #     3. viewmode_commandlist -- keymappings in view mode
+#     4. extra_commandlist -- ones that don't fit
 # -----------------------------------------------------------------
 
 
@@ -2083,8 +2080,12 @@ $commandlist = {
 	$ctrl_f => "buffer = $buffers.open",
 	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
-	$ctrl_6 => "buffer.extra_commands",
+	$ctrl_6 => "buffer.extramode = true",
 	$ctrl_s => "buffer.run_script"
+}
+$extramode_commandlist = {
+	?b => "buffer.bookmark",
+	?g => "buffer.goto_bookmark"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
@@ -2171,6 +2172,9 @@ optparse = OptionParser.new{|opts|
 	opts.on('-a', '--autoindent', 'Turn on autoindent'){
 		$autoindent = true
 	}
+	opts.on('-v', '--view', 'Start in view mode'){
+		$editmode = false
+	}
 	opts.on('-m', '--manualindent', 'Turn off autoindent'){
 		$autoindent = false
 	}
@@ -2211,11 +2215,22 @@ $screen_buffer = []
 # Create the case statement from list of keybindings.
 # The variable $case_then contains a string to be executed.
 # It has three sections: all, editmode, viewmode.
-$case_then = "case c\n"
+$case_then = "if buffer.extramode\n"
+$case_then += "case c\n"
+$extramode_commandlist.each{|key|
+	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
+}
+$case_then += "end\n"
+$case_then += "buffer.extramode = false\n"
+$case_then += "$screen.write_message(\"\")\n"
+$case_then += "else\n"
+
+$case_then += "case c\n"
 $commandlist.each{|key|
 	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
 }
 $case_then += "end\n"
+
 $case_then += "if buffer.editmode\n"
 $case_then += "case c\n"
 $editmode_commandlist.each{|key|
@@ -2230,7 +2245,7 @@ $viewmode_commandlist.each{|key|
 }
 $case_then += "end\n"
 $case_then += "end\n"
-
+$case_then += "end\n"
 
 
 
