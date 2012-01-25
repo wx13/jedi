@@ -196,7 +196,11 @@ that you can type anything at (other than enter).
 Entering ruby commands
 ----------------------
 
-Type "ctrl-t v : <ruby commands> <enter>".
+Type "ctrl-t v : <ruby commands> <enter>" to enter a ruby command.
+All commands entered this way, are run in the context of the current
+file buffer.  Thus "@text" refers to the text of that buffer.  The
+screen can be accessed by the global variable "$screen", and the other
+buffers can be accessed by the "$buffers" global variable.
 
 For example:
 
@@ -240,6 +244,33 @@ These are not the same command!  The first replaces the array element
 with a new element; the second modifies the existing element.  This
 is important because of undo-redo change detection.  The first is
 undo-able; the second is not.
+
+
+Running ruby scripts a startup
+------------------------------
+
+The "-s" or "--script" option specifies script files or directories containing
+script files to be run at startup.  If it is a directory, the all the files
+ending in ".rb" are run.  These can be simple configuration files, like:
+
+	@tabsize = 4
+	@autoindent = false
+	$color_comment = $color_green
+
+or can be modifications to the editor.  An empty method is run at the
+initialization of each buffer, so that the user can add startup methods to
+buffers.  For example, to set the tabsize to be 4 for fortran files only:
+
+	class FileBuffer
+		def perbuffer_userscript
+			if @filetype == "f"
+				@tabsize = 4
+			else
+				@tabsize = 8
+			end
+		end
+	end
+
 
 
 Description of code and methods
