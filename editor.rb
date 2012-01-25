@@ -437,6 +437,30 @@ class FileBuffer
 	end
 
 
+	def run_script
+		file = $screen.ask("run script file: ",[""],false,true)
+		if (file==nil) || (file=="")
+			$screen.write_message("cancelled")
+			return
+		end
+		if File.directory?(file)
+			list = Dir.glob(file+"/*.rb")
+			list.each{|f|
+				script = File.read(f)
+				eval(script)
+				$screen.write_message("done")
+			}
+		elsif File.exist?(file)
+			script = File.read(file)
+			eval(script)
+			$screen.write_message("done")
+		else
+			$screen.write_message("script file #{file} doesn't exist")
+		end
+	rescue
+		$screen.write_message("Bad script")
+	end
+
 	# set the file type from the filename
 	def set_filetype(filename)
 		$filetypes.each{|k,v|
@@ -2058,7 +2082,7 @@ $commandlist = {
 	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extra_commands",
-	$ctrl_s => "run_script"
+	$ctrl_s => "buffer.run_script"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
