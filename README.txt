@@ -36,8 +36,11 @@ Future work:
 + undo-redo for arbitrary ruby scripts
 	- challenging: how to know what has changed?
 	- currently: make sure to .dup lines before changing
-
-
++ help screen (ctrl-h)
++ record status in a file
+	- search terms
+	- recent scripts
+	- etc.
 
 
 
@@ -249,17 +252,19 @@ undo-able; the second is not.
 Running ruby scripts a startup
 ------------------------------
 
-The "-s" or "--script" option specifies script files or directories containing
-script files to be run at startup.  If it is a directory, the all the files
-ending in ".rb" are run.  These can be simple configuration files, like:
+The "-s" or "--script" option specifies script files or directories
+containing script files to be run at startup.  If it is a directory,
+the all the files ending in ".rb" are run.  These can be simple
+configuration files, like:
 
 	@tabsize = 4
 	@autoindent = false
 	$color_comment = $color_green
 
 or can be modifications to the editor.  An empty method is run at the
-initialization of each buffer, so that the user can add startup methods to
-buffers.  For example, to set the tabsize to be 4 for fortran files only:
+initialization of each buffer, so that the user can add startup methods
+to buffers.  For example, to set the tabsize to be 4 for fortran files
+only:
 
 	class FileBuffer
 		def perbuffer_userscript
@@ -272,6 +277,12 @@ buffers.  For example, to set the tabsize to be 4 for fortran files only:
 	end
 
 
+Examples
+--------
+
+Some examples of configuration files and user scripts and mods can be
+found in the "scripts" directory.
+
 
 Description of code and methods
 ===============================
@@ -279,10 +290,11 @@ Description of code and methods
 Keybindings
 -----------
 
-The keybindings section is near the top of the code. It has three sections:
-commandlist, editmode_commandlist, and viewmode_commandlist.  The first is
-for universal keybindings. The second only works in editmode, and the third
-works only in viewmode.
+The keybindings section is near the top of the code. It has four
+sections: commandlist, extramode_commandlist, editmode_commandlist, and
+viewmode_commandlist. The first is for universal keybindings. The
+third only works in editmode, and the fourth works only in viewmode.
+The second is for extra keybindings that there isn't room for.
 
 Classes
 -------
@@ -310,14 +322,15 @@ BufferHistory is a linked list of buffer text state, used for undo/redo.
 Undo-redo
 ---------
 
-The buffer text is stored in an array of strings (lines).  Each time the user
-does something, a snapshot of the text is saved.  This snapshot is a shallow
-copy (it is a new array, but each element is pointer to the old string).
-Before a line is changed, a deep copy is made of that line (now the array has
-one differing element). These sequences of snapshots are saved in a linked
-list (BufferHistory class). The linked list format allows the possibility of
-undo-trees if I ever feel they would be useful.  Undo and redo, are as simple
-as bumping a pointer up or down the link list of text buffers.
+The buffer text is stored in an array of strings (lines).  Each time
+the user does something, a snapshot of the text is saved.  This
+snapshot is a shallow copy (it is a new array, but each element is
+pointer to the old string). Before a line is changed, a deep copy is
+made of that line (now the array has one differing element). These
+sequences of snapshots are saved in a linked list (BufferHistory
+class). The linked list format allows the possibility of undo-trees if
+I ever feel they would be useful.  Undo and redo, are as simple as
+bumping a pointer up or down the link list of text buffers.
 
 
 
