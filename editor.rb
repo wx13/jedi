@@ -438,7 +438,7 @@ class FileBuffer
 
 
 	def run_script
-		file = $screen.ask("run script file: ",[""],false,true)
+		file = $screen.ask("run script file: ",$scriptfile_hist,false,true)
 		if (file==nil) || (file=="")
 			$screen.write_message("cancelled")
 			return
@@ -2200,6 +2200,7 @@ $replace_hist = [""]
 $indent_hist = [""]
 $lineno_hist = [""]
 $command_hist = [""]
+$scriptfile_hist = [""]
 
 # copy buffer
 $copy_buffer = ""
