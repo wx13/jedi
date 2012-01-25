@@ -1940,7 +1940,7 @@ end
 def run_script(file=nil)
 	if file == nil
 		file = $screen.ask("run script file: ",[""],false,true)
-		if (file==nil) || (ans=="")
+		if (file==nil) || (file=="")
 			$screen.write_message("cancelled")
 			return
 		end
@@ -1950,10 +1950,12 @@ def run_script(file=nil)
 		list.each{|f|
 			script = File.read(f)
 			eval(script)
+			$screen.write_message("done")
 		}
 	elsif File.exist?(file)
 		script = File.read(file)
 		eval(script)
+		$screen.write_message("done")
 	else
 		puts "Script file #{file} doesn't exist."
 		puts "Press any key to continue anyway."
