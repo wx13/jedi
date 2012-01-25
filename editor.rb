@@ -405,6 +405,13 @@ class FileBuffer
 		@bookmarks = {}
 		@bookmarks_hist = [""]
 
+		# This does nothing, by default; it is here to allow
+		# a user script to modify each text buffer that is opened.
+		perbuffer_userscript
+
+	end
+
+	def perbuffer_userscript
 	end
 
 
