@@ -19,7 +19,7 @@
 
 require 'curses'
 require 'optparse'
-
+require 'yaml'
 
 
 #----------------------------------------------------------
@@ -1871,6 +1871,9 @@ class BuffersList
 			@buffers[@nbuf] = FileBuffer.new("")
 			@nbuf += 1
 		end
+		if ($hist_file != nil) && (File.exist?($hist_file))
+			read_hists
+		end
 	end
 
 	# return next, previous, or current buffer
@@ -1902,9 +1905,31 @@ class BuffersList
 		@ibuf = 0
 		$screen.write_message("")
 		if @nbuf == 0 || @buffers[0] == nil
+			if $hist_file != nil
+				save_hists
+			end
 			exit
 		end
 		@buffers[0]
+	end
+
+	def save_hists
+		hists = {"search_hist" => $search_hist.reverse[0,1000].reverse,\
+	             "replace_hist" => $replace_hist.reverse[0,1000].reverse,\
+	             "command_hist" => $command_hist.reverse[0,1000].reverse,\
+	             "script_hist" => $scriptfile_hist.reverse[0,1000].reverse\
+	            }
+		File.open($hist_file,"w"){|file|
+			YAML.dump(hists,file)
+		}
+	end
+
+	def read_hists
+		hists = YAML.load_file($hist_file)
+		$search_hist = hists["search_hist"]
+		$replace_hist = hists["replace_hist"]
+		$command_hist = hists["command_hist"]
+		$script_hist = hists["script_hist"]
 	end
 
 	def open
@@ -2160,7 +2185,7 @@ $filetypes = {
 # -------------------------------------------------------
 
 
-
+$hist_file = nil
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
 	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
@@ -2175,6 +2200,9 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-a', '--autoindent', 'Turn on autoindent'){
 		$autoindent = true
+	}
+	opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
+		$hist_file = file
 	}
 	opts.on('-v', '--view', 'Start in view mode'){
 		$editmode = false
@@ -2199,9 +2227,6 @@ optparse.parse!
 
 
 
-# read specified files into buffers of buffer list
-$buffers = BuffersList.new(ARGV)
-
 # store up search history
 $search_hist = [""]
 $replace_hist = [""]
@@ -2209,6 +2234,9 @@ $indent_hist = [""]
 $lineno_hist = [""]
 $command_hist = [""]
 $scriptfile_hist = [""]
+
+# read specified files into buffers of buffer list
+$buffers = BuffersList.new(ARGV)
 
 # copy buffer
 $copy_buffer = ""
