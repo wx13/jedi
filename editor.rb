@@ -1945,12 +1945,16 @@ def run_script(file=nil)
 		list.each{|f|
 			script = File.read(f)
 			eval(script)
-			$screen.write_message("done")
+			if $screen != nil
+				$screen.write_message("done")
+			end
 		}
 	elsif File.exist?(file)
 		script = File.read(file)
 		eval(script)
-		$screen.write_message("done")
+		if $screen != nil
+			$screen.write_message("done")
+		end
 	else
 		puts "Script file #{file} doesn't exist."
 		puts "Press any key to continue anyway."
