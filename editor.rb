@@ -309,7 +309,6 @@ class Screen
 
 
 
-
 	# ask a yes or no question
 	def ask_yesno(question)
 		update_screen_size
@@ -2164,6 +2163,7 @@ $filetypes = {
 	/\.sh$/ => "shell",
 	/\.csh$/ => "shell",
 	/\.rb$/ => "shell",
+	/\.py$/ => "shell",
 	/\.[cC]$/ => "c",
 	/\.cpp$/ => "c",
 	"COMMIT_EDITMSG" => "shell",
