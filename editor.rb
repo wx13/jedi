@@ -180,6 +180,48 @@ class Screen
 		@screen.attroff Curses::A_REVERSE
 	end
 
+
+	def reverse_incremental(hist)
+		token = ""
+		mtoken = token
+		ih = hist.length - 1
+		loop do
+			write_str(@rows-1,0," "*@cols)
+			write_str(@rows-1,0,"(reverse-i-search) #{token}: #{mtoken}")
+			c = Curses.getch
+			if c.is_a?(String) then c = c.unpack('C')[0] end
+			case c
+				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
+					token.chop!
+					ih = hist.rindex{|x|x.match(/^#{token}/)}
+					if ih != nil
+						mtoken = hist[ih]
+					end
+				when $ctrl_r
+					if ih == 0
+						next
+					end
+					ih = hist[0..(ih-1)].rindex{|x|x.match(/^#{token}/)}
+				when $ctrl_c, $ctrl_g
+					return 0
+				when $ctrl_m, Curses::Key::ENTER
+					return hist.length - ih
+				when Curses::Key::UP, Curses::Key::DOWN
+					return hist.length - ih
+				when 10..127
+					token += c.chr
+					ih = hist[0..ih].rindex{|x|x.match(/^#{token}/)}
+			end
+			if ih != nil
+				mtoken = hist[ih]
+			else
+				ih = hist.length - 1
+			end
+		end
+	end
+
+
+
 	# ask th user a question
 	# INPUT:
 	#   question  = "string" (written to the screen)
@@ -218,6 +260,16 @@ class Screen
 					if ih < 0
 						ih = 0
 					end
+					if ih == 0
+						token = token0
+					else
+						token = hist[-ih].dup
+					end
+					glob = token
+					col = token.length
+				when $ctrl_r
+					ih = reverse_incremental(hist)
+					if ih == nil then ih = 0 end
 					if ih == 0
 						token = token0
 					else
