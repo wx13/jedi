@@ -16,7 +16,7 @@ $colmode = false
 
 # enable syntax coloring & choose colors
 $syntax_color = true
-$color_default = white
+$color_default = $color_white
 $color_comment = $color_cyan
 $color_string = $color_yellow
 $color_whitespace = $color_default
