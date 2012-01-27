@@ -8,7 +8,7 @@ Design goals:
 
 1. Simplicity
 	- single file of ruby code
-	- only use built-in libraries
+	- only use built-in libraries (hence curses instead of ncurses)
 	- easy to modify, customize & extend
 2. Scriptable
 	- execute single-line ruby commands within the editor
@@ -37,10 +37,6 @@ Future work:
 	- challenging: how to know what has changed?
 	- currently: make sure to .dup lines before changing
 + help screen (ctrl-h)
-+ record status in a file
-	- search terms
-	- recent scripts
-	- etc.
 
 
 
@@ -53,6 +49,14 @@ Installing & running
 You can just run "ruby editor.rb".
 Or put is somewhere in your path and give it execute permission.
 Rename it whatever you like.
+
+I do the following.  I create a directory ~/.jedi (jedi = Jason's EDItor)
+containing the files config.rb and history.yaml.  It also contains a directory
+called snippets.  Snippets is where I keep snippets of useful code for
+modifying text.  Then I put the following line in my .bashrc file:
+
+	alias jedi='ruby $HOME/bin/editor.rb -s $HOME/.jedi -y $HOME/.jedi/history.yaml'
+
 
 
 Options
