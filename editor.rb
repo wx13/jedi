@@ -19,7 +19,7 @@
 
 require 'curses'
 require 'optparse'
-
+require 'yaml'
 
 
 #----------------------------------------------------------
@@ -180,6 +180,48 @@ class Screen
 		@screen.attroff Curses::A_REVERSE
 	end
 
+
+	def reverse_incremental(hist)
+		token = ""
+		mtoken = token
+		ih = hist.length - 1
+		loop do
+			write_str(@rows-1,0," "*@cols)
+			write_str(@rows-1,0,"(reverse-i-search) #{token}: #{mtoken}")
+			c = Curses.getch
+			if c.is_a?(String) then c = c.unpack('C')[0] end
+			case c
+				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
+					token.chop!
+					ih = hist.rindex{|x|x.match(/^#{token}/)}
+					if ih != nil
+						mtoken = hist[ih]
+					end
+				when $ctrl_r
+					if ih == 0
+						next
+					end
+					ih = hist[0..(ih-1)].rindex{|x|x.match(/^#{token}/)}
+				when $ctrl_c, $ctrl_g
+					return 0
+				when $ctrl_m, Curses::Key::ENTER
+					return hist.length - ih
+				when Curses::Key::UP, Curses::Key::DOWN
+					return hist.length - ih
+				when 10..127
+					token += c.chr
+					ih = hist[0..ih].rindex{|x|x.match(/^#{token}/)}
+			end
+			if ih != nil
+				mtoken = hist[ih]
+			else
+				ih = hist.length - 1
+			end
+		end
+	end
+
+
+
 	# ask th user a question
 	# INPUT:
 	#   question  = "string" (written to the screen)
@@ -218,6 +260,16 @@ class Screen
 					if ih < 0
 						ih = 0
 					end
+					if ih == 0
+						token = token0
+					else
+						token = hist[-ih].dup
+					end
+					glob = token
+					col = token.length
+				when $ctrl_r
+					ih = reverse_incremental(hist)
+					if ih == nil then ih = 0 end
 					if ih == 0
 						token = token0
 					else
@@ -309,7 +361,6 @@ class Screen
 
 
 
-
 	# ask a yes or no question
 	def ask_yesno(question)
 		update_screen_size
@@ -319,6 +370,9 @@ class Screen
 		answer = "cancel"
 		loop do
 			c = Curses.getch
+			if c > 255
+				next
+			end
 			if c.chr.downcase == "y"
 				answer = "yes"
 				break
@@ -352,7 +406,7 @@ end
 #
 class FileBuffer
 
-	attr_accessor :filename, :text, :status, :editmode, :buffer_history
+	attr_accessor :filename, :text, :status, :editmode, :buffer_history, :extramode
 
 	def initialize(filename)
 
@@ -388,7 +442,8 @@ class FileBuffer
 
 		# flags
 		@autoindent = $autoindent
-		@editmode = true
+		@editmode = $editmode
+		@extramode = false
 		@insertmode = true
 		@linewrap = $linewrap
 		@colmode = false
@@ -405,20 +460,15 @@ class FileBuffer
 		@bookmarks = {}
 		@bookmarks_hist = [""]
 
+		# This does nothing, by default; it is here to allow
+		# a user script to modify each text buffer that is opened.
+		perbuffer_userscript
+
 	end
 
-
-	# not enough ctrl keys => extra stuff here.
-	# Should define this in a list as well.
-	def extra_commands
-		c = Curses.getch
-		case c
-			when ?b then bookmark
-			when ?g then goto_bookmark
-			else
-				$screen.write_message("Unknown command")
-		end
+	def perbuffer_userscript
 	end
+
 
 	# Enter arbitrary ruby command.
 	def enter_command
@@ -429,6 +479,30 @@ class FileBuffer
 		$screen.write_message("Unknown command")
 	end
 
+
+	def run_script
+		file = $screen.ask("run script file: ",$scriptfile_hist,false,true)
+		if (file==nil) || (file=="")
+			$screen.write_message("cancelled")
+			return
+		end
+		if File.directory?(file)
+			list = Dir.glob(file+"/*.rb")
+			list.each{|f|
+				script = File.read(f)
+				eval(script)
+				$screen.write_message("done")
+			}
+		elsif File.exist?(file)
+			script = File.read(file)
+			eval(script)
+			$screen.write_message("done")
+		else
+			$screen.write_message("script file #{file} doesn't exist")
+		end
+	rescue
+		$screen.write_message("Bad script")
+	end
 
 	# set the file type from the filename
 	def set_filetype(filename)
@@ -898,7 +972,7 @@ class FileBuffer
 		else
 			mark_row,row = ordered_mark_rows
 			for r in mark_row..row
-				if (@text[r].length==0)&&((c==?\s)||(c==?\t))
+				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c==$ctrl_i)||(c==$space))
 					next
 				end
 				if @colmode
@@ -1421,6 +1495,9 @@ class FileBuffer
 		screen.write_top_line(lstr,status,position)
 		# write the text to the screen
 		dump_text(screen,refresh)
+		if @extramode
+			$screen.write_message("EXTRAMODE")
+		end
 		# set cursor position
 		Curses.setpos(@cursrow,@curscol)
 	end
@@ -1845,6 +1922,9 @@ class BuffersList
 			@buffers[@nbuf] = FileBuffer.new("")
 			@nbuf += 1
 		end
+		if ($hist_file != nil) && (File.exist?($hist_file))
+			read_hists
+		end
 	end
 
 	# return next, previous, or current buffer
@@ -1876,9 +1956,31 @@ class BuffersList
 		@ibuf = 0
 		$screen.write_message("")
 		if @nbuf == 0 || @buffers[0] == nil
+			if $hist_file != nil
+				save_hists
+			end
 			exit
 		end
 		@buffers[0]
+	end
+
+	def save_hists
+		hists = {"search_hist" => $search_hist.reverse[0,1000].reverse,\
+	             "replace_hist" => $replace_hist.reverse[0,1000].reverse,\
+	             "command_hist" => $command_hist.reverse[0,1000].reverse,\
+	             "script_hist" => $scriptfile_hist.reverse[0,1000].reverse\
+	            }
+		File.open($hist_file,"w"){|file|
+			YAML.dump(hists,file)
+		}
+	end
+
+	def read_hists
+		hists = YAML.load_file($hist_file)
+		$search_hist = hists["search_hist"]
+		$replace_hist = hists["replace_hist"]
+		$command_hist = hists["command_hist"]
+		$script_hist = hists["script_hist"]
 	end
 
 	def open
@@ -1909,7 +2011,7 @@ end
 def run_script(file=nil)
 	if file == nil
 		file = $screen.ask("run script file: ",[""],false,true)
-		if (file==nil) || (ans=="")
+		if (file==nil) || (file=="")
 			$screen.write_message("cancelled")
 			return
 		end
@@ -1919,10 +2021,16 @@ def run_script(file=nil)
 		list.each{|f|
 			script = File.read(f)
 			eval(script)
+			if $screen != nil
+				$screen.write_message("done")
+			end
 		}
 	elsif File.exist?(file)
 		script = File.read(file)
 		eval(script)
+		if $screen != nil
+			$screen.write_message("done")
+		end
 	else
 		puts "Script file #{file} doesn't exist."
 		puts "Press any key to continue anyway."
@@ -2015,16 +2123,18 @@ $autoindent = true
 $linewrap = false
 $colmode = false
 $syntax_color = true
+$editmode = true
 
 
 
 
 # -----------------------------------------------------------------
 # This section defines the keymapping.
-# There are 3 sections:
+# There are 4 sections:
 #     1. commandlist -- universal keymapping
 #     2. editmode_commandlist -- keymappings when in edit mode
 #     3. viewmode_commandlist -- keymappings in view mode
+#     4. extra_commandlist -- ones that don't fit
 # -----------------------------------------------------------------
 
 
@@ -2050,8 +2160,12 @@ $commandlist = {
 	$ctrl_f => "buffer = $buffers.open",
 	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
-	$ctrl_6 => "buffer.extra_commands",
-	$ctrl_s => "run_script"
+	$ctrl_6 => "buffer.extramode = true",
+	$ctrl_s => "buffer.run_script"
+}
+$extramode_commandlist = {
+	?b => "buffer.bookmark",
+	?g => "buffer.goto_bookmark"
 }
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
@@ -2101,6 +2215,7 @@ $filetypes = {
 	/\.sh$/ => "shell",
 	/\.csh$/ => "shell",
 	/\.rb$/ => "shell",
+	/\.py$/ => "shell",
 	/\.[cC]$/ => "c",
 	/\.cpp$/ => "c",
 	"COMMIT_EDITMSG" => "shell",
@@ -2122,7 +2237,7 @@ $filetypes = {
 # -------------------------------------------------------
 
 
-
+$hist_file = nil
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
 	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
@@ -2137,6 +2252,12 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-a', '--autoindent', 'Turn on autoindent'){
 		$autoindent = true
+	}
+	opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
+		$hist_file = file
+	}
+	opts.on('-v', '--view', 'Start in view mode'){
+		$editmode = false
 	}
 	opts.on('-m', '--manualindent', 'Turn off autoindent'){
 		$autoindent = false
@@ -2158,15 +2279,16 @@ optparse.parse!
 
 
 
-# read specified files into buffers of buffer list
-$buffers = BuffersList.new(ARGV)
-
 # store up search history
 $search_hist = [""]
 $replace_hist = [""]
 $indent_hist = [""]
 $lineno_hist = [""]
 $command_hist = [""]
+$scriptfile_hist = [""]
+
+# read specified files into buffers of buffer list
+$buffers = BuffersList.new(ARGV)
 
 # copy buffer
 $copy_buffer = ""
@@ -2177,11 +2299,22 @@ $screen_buffer = []
 # Create the case statement from list of keybindings.
 # The variable $case_then contains a string to be executed.
 # It has three sections: all, editmode, viewmode.
-$case_then = "case c\n"
+$case_then = "if buffer.extramode\n"
+$case_then += "case c\n"
+$extramode_commandlist.each{|key|
+	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
+}
+$case_then += "end\n"
+$case_then += "buffer.extramode = false\n"
+$case_then += "$screen.write_message(\"\")\n"
+$case_then += "else\n"
+
+$case_then += "case c\n"
 $commandlist.each{|key|
 	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
 }
 $case_then += "end\n"
+
 $case_then += "if buffer.editmode\n"
 $case_then += "case c\n"
 $editmode_commandlist.each{|key|
@@ -2196,7 +2329,7 @@ $viewmode_commandlist.each{|key|
 }
 $case_then += "end\n"
 $case_then += "end\n"
-
+$case_then += "end\n"
 
 
 
