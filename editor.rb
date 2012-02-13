@@ -1021,6 +1021,10 @@ class FileBuffer
 					ws2 = a[0]
 				end
 				ws = [ws,ws2].max
+				# if current line is just whitespace, remove it
+				if @text[@row].match(/^\s*$/)
+					@text[@row] = ""
+				end
 				insertchar(@row+1,0,ws)
 			end
 			@col = ws.length
