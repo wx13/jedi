@@ -1000,19 +1000,28 @@ class FileBuffer
 			splitrow(@row,@col)
 			ws = ""
 			if @autoindent
-				if @row > 0
+				ws = ""
+				if @row > 1
+					s0 = @text[@row-2].dup
 					s1 = @text[@row-1].dup
 					s2 = @text[@row].dup
-					ml = [s1.length,s2.length].min
+					ml = [s0.length,s1.length,s2.length].min
+					s0 = s0[0,ml]
 					s1 = s1[0,ml]
 					s2 = s2[0,ml]
-					until s1==s2
+					until (s1==s2)&&(s0==s1)
+						s0.chop!
 						s1.chop!
 						s2.chop!
 					end
-					ws = s1
-					insertchar(@row+1,0,ws)
+					ws = s2
 				end
+				a = @text[@row].match(/^\s*/)
+				if a != nil
+					ws2 = a[0]
+				end
+				ws = [ws,ws2].max
+				insertchar(@row+1,0,ws)
 			end
 			@col = ws.length
 			@row += 1
