@@ -628,6 +628,10 @@ class FileBuffer
 			return
 		end
 		if ans == "" then ans = @filename end
+		if ans == ""
+			$screen.write_message("Cancelled")
+			return
+		end
 		if ans != @filename
 			yn = $screen.ask_yesno("save to different file: "+ans+" ? [y/n]")
 			if yn == "yes"
