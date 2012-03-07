@@ -703,6 +703,11 @@ class FileBuffer
 		@text.delete_at(row)
 		@status = "Modified"
 	end
+	# delete a range of rows (inclusive)
+	def delrows(row1,row2)
+		@text[row1..row2] = []
+		@status = "Modified"
+	end
 	# merge two consecutive rows
 	def mergerows(row1,row2)
 		if row2 >= @text.length
@@ -724,6 +729,11 @@ class FileBuffer
 	# new row
 	def insertrow(row,text)
 		@text.insert(row,text)
+		@status = "Modified"
+	end
+	# multiple new rows
+	def insertrows(row,text_array)
+		@text.insert(row,text_array).flatten!
 		@status = "Modified"
 	end
 	# completely change a row's text
@@ -1350,7 +1360,6 @@ class FileBuffer
 					@col = @mark_col
 					@mark_col = temp
 				end
-				$screen.write_message(@mark_col.to_s+" "+@col.to_s)
 				$copy_buffer = @text[@row][@mark_col..@col]
 				if @col >= @text[@row].length
 					@col -= 1
@@ -1367,13 +1376,13 @@ class FileBuffer
 					@col = @mark_col
 					@mark_col = temp
 				end
+				# handle first line
 				$copy_buffer = @text[@mark_row][@mark_col..-1] + "\n"
 				setrow(@mark_row,@text[@mark_row][0..@mark_col].chop)
 				row = @mark_row + 1
-				while row < @row
-					$copy_buffer += @text[@mark_row+1] + "\n"
-					delrow(@mark_row+1)
-					row += 1
+				if row < @row
+					$copy_buffer += @text[row..(@row-1)].join("\n") + "\n"
+					delrows(row,(@row-1))
 				end
 				if @col >= @text[@mark_row+1].length
 					@col -= 1
@@ -1419,9 +1428,8 @@ class FileBuffer
 				end
 				$copy_buffer = @text[@mark_row][@mark_col..-1] + "\n"
 				row = @mark_row + 1
-				while row < @row
-					$copy_buffer += @text[row] + "\n"
-					row += 1
+				if row < @row
+					$copy_buffer += @text[row..(@row-1)].join("\n") + "\n"
 				end
 				$copy_buffer += @text[row][0..@col]
 			end
@@ -1439,25 +1447,32 @@ class FileBuffer
 			end
 		end
 	end
+
 	def paste
-		insert(@row,@col,$copy_buffer)
 		@cutrow = -2
-		n = @text[@row].count("\n")
-		temp = @text[@row].split("\n")
-		if temp[0] == nil
-			temp[0] = ""
+		## plop the whole damn copy buffer into oneline
+		#insert(@row,@col,$copy_buffer)
+
+		# merge current line with copy buffer
+		$copy_buffer = @text[@row][0,@col] + $copy_buffer + @text[@row][@col..-1]
+
+		# turn buffer into an array
+		nlines = $copy_buffer.count("\n")
+		copy_array = $copy_buffer.split("\n")
+		if copy_array[0] == nil
+			copy_array[0] = ""
 		end
-		setrow(@row,temp[0])
-		temp[1..-1].each{|line|
-			@row += 1
-			insertrow(@row,line)
-		}
-		while n >= temp.length
-			@row += 1
-			n -= 1
-			insertrow(@row,"")
-		end
-		if n > 0
+
+		# insert first line (replace current line)
+		setrow(@row,copy_array[0])
+
+		# insert the rest (insert after current line)
+		@row += 1
+		insertrows(@row,copy_array[1..-1])
+		@row += nlines - 1
+
+		# reset cursor for multi-line paste
+		if nlines > 0
 			@col = 0
 		end
 	end
