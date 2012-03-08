@@ -1349,109 +1349,74 @@ class FileBuffer
 		@mark_col = @col
 		@mark_row = @row
 	end
+
+
+	def copy(cut=0)
+		# if this is continuation of a line by line copy
+		# then we add to the copy buffer
+		if @marked
+			$copy_buffer = ""
+			@marked = false
+		else
+			if @row!=(@cutrow+1-cut)
+				$copy_buffer = ""
+			end
+			@cutrow = @row
+			@mark_row = @row
+			@mark_col = 0
+			@col = @text[@row].length
+		end
+
+		# rectify row, mark_row order
+		if @row == @mark_row
+			if @col < @mark_col
+				temp = @col
+				@col = @mark_col
+				@mark_col = temp
+			end
+		elsif @row < @mark_row
+			temp = @row
+			@row = @mark_row
+			@mark_row = temp
+		end
+
+		temp = @text[@mark_row..@row].join("\n") + "\n"
+		sc = @mark_col
+		ec = temp.length - 1 - (@text[@row].length-@col)
+		$copy_buffer += temp[sc..ec]
+
+		if cut==1
+			if @col < @text[@row].length
+				setrow(@mark_row,@text[@mark_row][0,@mark_col]+@text[@row][(@col+1)..-1])
+				delrows(@mark_row+1,@row)
+			elsif (@row+1) >= @text.length
+				setrow(@mark_row,@text[@mark_row][0,@mark_col])
+				delrows(@mark_row+1,@row)
+			else
+				setrow(@mark_row,@text[@mark_row][0,@mark_col]+@text[@row+1])
+				delrows(@mark_row+1,@row+1)
+			end
+		end
+
+		# position cursor
+		if cut == 1
+			@row = @mark_row
+			@col = @mark_col
+		else
+			@row = @mark_row + 1
+			@col = 0
+		end
+
+	end
+
+
 	def cut
-		if @marked
-			# single line stuff
-			@marked = false
-			if @row == @mark_row
-				# single row
-				if @col < @mark_col
-					temp = @col
-					@col = @mark_col
-					@mark_col = temp
-				end
-				$copy_buffer = @text[@row][@mark_col..@col]
-				if @col >= @text[@row].length
-					@col -= 1
-				end
-				setrow(@row,@text[@row][0..@mark_col].chop+@text[@row][(@col+1)..-1])
-				@col = @mark_col
-			else
-				# multiple rows
-				if @row < @mark_row
-					temp = @row
-					@row = @mark_row
-					@mark_row = temp
-					temp = @col
-					@col = @mark_col
-					@mark_col = temp
-				end
-				# handle first line
-				$copy_buffer = @text[@mark_row][@mark_col..-1] + "\n"
-				setrow(@mark_row,@text[@mark_row][0..@mark_col].chop)
-				row = @mark_row + 1
-				if row < @row
-					$copy_buffer += @text[row..(@row-1)].join("\n") + "\n"
-					delrows(row,(@row-1))
-				end
-				if @col >= @text[@mark_row+1].length
-					@col -= 1
-				end
-				$copy_buffer += @text[@mark_row+1][0..@col]
-				append(@mark_row,@text[@mark_row+1][(@col+1)..-1])
-				delrow(@mark_row+1)
-				@row = @mark_row
-				@col = @mark_col
-				if @col > @text[@row].length
-					@col = @text[@row].length
-				end
-			end
-		else
-			# unmarked text (check for consecutive lines)
-			if @row == (@cutrow)
-				$copy_buffer += @text[@row] + "\n"
-			else
-				$copy_buffer = @text[@row] + "\n"
-			end
-			@cutrow = @row
-			delrow(@row)
-			@col = 0
-		end
+		copy(1)
 	end
-	# same as cut, but no cutting
-	def copy
-		if @marked
-			@marked = false
-			# single line stuff
-			if @row == @mark_row
-				if @col < @mark_col
-					temp = @col
-					@col = @mark_col
-					@mark_col = temp
-				end
-				$copy_buffer = @text[@row][@mark_col..@col]
-			else
-				if @row < @mark_row
-					temp = @row
-					@row = @mark_row
-					@mark_row = temp
-				end
-				$copy_buffer = @text[@mark_row][@mark_col..-1] + "\n"
-				row = @mark_row + 1
-				if row < @row
-					$copy_buffer += @text[row..(@row-1)].join("\n") + "\n"
-				end
-				$copy_buffer += @text[row][0..@col]
-			end
-		else
-			if @row == (@cutrow+1)
-				$copy_buffer += @text[@row] + "\n"
-			else
-				$copy_buffer = @text[@row] + "\n"
-			end
-			@cutrow = @row
-			@row += 1
-			@col = 0
-			if @row >= @text.length
-				@row -= 1
-			end
-		end
-	end
+
 
 	def paste
 		@cutrow = -2
-		## plop the whole damn copy buffer into oneline
-		#insert(@row,@col,$copy_buffer)
 
 		# merge current line with copy buffer
 		$copy_buffer = @text[@row][0,@col] + $copy_buffer + @text[@row][@col..-1]
@@ -1945,7 +1910,7 @@ class BuffersList
 		@buffers = []
 		@nbuf = 0
 		@ibuf = 0
-		@copy_buffer = ""
+		#@copy_buffer = ""
 		for filename in files
 			@buffers[@nbuf] = FileBuffer.new(filename)
 			@nbuf += 1
