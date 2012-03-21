@@ -1419,11 +1419,11 @@ class FileBuffer
 		@cutrow = -2
 
 		# merge current line with copy buffer
-		$copy_buffer = @text[@row][0,@col] + $copy_buffer + @text[@row][@col..-1]
+		copy_buffer = @text[@row][0,@col] + $copy_buffer + @text[@row][@col..-1]
 
 		# turn buffer into an array
 		nlines = $copy_buffer.count("\n")
-		copy_array = $copy_buffer.split("\n")
+		copy_array = copy_buffer.split("\n",-1)
 		if copy_array[0] == nil
 			copy_array[0] = ""
 		end
