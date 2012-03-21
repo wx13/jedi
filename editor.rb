@@ -1423,7 +1423,7 @@ class FileBuffer
 
 		# turn buffer into an array
 		nlines = $copy_buffer.count("\n")
-		copy_array = copy_buffer.split("\n")
+		copy_array = copy_buffer.split("\n",-1)
 		if copy_array[0] == nil
 			copy_array[0] = ""
 		end
