@@ -690,6 +690,10 @@ class FileBuffer
 	end
 	# insert a character
 	def insertchar(row,col,c)
+		if @text[row] == nil
+			@text[row] = c
+			return
+		end
 		@text[row] = @text[row].dup
 		if @insertmode || col == @text[row].length
 			@text[row].insert(col,c)
@@ -1743,6 +1747,7 @@ class FileBuffer
 	def sc2bc(row,col)
 		bc = 0
 		sc = 0
+		if @text[row] == nil then return end
 		@text[row].each_char{|c|
 			if c == "\t"
 				sc += @tabsize
