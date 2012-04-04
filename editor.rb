@@ -1576,10 +1576,10 @@ class FileBuffer
 						highlight(r,c,c)
 					end
 				else
-					sl = @text[mark_row].length-1
+					sl = @text[mark_row].length
 					highlight(mark_row,mark_col,sl)
 					for r in (mark_row+1)..(row-1)
-						sl = @text[r].length-1
+						sl = @text[r].length
 						highlight(r,0,sl)
 					end
 					highlight(row,0,col)
@@ -1607,10 +1607,11 @@ class FileBuffer
 		if sc < @colfeed then sc = @colfeed end
 		if ec < @colfeed then return end
 		str = sline[sc..ec]
+		if ec == sline.length then str += " " end
 		ssc = sc - @colfeed
 		sec = ec - @colfeed
 
-		if (str.length+ssc) >=$screen.cols
+		if (str.length+ssc) >= $screen.cols
 			str = str[0,($screen.cols-ssc)]
 		end
 
