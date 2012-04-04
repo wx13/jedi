@@ -32,11 +32,14 @@ Features:
 Future work:
 
 + display & edit diffs
+	- no idea how to do this
 + record & replay keypresses (macros)
+	- not sure if I'd ever use this (given scripting capabilities)
 + undo-redo for arbitrary ruby scripts
 	- challenging: how to know what has changed?
 	- currently: make sure to .dup lines before changing
 + help screen (ctrl-h)
+	- How to do this without having to maintain multiple README / help pages?
 
 
 
@@ -46,24 +49,29 @@ Usage
 Installing & running
 --------------------
 
-You can just run "ruby editor.rb".
-Or put is somewhere in your path and give it execute permission.
+From easy to hard:
+
+1. Just run "ruby editor.rb".
+
+2. Put editor.rb in your path and give it execute permission.
 Rename it whatever you like.
 
-I do the following.  I create a directory ~/.jedi (jedi = Jason's EDItor)
+3. (This is what I do) I create a directory ~/.jedi (jedi = Jason's EDItor)
 containing the files config.rb and history.yaml.  It also contains a directory
 called snippets.  Snippets is where I keep snippets of useful code for
 modifying text.  Then I put the following line in my .bashrc file:
 
 	alias jedi='ruby $HOME/bin/editor.rb -s $HOME/.jedi -y $HOME/.jedi/history.yaml'
 
+This tells editor.rb to read all *.rb files from ~/.jedi/ as scripts and to
+save command/search/script history in ~/.jedi/history.yaml.
 
 
 Options
 -------
 
 A few parameters and flags, (such as tab size, and autoindent)
-can be set with command line options.  Type "editor -h" to see
+can be set with command line options.  Type "ruby editor.rb -h" to see
 available options.
 
 
@@ -136,8 +144,8 @@ and there are some shorcuts for navigation, such as:
 	- g to goto a line
 
 To get to view mode, hit "ctrl-t v". To get to edit mode, hit
-"ctrl-t e" or just hit "i".
-
+"ctrl-t e" or just hit "i".  There are some commans only available
+in view mode, because of the limited number of keys on the keyboard.
 
 Remember that all the keymappings can be easily changed, and one
 could easily write a set of keybindings that are very vim-like.
@@ -147,7 +155,8 @@ could easily write a set of keybindings that are very vim-like.
 Basic editing
 -------------
 
-Basic editing is verys simlar to gnu-nano.
+Basic editing is very simlar to gnu-nano. (Remember, key-bindings are
+very easy to change).
 
 	- Arrow keys & page up/down to move around.
 	- Ctrl-{v,y} are also page down/up.
@@ -161,7 +170,7 @@ Basic editing is verys simlar to gnu-nano.
 	- Ctrl-{b,n} previous/next text buffer
 	- Ctrl-f open file
 	- Ctrl-g go to line number (empty=0, negative = up from bottom)
-	- Ctrl-l justify text
+	- Ctrl-l justify text (adjustable width)
 	- Ctrl-p copy
 	- Ctrl-k cut
 	- Ctrl-u paste
@@ -192,9 +201,7 @@ hit enter.
 To indent a block of text
 	1. hit "ctrl-x" at first line (or last) line of text
 	2. navigate to last line (or first)
-	3. type tabs or spaces
-
-To comment a block of text, do the same as indent, but type "ctrl-t v t <enter>"
+	3. type tabs or spaces (backspace to unindent)
 
 Alternatively, enter column mode "ctrl-t c".  Then "ctrl-x" to make a long cursor
 that you can type anything at (other than enter).
@@ -253,7 +260,7 @@ is important because of undo-redo change detection.  The first is
 undo-able; the second is not.
 
 
-Running ruby scripts a startup
+Running ruby scripts at startup
 ------------------------------
 
 The "-s" or "--script" option specifies script files or directories
@@ -265,10 +272,10 @@ configuration files, like:
 	@autoindent = false
 	$color_comment = $color_green
 
-or can be modifications to the editor.  An empty method is run at the
-initialization of each buffer, so that the user can add startup methods
-to buffers.  For example, to set the tabsize to be 4 for fortran files
-only:
+or can be modifications to the editor.  An empty method (called
+perbuffer_userscript) is run at the initialization of each buffer,
+so that the user can add startup methods to buffers.  For example,
+to set the tabsize to be 4 for fortran files only:
 
 	class FileBuffer
 		def perbuffer_userscript
