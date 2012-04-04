@@ -946,39 +946,6 @@ class FileBuffer
 			addchar(?\t)
 		end
 	end
-	# comment a block of text
-	def block_comment
-		if @marked == false
-			return
-		end
-		mark_row,row = ordered_mark_rows
-		s = $screen.ask("Indent string:",$indent_hist)
-		if s == nil then
-			$screen.write_message("Cancelled")
-			return
-		end
-		if s == ""
-			case @filetype
-				when "shell","m","ruby" then s = "#"
-				when "c" then s = "//"
-				when "f" then s = "!"
-			end
-		end
-		for r in mark_row..row
-			if (@text[r].length == 0)&&(s=~/^\s*$/)
-				next
-			end
-			if @colmode
-				sc = bc2sc(@row,@col)
-				c = sc2bc(r,sc)
-				if(c>=@text[r].length) then next end
-				insertchar(r,c,s)
-			else
-				insertchar(r,0,s)
-			end
-		end
-		$screen.write_message("done")
-	end
 	# insert a char and move to the right
 	def addchar(c)
 		if @marked == false
@@ -2203,7 +2170,6 @@ $viewmode_commandlist = {
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
 	?L => "buffer.screen_right",
-	?t => "buffer.block_comment",
 	?: => "buffer.enter_command"
 }
 
