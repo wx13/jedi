@@ -864,6 +864,10 @@ class FileBuffer
 			@row = row_changed(@text,@buffer_history.prev.text,@row)
 		end
 	end
+	def revert_to_saved
+		@buffer_history.revert_to_saved
+		@text = @buffer_history.copy
+	end
 	def row_changed(text1,text2,r)
 		n = [text1.length,text2.length].min
 		text1.each_index{|i|
@@ -2167,6 +2171,7 @@ $viewmode_commandlist = {
 	?i => "buffer.toggle_editmode",
 	?[ => "buffer.undo",
 	?] => "buffer.redo",
+	?{ => "buffer.revert_to_saved",
 	?K => "buffer.screen_up",
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
