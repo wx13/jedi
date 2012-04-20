@@ -406,14 +406,13 @@ end
 #
 class FileBuffer
 
-	attr_accessor :filename, :text, :status, :editmode, :buffer_history, :extramode
+	attr_accessor :filename, :text, :editmode, :buffer_history, :extramode
 
 	def initialize(filename)
 
 		# set some parameters
 		@tabsize = $tabsize
 		@linelength = 0  # 0 means full screen width
-		@status = ""  # empty string means unmodified
 
 		# read in the file
 		@filename = filename
@@ -646,7 +645,7 @@ class FileBuffer
 			text = @text.join(@eol)
 			file.write(text)
 		}
-		@status = ""
+		@buffer_history.save
 		$screen.write_message("saved to: "+@filename)
 	end
 
@@ -668,7 +667,9 @@ class FileBuffer
 	end
 
 
-
+	def modified?
+		@buffer_history.modified?
+	end
 
 
 	#
@@ -686,7 +687,6 @@ class FileBuffer
 			@text[row] = @text[row].dup
 			@text[row][col] = ""
 		end
-		@status = "Modified"
 	end
 	# insert a character
 	def insertchar(row,col,c)
@@ -700,17 +700,14 @@ class FileBuffer
 		else
 			@text[row][col] = c
 		end
-		@status = "Modified"
 	end
 	# delete a row
 	def delrow(row)
 		@text.delete_at(row)
-		@status = "Modified"
 	end
 	# delete a range of rows (inclusive)
 	def delrows(row1,row2)
 		@text[row1..row2] = []
-		@status = "Modified"
 	end
 	# merge two consecutive rows
 	def mergerows(row1,row2)
@@ -721,42 +718,35 @@ class FileBuffer
 		@text[row1] = @text[row1].dup
 		@text[row1] += @text[row2]
 		@text.delete_at(row2)
-		@status = "Modified"
 	end
 	# split a row into two
 	def splitrow(row,col)
 		text = @text[row].dup
 		@text[row] = text[(col)..-1]
 		insertrow(row,text[0..(col-1)])
-		@status = "Modified"
 	end
 	# new row
 	def insertrow(row,text)
 		@text.insert(row,text)
-		@status = "Modified"
 	end
 	# multiple new rows
 	def insertrows(row,text_array)
 		@text.insert(row,text_array).flatten!
-		@status = "Modified"
 	end
 	# completely change a row's text
 	def setrow(row,text)
 		old = @text[row]
 		@text[row] = text
-		@status = "Modified"
 	end
 	# add to the end of a line
 	def append(row,text)
 		@text[row] = @text[row].dup
 		@text[row] += text
-		@status = "Modified"
 	end
 	# insert a string
 	def insert(row,col,text)
 		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
-		@status = "Modified"
 	end
 	# backspace a column of text
 	def column_backspace(row1,row2,col)
@@ -770,7 +760,6 @@ class FileBuffer
 			@text[r][c-1] = ""
 		end
 		cursor_left
-		@status = "Modified"
 	end
 	# delete a column of text
 	def column_delete(row1,row2,col)
@@ -782,7 +771,6 @@ class FileBuffer
 			@text[r] = @text[r].dup
 			@text[r][c] = ""
 		end
-		@status = "Modified"
 	end
 	# indent a block of text
 	def block_indent(row1,row2)
@@ -792,7 +780,6 @@ class FileBuffer
 				@text[r].insert(0,"\t")
 			end
 		end
-		@status = "Modified"
 	end
 	# unindent a block of text
 	def block_unindent(row1,row2)
@@ -812,7 +799,6 @@ class FileBuffer
 				@text[r][0] = ""
 			end
 		end
-		@status = "Modified"
 	end
 	# same as above, but if spaces are used
 	def block_unspace(row1,row2)
@@ -832,7 +818,6 @@ class FileBuffer
 				@text[r][0] = ""
 			end
 		end
-		@status = "Modified"
 	end
 	# uncomment a block
 	def block_uncomment(row1,row2)
@@ -857,7 +842,6 @@ class FileBuffer
 				@text[r][0] = ""
 			end
 		end
-		@status = "Modified"
 	end
 
 
@@ -879,6 +863,12 @@ class FileBuffer
 			@col = 0
 			@row = row_changed(@text,@buffer_history.prev.text,@row)
 		end
+	end
+	def revert_to_saved
+		@text = @buffer_history.revert_to_saved
+	end
+	def unrevert_to_saved
+		@text = @buffer_history.unrevert_to_saved
 	end
 	def row_changed(text1,text2,r)
 		n = [text1.length,text2.length].min
@@ -949,39 +939,6 @@ class FileBuffer
 		else
 			addchar(?\t)
 		end
-	end
-	# comment a block of text
-	def block_comment
-		if @marked == false
-			return
-		end
-		mark_row,row = ordered_mark_rows
-		s = $screen.ask("Indent string:",$indent_hist)
-		if s == nil then
-			$screen.write_message("Cancelled")
-			return
-		end
-		if s == ""
-			case @filetype
-				when "shell","m","ruby" then s = "#"
-				when "c" then s = "//"
-				when "f" then s = "!"
-			end
-		end
-		for r in mark_row..row
-			if (@text[r].length == 0)&&(s=~/^\s*$/)
-				next
-			end
-			if @colmode
-				sc = bc2sc(@row,@col)
-				c = sc2bc(r,sc)
-				if(c>=@text[r].length) then next end
-				insertchar(r,c,s)
-			else
-				insertchar(r,0,s)
-			end
-		end
-		$screen.write_message("done")
 	end
 	# insert a char and move to the right
 	def addchar(c)
@@ -1312,7 +1269,6 @@ class FileBuffer
 				if yn == "yes"
 					temp = @text[row].dup
 					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
-					@status = "Modified"
 					col = idx+replacement.length
 				elsif yn == "cancel"
 					dump_to_screen($screen,true)
@@ -1480,10 +1436,13 @@ class FileBuffer
 		c = (@colfeed+@curscol)
 		r0 = @text.length - 1
 		position = r.to_s + "/" + r0.to_s + "," + c.to_s
-		if @editmode
-			status = @status
+		if @buffer_history.modified?
+			status = "Modified"
 		else
-			status = @status + "  VIEW"
+			status = ""
+		end
+		if !@editmode
+			status = status + "  VIEW"
 		end
 		# report on number of open buffers
 		if $buffers.nbuf <= 1
@@ -1580,10 +1539,10 @@ class FileBuffer
 						highlight(r,c,c)
 					end
 				else
-					sl = @text[mark_row].length-1
+					sl = @text[mark_row].length
 					highlight(mark_row,mark_col,sl)
 					for r in (mark_row+1)..(row-1)
-						sl = @text[r].length-1
+						sl = @text[r].length
 						highlight(r,0,sl)
 					end
 					highlight(row,0,col)
@@ -1611,10 +1570,11 @@ class FileBuffer
 		if sc < @colfeed then sc = @colfeed end
 		if ec < @colfeed then return end
 		str = sline[sc..ec]
+		if ec == sline.length then str += " " end
 		ssc = sc - @colfeed
 		sec = ec - @colfeed
 
-		if (str.length+ssc) >=$screen.cols
+		if (str.length+ssc) >= $screen.cols
 			str = str[0,($screen.cols-ssc)]
 		end
 
@@ -1796,6 +1756,8 @@ class BufferHistory
 		@tree = Node.new(text)
 		@tree.next = nil
 		@tree.prev = nil
+		@saved = @tree
+		@old = @tree
 	end
 
 	class Node
@@ -1817,14 +1779,14 @@ class BufferHistory
 	def add(text)
 
 		# create a new node and set navigation pointers
-		old = @tree
+		@old = @tree
 		@tree = Node.new(text)
-		@tree.next = old.next
-		if old.next != nil
-			old.next.prev = @tree
+		@tree.next = @old.next
+		if @old.next != nil
+			@old.next.prev = @tree
 		end
-		@tree.prev = old
-		old.next = @tree
+		@tree.prev = @old
+		@old.next = @tree
 
 		# Prune the tree, so it doesn't get too big.
 		# Start by going back.
@@ -1896,6 +1858,21 @@ class BufferHistory
 			end
 		end
 	end
+	def save
+		@saved = @tree
+	end
+	def modified?
+		@saved.text != @tree.text
+	end
+	def revert_to_saved
+		@old = @tree
+		@tree = @saved
+		return(copy)
+	end
+	def unrevert_to_saved
+		@tree = @old
+		return(copy)
+	end
 end
 
 
@@ -1944,7 +1921,7 @@ class BuffersList
 
 	# close a buffer
 	def close
-		if @buffers[@ibuf].status != ""
+		if @buffers[@ibuf].modified?
 			ys = $screen.ask_yesno("Save changes?")
 			if ys == "yes"
 				@buffers[@ibuf].save
@@ -2203,11 +2180,12 @@ $viewmode_commandlist = {
 	?i => "buffer.toggle_editmode",
 	?[ => "buffer.undo",
 	?] => "buffer.redo",
+	?{ => "buffer.revert_to_saved",
+	?} => "buffer.unrevert_to_saved",
 	?K => "buffer.screen_up",
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
 	?L => "buffer.screen_right",
-	?t => "buffer.block_comment",
 	?: => "buffer.enter_command"
 }
 
@@ -2354,7 +2332,6 @@ $screen.init_screen do
 		# for undo/redo purposes
 		if buffer.buffer_history.text != buffer.text
 			buffer.buffer_history.add(buffer.text)
-			buffer.status = "Modified"
 		end
 
 		# display the current buffer
