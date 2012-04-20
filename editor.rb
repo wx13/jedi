@@ -865,8 +865,10 @@ class FileBuffer
 		end
 	end
 	def revert_to_saved
-		@buffer_history.revert_to_saved
-		@text = @buffer_history.copy
+		@text = @buffer_history.revert_to_saved
+	end
+	def unrevert_to_saved
+		@text = @buffer_history.unrevert_to_saved
 	end
 	def row_changed(text1,text2,r)
 		n = [text1.length,text2.length].min
@@ -1755,6 +1757,7 @@ class BufferHistory
 		@tree.next = nil
 		@tree.prev = nil
 		@saved = @tree
+		@old = @tree
 	end
 
 	class Node
@@ -1776,14 +1779,14 @@ class BufferHistory
 	def add(text)
 
 		# create a new node and set navigation pointers
-		old = @tree
+		@old = @tree
 		@tree = Node.new(text)
-		@tree.next = old.next
-		if old.next != nil
-			old.next.prev = @tree
+		@tree.next = @old.next
+		if @old.next != nil
+			@old.next.prev = @tree
 		end
-		@tree.prev = old
-		old.next = @tree
+		@tree.prev = @old
+		@old.next = @tree
 
 		# Prune the tree, so it doesn't get too big.
 		# Start by going back.
@@ -1862,7 +1865,13 @@ class BufferHistory
 		@saved.text != @tree.text
 	end
 	def revert_to_saved
+		@old = @tree
 		@tree = @saved
+		return(copy)
+	end
+	def unrevert_to_saved
+		@tree = @old
+		return(copy)
 	end
 end
 
@@ -2172,6 +2181,7 @@ $viewmode_commandlist = {
 	?[ => "buffer.undo",
 	?] => "buffer.redo",
 	?{ => "buffer.revert_to_saved",
+	?} => "buffer.unrevert_to_saved",
 	?K => "buffer.screen_up",
 	?J => "buffer.screen_down",
 	?H => "buffer.screen_left",
