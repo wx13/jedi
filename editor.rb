@@ -621,6 +621,8 @@ class FileBuffer
 
 	# Save buffer to a file.
 	def save
+		# Ask the user for a file.
+		# Defaults to current file.
 		ans = $screen.ask("save to: ",[@filename],true,true)
 		if ans == nil
 			$screen.write_message("Cancelled")
@@ -631,6 +633,8 @@ class FileBuffer
 			$screen.write_message("Cancelled")
 			return
 		end
+		# If name is different from current file name,
+		# ask for verification.
 		if ans != @filename
 			yn = $screen.ask_yesno("save to different file: "+ans+" ? [y/n]")
 			if yn == "yes"
@@ -641,11 +645,18 @@ class FileBuffer
 				return
 			end
 		end
+		# Dump the text to the file.
 		File.open(@filename,"w"){|file|
 			text = @text.join(@eol)
 			file.write(text)
 		}
+		# Let the undo/redo history know that we have saved,
+		# for revert-to-saved purposes.
 		@buffer_history.save
+		# Save the command/search histories.
+		if $hist_file != nil
+			$buffers.save_hists
+		end
 		$screen.write_message("saved to: "+@filename)
 	end
 
