@@ -1955,6 +1955,7 @@ class BuffersList
 	end
 
 	def save_hists
+		read_hists
 		hists = {"search_hist" => $search_hist.reverse[0,1000].reverse,\
 	             "replace_hist" => $replace_hist.reverse[0,1000].reverse,\
 	             "command_hist" => $command_hist.reverse[0,1000].reverse,\
@@ -1967,10 +1968,14 @@ class BuffersList
 
 	def read_hists
 		hists = YAML.load_file($hist_file)
-		$search_hist = hists["search_hist"]
-		$replace_hist = hists["replace_hist"]
-		$command_hist = hists["command_hist"]
-		$script_hist = hists["script_hist"]
+		$search_hist.concat(hists["search_hist"]).uniq!
+		$replace_hist.concat(hists["replace_hist"]).uniq!
+		$command_hist.concat(hists["command_hist"]).uniq!
+		$script_hist.concat(hists["script_hist"]).uniq!
+		#$search_hist = hists["search_hist"]
+		#$replace_hist = hists["replace_hist"]
+		#$command_hist = hists["command_hist"]
+		#$script_hist = hists["script_hist"]
 	end
 
 	def open
@@ -2277,6 +2282,7 @@ $indent_hist = [""]
 $lineno_hist = [""]
 $command_hist = [""]
 $scriptfile_hist = [""]
+$script_hist = [""]
 
 # read specified files into buffers of buffer list
 $buffers = BuffersList.new(ARGV)
