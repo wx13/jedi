@@ -1972,10 +1972,6 @@ class BuffersList
 		$replace_hist.concat(hists["replace_hist"]).uniq!
 		$command_hist.concat(hists["command_hist"]).uniq!
 		$script_hist.concat(hists["script_hist"]).uniq!
-		#$search_hist = hists["search_hist"]
-		#$replace_hist = hists["replace_hist"]
-		#$command_hist = hists["command_hist"]
-		#$script_hist = hists["script_hist"]
 	end
 
 	def open
