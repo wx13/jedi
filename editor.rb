@@ -1632,8 +1632,11 @@ class FileBuffer
 
 			# if it is an escape, then move down 2 chars
 			if cline[0].chr == "\\"
-				bline += cline[k,2]
-				cline = cline[k+2..-1]
+				r = cline[0,2]
+				if r != nil
+					bline += r
+				end
+				cline = cline[2..-1]
 				next
 			end
 
@@ -1662,11 +1665,15 @@ class FileBuffer
 					cline = ""
 					break
 				end
-				while (k>0) || (cline[k-1].chr=="\\") do
-					bline += cline[k,2]
-					cline = cline[k+2..-1]
+				while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
+					bline += cline[0,k+1]
+					cline = cline[k+1..-1]
 					break if cline == nil
 					k = cline.index(cqc)
+				end
+				if k==nil
+					bline += cline
+					break
 				end
 				if cline == nil
 					break
