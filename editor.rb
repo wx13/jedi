@@ -1621,7 +1621,7 @@ class FileBuffer
 		while (cline!=nil)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union([lccs,bccs,dqc,sqc,"\\"].flatten)
+			all = Regexp.union([lccs,bccs.keys,dqc,sqc,"\\"].flatten)
 			k = cline.index(all)
 			if k==nil
 				bline += cline
@@ -1653,7 +1653,42 @@ class FileBuffer
 			}
 			break if flag
 
-			# quote, then look for match
+			# block comments
+			flag = false
+			bccs.each{|sc,ec|
+				if cline.index(sc)==0
+					flag = true
+					cqc = ec
+					bline += $color+$color_comment
+					bline += cline[0].chr
+					cline = cline[1..-1]
+					k = cline.index(cqc)
+					if k==nil
+						bline += cline
+						cline = ""
+						break
+					end
+					while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
+						bline += cline[0,k+ec.length]
+						cline = cline[k+ec.length..-1]
+						break if cline == nil
+						k = cline.index(cqc)
+					end
+					if k==nil
+						bline += cline
+						break
+					end
+					if cline == nil
+						break
+					end
+					bline += cline[0..k+ec.length-1]
+					bline += $color+$color_default
+					cline = cline[k+ec.length..-1]
+				end
+			}
+			next if flag
+
+			# if quote, then look for match
 			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
 				cqc = cline[0].chr
 				bline += $color+$color_string
@@ -1701,9 +1736,9 @@ class FileBuffer
 		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
 		case @filetype
 			when "shell","ruby"
-				aline = syntax_color_string_comment(aline,["#"],[])
+				aline = syntax_color_string_comment(aline,["#"],{})
 			when "m"
-				aline = syntax_color_string_comment(aline,["#","%"],[])
+				aline = syntax_color_string_comment(aline,["#","%"],{})
 			when "f"
 				if aline[0] == ?c
 					aline = $color+$color_comment+aline+$color+$color_default
@@ -1711,18 +1746,9 @@ class FileBuffer
 					aline = syntax_color_string_comment(aline,"!")
 				end
 			when "c"
-				aline.gsub!(/['][^']*[']/,$color+$color_string+"\\0"+$color+$color_default)
-				aline.gsub!(/["][^"]*["]/,$color+$color_string+"\\0"+$color+$color_default)
-				# // style comments
-				aline.gsub!(/\/\/.*$/,$color+$color_comment+"\\0"+$color+$color_default)
-				# /* comment */
-				aline.gsub!(/\/\*.*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
-				# /* comment
-				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$color_comment+"\\0"+$color+$color_default)
-				# comment */
-				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
+				aline = syntax_color_string_comment(aline,["//"],{"/*"=>"*/"})
 			else
-				aline = syntax_color_string_comment(aline,[],[])
+				aline = syntax_color_string_comment(aline,[],{})
 		end
 		return(aline)
 	end
