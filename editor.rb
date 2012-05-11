@@ -1595,69 +1595,92 @@ class FileBuffer
 	end
 
 
-	def syntax_color_string_comment(aline,comchar,comchar2=nil)
 
+	#
+	# Do string and comment coloring.
+	# INPUT:
+	#   aline -- line of text to color
+	#   lccs  -- line comment characters
+	#            (list of characters that start comments to end-of-line)
+	#   bccs  -- block comment characters
+	#            (pairs of comment characters, such as /* */)
+	# OUTPUT:
+	#   line with color characters inserted
+	#
+	def syntax_color_string_comment(aline,lccs,bccs)
+
+		dqc = '"'
+		sqc = '\''
 		dquote = false
 		squote = false
 		comment = false
 		bline = ""
 		escape = false
 
-		i = -1
-		aline.each_char{|c|
-			i+=1
-			if escape
-				escape = false
-				bline += c
+		cline = aline.dup
+		while (cline!=nil)&&(cline.length>0) do
+
+			# find first occurance of special character
+			all = Regexp.union([lccs,bccs,dqc,sqc,"\\"].flatten)
+			k = cline.index(all)
+			if k==nil
+				bline += cline
+				break
+			end
+			bline += cline[0..(k-1)]
+			cline = cline[k..-1]
+
+			# if it is an escape, then move down 2 chars
+			if cline[0].chr == "\\"
+				bline += cline[k,2]
+				cline = cline[k+2..-1]
 				next
 			end
-			if comment
-				bline += c
-				next
-			end
-			case c
-				when "\\"
-					escape = true
-					bline += c
-				when comchar,comchar2
-					if !(squote|dquote)
-						comment=true
-						bline += $color+$color_comment+c
-					else
-						bline += c
-					end
-				when "\'"
-					if squote
-						squote=false
-						bline += c+$color+$color_default
-					elsif !(dquote)
-						if aline[(i+1)..-1].match(/\'/)
-							squote = true
-							bline += $color+$color_string+c
-						else
-							bline += c
-						end
-					else
-						bline += c
-					end
-				when "\""
-					if dquote
-						dquote=false
-						bline += c+$color+$color_default
-					elsif !(squote)
-						if aline[(i+1)..-1].match(/\"/)
-							dquote = true
-							bline += $color+$color_string+c
-						else
-							bline += c
-						end
-					else
-						bline += c
-					end
-				else
-					bline += c
+
+			# if eol comment, then we are done
+			flag = false
+			lccs.each{|str|
+				if cline.index(str)==0
+					bline += $color+$color_comment
+					bline += cline
+					bline += $color+$color_default
+					flag = true
+					break
 				end
-		}
+			}
+			break if flag
+
+			# quote, then look for match
+			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
+				cqc = cline[0].chr
+				bline += $color+$color_string
+				bline += cline[0].chr
+				cline = cline[1..-1]
+				k = cline.index(cqc)
+				if k==nil
+					bline += cline
+					cline = ""
+					break
+				end
+				while (k>0) || (cline[k-1].chr=="\\") do
+					bline += cline[k,2]
+					cline = cline[k+2..-1]
+					break if cline == nil
+					k = cline.index(cqc)
+				end
+				if cline == nil
+					break
+				end
+				bline += cline[0..k]
+				bline += $color+$color_default
+				cline = cline[k+1..-1]
+				next
+			end
+
+			bline += cline[0].chr
+			cline = cline[1..-1]
+		end
+
 		aline = bline + $color+$color_default
 		return aline
 	end
@@ -1671,9 +1694,9 @@ class FileBuffer
 		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
 		case @filetype
 			when "shell","ruby"
-				aline = syntax_color_string_comment(aline,"#")
+				aline = syntax_color_string_comment(aline,["#"],[])
 			when "m"
-				aline = syntax_color_string_comment(aline,"#","%")
+				aline = syntax_color_string_comment(aline,["#","%"],[])
 			when "f"
 				if aline[0] == ?c
 					aline = $color+$color_comment+aline+$color+$color_default
@@ -1692,7 +1715,7 @@ class FileBuffer
 				# comment */
 				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
 			else
-				aline = syntax_color_string_comment(aline,nil)
+				aline = syntax_color_string_comment(aline,[],[])
 		end
 		return(aline)
 	end
