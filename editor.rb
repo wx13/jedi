@@ -1596,6 +1596,35 @@ class FileBuffer
 
 
 
+	def syntax_find_match(cline,cqc,bline)
+		bline += cline[0].chr
+		cline = cline[1..-1]
+		k = cline.index(cqc)
+		if k==nil
+			bline += cline
+			cline = ""
+			return(bline)
+		end
+		while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
+			bline += cline[0,k+cqc.length]
+			cline = cline[k+cqc.length..-1]
+			break if cline == nil
+			k = cline.index(cqc)
+		end
+		if k==nil
+			bline += cline
+			return(bline)
+		end
+		if cline == nil
+			return(bline)
+		end
+		bline += cline[0..k+cqc.length-1]
+		cline = cline[k+cqc.length..-1]
+		return bline,cline
+	end
+
+
+
 	#
 	# Do string and comment coloring.
 	# INPUT:
@@ -1658,32 +1687,9 @@ class FileBuffer
 			bccs.each{|sc,ec|
 				if cline.index(sc)==0
 					flag = true
-					cqc = ec
 					bline += $color+$color_comment
-					bline += cline[0].chr
-					cline = cline[1..-1]
-					k = cline.index(cqc)
-					if k==nil
-						bline += cline
-						cline = ""
-						break
-					end
-					while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
-						bline += cline[0,k+ec.length]
-						cline = cline[k+ec.length..-1]
-						break if cline == nil
-						k = cline.index(cqc)
-					end
-					if k==nil
-						bline += cline
-						break
-					end
-					if cline == nil
-						break
-					end
-					bline += cline[0..k+ec.length-1]
+					bline,cline = syntax_find_match(cline,ec,bline)
 					bline += $color+$color_default
-					cline = cline[k+ec.length..-1]
 				end
 			}
 			next if flag
@@ -1692,30 +1698,8 @@ class FileBuffer
 			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
 				cqc = cline[0].chr
 				bline += $color+$color_string
-				bline += cline[0].chr
-				cline = cline[1..-1]
-				k = cline.index(cqc)
-				if k==nil
-					bline += cline
-					cline = ""
-					break
-				end
-				while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
-					bline += cline[0,k+1]
-					cline = cline[k+1..-1]
-					break if cline == nil
-					k = cline.index(cqc)
-				end
-				if k==nil
-					bline += cline
-					break
-				end
-				if cline == nil
-					break
-				end
-				bline += cline[0..k]
+				bline,cline = syntax_find_match(cline,cqc,bline)
 				bline += $color+$color_default
-				cline = cline[k+1..-1]
 				next
 			end
 
