@@ -1955,7 +1955,9 @@ class BuffersList
 	end
 
 	def save_hists
-		read_hists
+		if ($hist_file != nil) && (File.exist?($hist_file))
+			read_hists
+		end
 		hists = {"search_hist" => $search_hist.reverse[0,1000].reverse,\
 	             "replace_hist" => $replace_hist.reverse[0,1000].reverse,\
 	             "command_hist" => $command_hist.reverse[0,1000].reverse,\
@@ -1967,7 +1969,13 @@ class BuffersList
 	end
 
 	def read_hists
+		if ($hist_file == nil) || (!File.exist?($hist_file))
+			return
+		end
 		hists = YAML.load_file($hist_file)
+		if !hists
+			return
+		end
 		$search_hist.concat(hists["search_hist"]).uniq!
 		$replace_hist.concat(hists["replace_hist"]).uniq!
 		$command_hist.concat(hists["command_hist"]).uniq!
