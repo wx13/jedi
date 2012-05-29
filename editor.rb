@@ -582,51 +582,18 @@ class FileBuffer
 		$screen.write_message("found it")
 	end
 
+
+
 	# Toggle one of many states.
 	# These keys should be a keybinding.
 	def toggle
-		$screen.write_message("ed,vu,auto,man,ins,ovrw,wrap,long,col,row,scolr,bw")
+		str = ""
+		$togglelist_array.each{|a| str += a[1][2] + ","}
+		str.chop!
+		$screen.write_message(str)
 		c = Curses.getch
-		case c
-			when ?e
-				@editmode = true
-				$screen.write_message("Edit mode")
-			when ?v
-				@editmode = false
-				$screen.write_message("View mode")
-			when ?a
-				@autoindent = true
-				$screen.write_message("Autoindent")
-			when ?m
-				@autoindent = false
-				$screen.write_message("Manual indent")
-			when ?i
-				@insertmode = true
-				$screen.write_message("Insert mode")
-			when ?o
-				@insertmode = false
-				$screen.write_message("Overwrite mode")
-			when ?w
-				@linewrap = true
-				$screen.write_message("Line wrapping")
-			when ?l
-				@linewrap = false
-				$screen.write_message("No line wrapping")
-			when ?c
-				@colmode = true
-				$screen.write_message("Column mode")
-			when ?r
-				@colmode = false
-				$screen.write_message("Row mode")
-			when ?s
-				@syntax_color = true
-				$screen.write_message("Syntax color enabled")
-			when ?b
-				@syntax_color = false
-				$screen.write_message("Syntax color disabled")
-			else
-				$screen.write_message("Unkown toggle")
-		end
+		eval($togglelist[c][0])
+		$screen.write_message($togglelist[c][1])
 	end
 
 	# Go back to edit mode.
@@ -2164,11 +2131,14 @@ $editmode = true
 
 # -----------------------------------------------------------------
 # This section defines the keymapping.
-# There are 4 sections:
+# There are 5 sections:
 #     1. commandlist -- universal keymapping
 #     2. editmode_commandlist -- keymappings when in edit mode
 #     3. viewmode_commandlist -- keymappings in view mode
 #     4. extra_commandlist -- ones that don't fit
+#     5. togglelist -- for toggling states on/off
+#     	 These get run when buffer.toggle is run.
+#        It is an array, because I want to preserve order.
 # -----------------------------------------------------------------
 
 
@@ -2246,6 +2216,22 @@ $viewmode_commandlist = {
 	?: => "buffer.enter_command"
 }
 $viewmode_commandlist.default = ""
+$togglelist_array = [
+	[?e, ["@editmode = true","Edit mode","ed"]],
+	[?v, ["@editmode = false","View mode","vu"]],
+	[?a, ["@autoindent = true","Autoindent","ai"]],
+	[?m, ["@autoindent = false","Manual indent","mi"]],
+	[?i, ["@insertmode = true","Insert mode","ins"]],
+	[?o, ["@insertmode = false","Overwrite mode","ovrw"]],
+	[?w, ["@linewrap = true","Line wrapping enabled","wrap"]],
+	[?l, ["@linewrap = false","Line wrapping disabled","long"]],
+	[?c, ["@colmode = true","Column mode","col"]],
+	[?r, ["@colmode = false","Row mode","row"]],
+	[?s, ["@syntax_color = true","Syntax color enabled","scol"]],
+	[?b, ["@syntax_color = false","Syntax color disabled","bw"]]
+]
+$togglelist = Hash[$togglelist_array]
+$togglelist.default = ["","Unknown toggle",""]
 
 
 
