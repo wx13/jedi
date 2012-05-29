@@ -585,12 +585,13 @@ class FileBuffer
 
 
 	# Toggle one of many states.
-	# These keys should be a keybinding.
 	def toggle
+		# show user the choices
 		str = ""
 		$togglelist_array.each{|a| str += a[1][2] + ","}
 		str.chop!
 		$screen.write_message(str)
+		# get answer and execute the code
 		c = Curses.getch
 		eval($togglelist[c][0])
 		$screen.write_message($togglelist[c][1])
@@ -693,12 +694,11 @@ class FileBuffer
 	end
 
 
-	#
-	# Modifying text
-	#
 
-	# These are the functions which do the mods.
-	# Everything else calls these.
+
+	# -----------------------------------------------
+	# low-level methods for modifying text
+	# -----------------------------------------------
 
 	# delete a character
 	def delchar(row,col)
@@ -794,47 +794,18 @@ class FileBuffer
 		end
 	end
 
-
-	#
-	# Undo / redo
-	#
-	def undo
-		if @buffer_history.prev != nil
-			@buffer_history.tree = @buffer_history.prev
-			@text = @buffer_history.copy
-			@col = 0
-			@row = row_changed(@text,@buffer_history.next.text,@row)
-		end
-	end
-	def redo
-		if @buffer_history.next != nil
-			@buffer_history.tree = @buffer_history.next
-			@text = @buffer_history.copy
-			@col = 0
-			@row = row_changed(@text,@buffer_history.prev.text,@row)
-		end
-	end
-	def revert_to_saved
-		@text = @buffer_history.revert_to_saved
-	end
-	def unrevert_to_saved
-		@text = @buffer_history.unrevert_to_saved
-	end
-	def row_changed(text1,text2,r)
-		n = [text1.length,text2.length].min
-		text1.each_index{|i|
-			if i >= n then break end
-			if text1[i] != text2[i]
-				return(i)
-			end
-		}
-		return(r)
-	end
+	# end of low-level text modifiers
+	# -----------------------------------------------
 
 
 
-	# these functions all call the mod function
-	# but don't modify the buffer directly
+
+
+
+	# -----------------------------------------------
+	# high-level text modifiers
+	# (which call the low-level ones)
+	# -----------------------------------------------
 
 	def ordered_mark_rows
 		if @row < @mark_row
@@ -1039,6 +1010,53 @@ class FileBuffer
 	end
 
 
+	# end of high-level text modifiers
+	# -----------------------------------------------
+
+
+
+
+	#
+	# Undo / redo
+	#
+	def undo
+		if @buffer_history.prev != nil
+			@buffer_history.tree = @buffer_history.prev
+			@text = @buffer_history.copy
+			@col = 0
+			@row = row_changed(@text,@buffer_history.next.text,@row)
+		end
+	end
+	def redo
+		if @buffer_history.next != nil
+			@buffer_history.tree = @buffer_history.next
+			@text = @buffer_history.copy
+			@col = 0
+			@row = row_changed(@text,@buffer_history.prev.text,@row)
+		end
+	end
+	def revert_to_saved
+		@text = @buffer_history.revert_to_saved
+	end
+	def unrevert_to_saved
+		@text = @buffer_history.unrevert_to_saved
+	end
+	def row_changed(text1,text2,r)
+		n = [text1.length,text2.length].min
+		text1.each_index{|i|
+			if i >= n then break end
+			if text1[i] != text2[i]
+				return(i)
+			end
+		}
+		return(r)
+	end
+
+
+
+
+
+
 	#
 	# Navigation stuff
 	#
@@ -1127,6 +1145,8 @@ class FileBuffer
 	def screen_down
 		@linefeed += 1
 	end
+
+
 
 
 	#
@@ -1245,9 +1265,15 @@ class FileBuffer
 	end
 
 
-	#
+
+
+
+
+	# -----------------------------------------------
 	# copy/paste
-	#
+	# -----------------------------------------------
+
+
 	def mark
 		if @marked
 			@marked = false
@@ -1352,13 +1378,21 @@ class FileBuffer
 		end
 	end
 
+	# end of copy/paste stuff
+	# -----------------------------------------------
 
 
 
 
-	#
+
+
+
+
+
+	# -----------------------------------------------
 	# display text
-	#
+	# -----------------------------------------------
+
 
 	# write everything, including status lines
 	def dump_to_screen(screen,refresh=false)
@@ -1715,19 +1749,27 @@ class FileBuffer
 		return(ans)
 	end
 
+	# end of text display stuff
+	# -----------------------------------------------
+
 end
 
+# end of big buffer class
+# ---------------------------------------------------
 
 
 
 
 
-#
+
+
+
+# ---------------------------------------------------
 # Linked list of buffer text states for undo/redo
 #
 # Whole thing is a wrapper around a linked list of Node objects,
 # which are defined inside this BufferHistory class.
-#
+# ---------------------------------------------------
 class BufferHistory
 
 	attr_accessor :tree
@@ -1855,13 +1897,18 @@ class BufferHistory
 	end
 end
 
+# end of BufferHistory class
+# ---------------------------------------------------
 
 
 
 
-#
-# this is a list of buffers
-#
+
+
+
+# ---------------------------------------------------
+# This is a list of buffers
+# ---------------------------------------------------
 class BuffersList
 
 	attr_accessor :copy_buffer, :nbuf, :ibuf
@@ -1966,16 +2013,22 @@ class BuffersList
 
 end
 
-
-
-
+# end of buffers list class
 #----------------------------------------------------------
 
 
 
-# ---------------- global function ----------------------
 
-# allow user scripts
+
+# ----------------------------------------------------------
+# This is a separate global function which runs an arbitrary
+# ruby script.
+# It can read from a file or from user input.
+#
+# It is global, because we want to be able to call it right
+# at startup. That way a user can modify the editor's behavior
+# before any buffers have been loaded.
+# ----------------------------------------------------------
 def run_script(file=nil)
 	if file == nil
 		file = $screen.ask("run script file: ",[""],false,true)
@@ -2014,6 +2067,11 @@ rescue
 	end
 end
 # --------------------------------------------------------
+
+
+
+
+
 
 
 
@@ -2079,6 +2137,15 @@ $color_black = "\308"
 $color_normal = "\310"
 $color_reverse = "\311"
 
+
+
+
+
+
+# -------------------------------------------------------
+# default syntax color stuff
+# -------------------------------------------------------
+
 # default text colors
 $color_default = $color_white
 $color_comment = $color_cyan
@@ -2125,6 +2192,10 @@ $linewrap = false
 $colmode = false
 $syntax_color = true
 $editmode = true
+
+
+
+
 
 
 
@@ -2241,12 +2312,13 @@ $togglelist.default = ["","Unknown toggle",""]
 
 
 # -------------------------------------------------------
-# -------------------------------------------------------
-# --------------------- main code -----------------------
-# -------------------------------------------------------
+# End of methods and classes definitions.
+# Start of directly executed code.
 # -------------------------------------------------------
 
 
+
+# parse the command line options
 $hist_file = nil
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
@@ -2289,7 +2361,7 @@ optparse.parse!
 
 
 
-# store up search history
+# intitialize histories
 $search_hist = [""]
 $replace_hist = [""]
 $indent_hist = [""]
@@ -2301,10 +2373,11 @@ $script_hist = [""]
 # read specified files into buffers of buffer list
 $buffers = BuffersList.new(ARGV)
 
-# copy buffer
+# initialize copy buffer
 $copy_buffer = ""
 
-# for detecting changes to display
+# for detecting changes to display,
+# so we don't have to redraw as frequently
 $screen_buffer = []
 
 
@@ -2353,6 +2426,7 @@ $screen.init_screen do
 			end
 		end
 
+		# make sure cursor is in a good place
 		buffer.sanitize
 
 	end
