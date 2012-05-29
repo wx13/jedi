@@ -503,6 +503,7 @@ class FileBuffer
 		$screen.write_message("Bad script")
 	end
 
+
 	# set the file type from the filename
 	def set_filetype(filename)
 		$filetypes.each{|k,v|
@@ -510,6 +511,10 @@ class FileBuffer
 				@filetype = v
 			end
 		}
+		# set up syntax coloring
+		@syntax_color_lc = $syntax_color_lc[@filetype]
+		@syntax_color_bc = $syntax_color_bc[@filetype]
+		@syntax_color_regex = $syntax_color_regex[@filetype]
 	end
 
 
@@ -781,77 +786,6 @@ class FileBuffer
 			if c==@text[r].length then next end
 			@text[r] = @text[r].dup
 			@text[r][c] = ""
-		end
-	end
-	# indent a block of text
-	def block_indent(row1,row2)
-		for r in row1..row2
-			if @text[r].length > 0
-				@text[r] = @text[r].dup
-				@text[r].insert(0,"\t")
-			end
-		end
-	end
-	# unindent a block of text
-	def block_unindent(row1,row2)
-		for r in row1..row2
-			if @text[r].length == 0
-				next
-			end
-			t = @text[r][0].chr
-			if t != "\t"
-				block_unspace(row1,row2)
-				return
-			end
-		end
-		for r in row1..row2
-			if @text[r][0] != nil
-				@text[r] = @text[r].dup
-				@text[r][0] = ""
-			end
-		end
-	end
-	# same as above, but if spaces are used
-	def block_unspace(row1,row2)
-		for r in row1..row2
-			if @text[r].length == 0
-				next
-			end
-			s = @text[r][0].chr
-			if s != " "
-				block_uncomment(row1,row2)
-				return
-			end
-		end
-		for r in row1..row2
-			if @text[r][0] != nil
-				@text[r] = @text[r].dup
-				@text[r][0] = ""
-			end
-		end
-	end
-	# uncomment a block
-	def block_uncomment(row1,row2)
-		c = ""
-		case @filetype
-			when "shell","m","ruby" then c = "#"
-			when "c" then c = "//"
-			when "f" then c = "!"
-		end
-		for r in row1..row2
-			if @text[r].length == 0
-				next
-			end
-			s = @text[r][0].chr
-			if s != c
-				return
-			end
-		end
-		for r in row1..row2
-			if @text[r][0] != nil
-				@text[r] = @text[r].dup
-				@text[r][0] = ""
-			end
 		end
 	end
 
@@ -1595,73 +1529,121 @@ class FileBuffer
 	end
 
 
-	def syntax_color_string_comment(aline,comchar,comchar2=nil)
 
+	def syntax_find_match(cline,cqc,bline)
+		bline += cline[0].chr
+		cline = cline[1..-1]
+		k = cline.index(cqc)
+		if k==nil
+			bline += cline
+			cline = ""
+			return(bline)
+		end
+		while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
+			bline += cline[0,k+cqc.length]
+			cline = cline[k+cqc.length..-1]
+			break if cline == nil
+			k = cline.index(cqc)
+		end
+		if k==nil
+			bline += cline
+			return(bline)
+		end
+		if cline == nil
+			return(bline)
+		end
+		bline += cline[0..k+cqc.length-1]
+		cline = cline[k+cqc.length..-1]
+		return bline,cline
+	end
+
+
+
+	#
+	# Do string and comment coloring.
+	# INPUT:
+	#   aline -- line of text to color
+	#   lccs  -- line comment characters
+	#            (list of characters that start comments to end-of-line)
+	#   bccs  -- block comment characters
+	#            (pairs of comment characters, such as /* */)
+	# OUTPUT:
+	#   line with color characters inserted
+	#
+	def syntax_color_string_comment(aline,lccs,bccs)
+
+		dqc = '"'
+		sqc = '\''
 		dquote = false
 		squote = false
 		comment = false
 		bline = ""
 		escape = false
 
-		i = -1
-		aline.each_char{|c|
-			i+=1
-			if escape
-				escape = false
-				bline += c
-				next
+		cline = aline.dup
+		while (cline!=nil)&&(cline.length>0) do
+
+			# find first occurance of special character
+			all = Regexp.union([lccs,bccs.keys,dqc,sqc,"\\"].flatten)
+			k = cline.index(all)
+			if k==nil
+				bline += cline
+				break
 			end
-			if comment
-				bline += c
-				next
-			end
-			case c
-				when "\\"
-					escape = true
-					bline += c
-				when comchar,comchar2
-					if !(squote|dquote)
-						comment=true
-						bline += $color+$color_comment+c
-					else
-						bline += c
-					end
-				when "\'"
-					if squote
-						squote=false
-						bline += c+$color+$color_default
-					elsif !(dquote)
-						if aline[(i+1)..-1].match(/\'/)
-							squote = true
-							bline += $color+$color_string+c
-						else
-							bline += c
-						end
-					else
-						bline += c
-					end
-				when "\""
-					if dquote
-						dquote=false
-						bline += c+$color+$color_default
-					elsif !(squote)
-						if aline[(i+1)..-1].match(/\"/)
-							dquote = true
-							bline += $color+$color_string+c
-						else
-							bline += c
-						end
-					else
-						bline += c
-					end
-				else
-					bline += c
+			bline += cline[0..(k-1)] if k > 0
+			cline = cline[k..-1]
+
+			# if it is an escape, then move down 2 chars
+			if cline[0].chr == "\\"
+				r = cline[0,2]
+				if r != nil
+					bline += r
 				end
-		}
+				cline = cline[2..-1]
+				next
+			end
+
+			# if eol comment, then we are done
+			flag = false
+			lccs.each{|str|
+				if cline.index(str)==0
+					bline += $color+$color_comment
+					bline += cline
+					bline += $color+$color_default
+					flag = true
+					break
+				end
+			}
+			break if flag
+
+			# block comments
+			flag = false
+			bccs.each{|sc,ec|
+				if cline.index(sc)==0
+					flag = true
+					bline += $color+$color_comment
+					bline,cline = syntax_find_match(cline,ec,bline)
+					bline += $color+$color_default
+				end
+			}
+			next if flag
+
+			# if quote, then look for match
+			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
+				cqc = cline[0].chr
+				bline += $color+$color_string
+				bline,cline = syntax_find_match(cline,cqc,bline)
+				bline += $color+$color_default
+				next
+			end
+
+			bline += cline[0].chr
+			cline = cline[1..-1]
+		end
+
 		aline = bline + $color+$color_default
 		return aline
 	end
-
 
 
 
@@ -1669,33 +1651,15 @@ class FileBuffer
 		aline = sline.dup
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
-		case @filetype
-			when "shell","ruby"
-				aline = syntax_color_string_comment(aline,"#")
-			when "m"
-				aline = syntax_color_string_comment(aline,"#","%")
-			when "f"
-				if aline[0] == ?c
-					aline = $color+$color_comment+aline+$color+$color_default
-				else
-					aline = syntax_color_string_comment(aline,"!")
-				end
-			when "c"
-				aline.gsub!(/['][^']*[']/,$color+$color_string+"\\0"+$color+$color_default)
-				aline.gsub!(/["][^"]*["]/,$color+$color_string+"\\0"+$color+$color_default)
-				# // style comments
-				aline.gsub!(/\/\/.*$/,$color+$color_comment+"\\0"+$color+$color_default)
-				# /* comment */
-				aline.gsub!(/\/\*.*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
-				# /* comment
-				aline.gsub!(/\/\*(?:(?!\*\/).)*$/,$color+$color_comment+"\\0"+$color+$color_default)
-				# comment */
-				aline.gsub!(/^(?:(?!\/\*).)*\*\//,$color+$color_comment+"\\0"+$color+$color_default)
-			else
-				aline = syntax_color_string_comment(aline,nil)
-		end
+		# comments & quotes
+		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
+		# general regex coloring
+		@syntax_color_regex.each{|k,v|
+			aline.gsub!(k,$color+v+"\\0"+$color+$color_default)
+		}
 		return(aline)
 	end
+
 
 	# functions for converting from column position in buffer
 	# to column position on screen
@@ -2116,6 +2080,39 @@ $color_comment = $color_cyan
 $color_string = $color_yellow
 $color_whitespace = $color_red
 
+# define file types for syntax coloring
+$filetypes = {
+	/\.sh$/ => "shell",
+	/\.csh$/ => "shell",
+	/\.rb$/ => "shell",
+	/\.py$/ => "shell",
+	/\.[cC]$/ => "c",
+	/\.cpp$/ => "c",
+	"COMMIT_EDITMSG" => "shell",
+	/\.m$/ => "m",
+	/\.[fF]$/ => "f"
+}
+
+# --- default syntax coloring rules ---
+# line comments
+$syntax_color_lc = {
+	"shell" => ["#"],
+	"ruby" => ["#"],
+	"c" => ["//"],
+	"f" => ["!",/^c/],
+	"idl" => [";"]
+}
+$syntax_color_lc.default = []
+# block comments
+$syntax_color_bc = {
+	"c" => {"/*"=>"*/"},
+}
+$syntax_color_bc.default = {}
+# general regex
+$syntax_color_regex = {}
+$syntax_color_regex.default = {}
+
+
 # default config
 $tabsize = 4
 $autoindent = true
@@ -2209,19 +2206,6 @@ $viewmode_commandlist = {
 	?: => "buffer.enter_command"
 }
 
-
-# define file types for syntax coloring
-$filetypes = {
-	/\.sh$/ => "shell",
-	/\.csh$/ => "shell",
-	/\.rb$/ => "shell",
-	/\.py$/ => "shell",
-	/\.[cC]$/ => "c",
-	/\.cpp$/ => "c",
-	"COMMIT_EDITMSG" => "shell",
-	/\.m$/ => "m",
-	/\.[fF]$/ => "f"
-}
 
 
 
