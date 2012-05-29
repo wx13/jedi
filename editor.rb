@@ -510,6 +510,25 @@ class FileBuffer
 				@filetype = v
 			end
 		}
+		# set up syntax coloring
+		case @filetype
+			when "shell","ruby"
+				@syntax_color_lc = ["#"]
+				@syntax_color_bc = {}
+				@syntax_color_regex = {}
+			when "c"
+				@syntax_color_bc = {"/*"=>"*/"}
+				@syntax_color_lc = ["//"]
+				@syntax_color_regex = {}
+			when "m"
+				@syntax_color_bc = {}
+				@syntax_color_lc = ["#","%"]
+				@syntax_color_regex = {}
+			when "idl"
+				@syntax_color_bc = {}
+				@syntax_color_lc = [";"]
+				@syntax_color_regex = {}
+		end
 	end
 
 
@@ -1647,22 +1666,8 @@ class FileBuffer
 		aline = sline.dup
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
-		case @filetype
-			when "shell","ruby"
-				aline = syntax_color_string_comment(aline,["#"],{})
-			when "m"
-				aline = syntax_color_string_comment(aline,["#","%"],{})
-			when "f"
-				if aline[0] == ?c
-					aline = $color+$color_comment+aline+$color+$color_default
-				else
-					aline = syntax_color_string_comment(aline,"!")
-				end
-			when "c"
-				aline = syntax_color_string_comment(aline,["//"],{"/*"=>"*/"})
-			else
-				aline = syntax_color_string_comment(aline,[],{})
-		end
+		# comments & quotes
+		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		return(aline)
 	end
 
