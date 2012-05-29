@@ -22,9 +22,14 @@ require 'optparse'
 require 'yaml'
 
 
-#----------------------------------------------------------
-# This class will manage the curses screen output
-#----------------------------------------------------------
+#------------------------------------------------------------
+# This class will manage the curses screen output.
+# It should include all the user interface stuff, such as:
+#   - write text to a position on the screen
+#   - write status line
+#   - ask user a question
+# It should not deal with text buffer management or the like.
+#------------------------------------------------------------
 
 class Screen
 
@@ -41,7 +46,7 @@ class Screen
 	end
 
 	# This starts the curses session.
-	# When this exists, screen closes.
+	# When this exits, screen closes.
 	def init_screen
 		@screen = Curses.init_screen
 		Curses.start_color
@@ -67,7 +72,7 @@ class Screen
 		buffer.dump_to_screen($screen,true)
 	end
 
-	# write a string at a position
+	# Write a string at a position.
 	def write_str(line,column,text)
 		if text == nil
 			return
@@ -76,44 +81,31 @@ class Screen
 		Curses.addstr(text)
 	end
 
-	# ---------------------------------------------------
-	# write a line of text
-	# 1. split string at each color escape (\300)
-	# 2. after each color escape is a color specifiyer (e.g. \301)
-	# 3. remove color specifier and issue a set_color command
-	# 4. don't print any characters before colfeed
-	# ---------------------------------------------------
+	# Write a line of text.
 	def write_line(row,colfeed,line)
-		if line == nil
+
+		if line == nil || line == ""
 			return
 		end
 
-		# clear row
-		write_str(row,0," "*@cols)
+		write_str(row,0," "*@cols)  # clear row
 
-		# split at color escape
-		a = line.split($color)
-		# don't do anything for empty rows
-		if a[0] == nil
-			return
-		end
-		pos = 0
-		s = colfeed
-		# start at edge of screen
-		s = colfeed
-		# write up to first color escape
-		write_str(row,0,a[0][s,(@cols-pos)])
-		pos += a[0].length
-		a = a[1..-1]
-		if a == nil
-			return
-		end
-		# loop over remaining parts, and process colors
-		a.each{|str|
-			c = str[0].chr  # color code
-			d = str[1..-1]  # rest of the string
-			next if d == nil
-			case c
+		substrings = line.split($color)  # split at color escape
+
+		# Write from colfeed to first color escape.
+		# If colfeed is larger than the first substring,
+		# this will naturally write nothing.
+		write_str(row,0,substrings[0][colfeed,@cols])
+		pos = substrings[0].length
+		substrings = substrings[1..-1]
+		return if substrings == nil
+
+		# loop over remaining parts of the line
+		substrings.each{|substring|
+			colorcode = substring[0].chr
+			substring = substring[1..-1]
+			next if substring == nil
+			case colorcode
 				when $color_white then set_color(Curses::COLOR_WHITE)
 				when $color_red then set_color(Curses::COLOR_RED)
 				when $color_green then set_color(Curses::COLOR_GREEN)
@@ -124,14 +116,20 @@ class Screen
 				when $color_reverse then @screen.attron(Curses::A_REVERSE)
 				when $color_normal then @screen.attroff(Curses::A_REVERSE)
 			end
-			s = 0
-			c = pos - colfeed
+			# pos is position in the line.
 			if pos < colfeed
-				s = colfeed - pos
-				c = 0
+				# We must chop off first part of the substring,
+				# because we are writing off the left edge of the screen.
+				str_start = colfeed - pos
+				col = 0
+			else
+				# We write the entire string, but starting some number of
+				# spaces in from the edge.
+				col = pos - colfeed
+				str_start = 0
 			end
-			write_str(row,c,d[s,(@cols-c)])
-			pos += d.length
+			write_str(row,col,substring[str_start,(@cols-col)])
+			pos += substring.length
 		}
 	end
 
@@ -141,23 +139,27 @@ class Screen
 
 	# write the info line at top of screen
 	def write_top_line(lstr,cstr,rstr)
+
 		update_screen_size
 		rstr = cstr + "  " + rstr
 		ll = lstr.length
 		lr = rstr.length
+
+		# if line is too long, chop off start of left string
 		if (ll+lr+3) > @cols
 			xxx = @cols - lr - 8
-			if xxx < 0 then return end
+			return if xxx < 0
 			lstr = "..." + lstr[(-xxx)..-1]
+			ll = lstr.length
 		end
-		ll = lstr.length
-		lr = rstr.length
-		xx = @cols - ll - lr
-		if xx < 0 then return end
-		all = lstr + (" "*xx) + rstr
+
+		nspaces = @cols - ll - lr
+		return if nspaces < 0  # line is too long to write
+		all = lstr + (" "*nspaces) + rstr
 		@screen.attron Curses::A_REVERSE
 		write_str(0,0,all)
 		@screen.attroff Curses::A_REVERSE
+
 	end
 
 	# toggle reverse text
@@ -181,39 +183,58 @@ class Screen
 	end
 
 
+	#
+	# Do a reverese incremental search through a history.
+	# This is a helper function for asking the user for input.
+	#
 	def reverse_incremental(hist)
-		token = ""
-		mtoken = token
-		ih = hist.length - 1
+
+		token = ""  # user's search token
+		mline = token  # line which matches token
+		ih = hist.length - 1  # position within history list
+
+		# interact with user
 		loop do
+
+			# write out current match status
 			write_str(@rows-1,0," "*@cols)
-			write_str(@rows-1,0,"(reverse-i-search) #{token}: #{mtoken}")
+			write_str(@rows-1,0,"(reverse-i-search) #{token}: #{mline}")
+
+			# get user input
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
 			case c
 				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
+					# chop off a character, and search for a new match
 					token.chop!
 					ih = hist.rindex{|x|x.match(/^#{token}/)}
 					if ih != nil
-						mtoken = hist[ih]
+						mline = hist[ih]
 					end
 				when $ctrl_r
+					# get next match in reverse list
 					if ih == 0
 						next
 					end
 					ih = hist[0..(ih-1)].rindex{|x|x.match(/^#{token}/)}
 				when $ctrl_c, $ctrl_g
+					# 0 return value = cancelled search
 					return 0
 				when $ctrl_m, Curses::Key::ENTER
+					# non-zero return value is index of the match.
+					# We've been searching backwards, so must invert index.
 					return hist.length - ih
 				when Curses::Key::UP, Curses::Key::DOWN
+					# up/down treated same as enter
 					return hist.length - ih
 				when 10..127
+					# regular character
 					token += c.chr
 					ih = hist[0..ih].rindex{|x|x.match(/^#{token}/)}
 			end
+			# ajust string for next loop
 			if ih != nil
-				mtoken = hist[ih]
+				mline = hist[ih]
 			else
 				ih = hist.length - 1
 			end
@@ -222,18 +243,22 @@ class Screen
 
 
 
+	#
 	# ask th user a question
 	# INPUT:
-	#   question  = "string" (written to the screen)
+	#   question  = "string"
 	#   history = ["string1","string2"]
-	#   file = true/false
-	def ask(question,hist=[""],display=false,file=false)
+	#   last_answer = true/false (start with last hist item as current answe?)
+	#   file = true/false (should we do tab-completion on files?)
+	#
+	def ask(question,hist=[""],last_answer=false,file=false)
+
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
 		ih = 0  # history index
 		token = ""  # potential answer
-		if display
-			token = hist[-1].dup
+		if last_answer
+			token = hist[-1].dup  # show last item in history
 		end
 		token0 = token.dup  # remember typed string, even if we move away
 		col = token.length  # put cursor at end of string
@@ -242,6 +267,8 @@ class Screen
 		shift = 0  # shift: in case we go past edge of screen
 		idx = 0  # for tabbing through files
 		glob = token  # for file globbing
+
+		# interact with user
 		loop do
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
@@ -292,23 +319,24 @@ class Screen
 					col = 0
 					glob = token
 				when $ctrl_u
+					# cut to start-of-line
 					token = token[col..-1]
 					glob = token
 					col = 0
 				when $ctrl_k
+					# cut to end-of-line
 					token = token[0,col]
 					glob = token
 				when $ctrl_d
+					# delete character at cursor
 					if col < token.length
 						token[col] = ""
 					end
 					token0 = token.dup
 					glob = token
-				when $ctrl_u
-					token.insert(col,$copy_buffer)
-					glob = token
 				when $ctrl_m, Curses::Key::ENTER then break
 				when 10..127
+					# regular character
 					token.insert(col,c.chr)
 					token0 = token.dup
 					col += 1
@@ -321,9 +349,9 @@ class Screen
 					token0 = token.dup
 					glob = token
 				when ?\t, $ctrl_i, 9
-					# find files that match typed string
-					# Cycle through matches.
 					if file
+						# find files that match typed string
+						# Cycle through matches.
 						list = Dir.glob(glob+"*")
 						if list.length == 0
 							next
@@ -333,12 +361,15 @@ class Screen
 						col = token.length
 						idx += 1
 					else
+						# not a file, so insert literal tab character
 						token.insert(col,c.chr)
 						token0 = token.dup
 						col += 1
 						glob = token
 					end
 			end
+
+			# display the answer so far
 			write_str(@rows-1,0," "*$cols)
 			if (col+question.length+2) > $cols
 				shift = col - $cols + question.length + 2
@@ -347,6 +378,7 @@ class Screen
 			end
 			write_str(@rows-1,0,question+" "+token[shift..-1])
 			Curses.setpos(@rows-1,(col-shift)+question.length+1)
+
 		end
 		@screen.attroff Curses::A_REVERSE
 		if token == ""
@@ -370,9 +402,7 @@ class Screen
 		answer = "cancel"
 		loop do
 			c = Curses.getch
-			if c > 255
-				next
-			end
+			next if c > 255  # don't accept weird characters
 			if c.chr.downcase == "y"
 				answer = "yes"
 				break
@@ -395,15 +425,23 @@ end
 
 
 
+# end of Screen class
 #----------------------------------------------------------
 
 
 
-#
+
+
+
+
+
+
+# ---------------------------------------------------------
 # This is the big main class, which handles a file
 # buffer.  Does everything from screen dumps to
 # searching etc.
-#
+#----------------------------------------------------------
+
 class FileBuffer
 
 	attr_accessor :filename, :text, :editmode, :buffer_history, :extramode
@@ -450,8 +488,7 @@ class FileBuffer
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text)
-		# save up info about screen to detect
-		# changes
+		# save up info about screen to detect changes
 		@colfeed_old = 0
 		@marked_old = false
 
@@ -518,6 +555,7 @@ class FileBuffer
 	end
 
 
+	# remember a position in the text
 	def bookmark
 		answer = $screen.ask("bookmark:",@bookmarks_hist)
 		if answer == nil
