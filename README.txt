@@ -120,6 +120,13 @@ Make files that end in ".h" get c-style coloring:
 
 	$filetypes[/\.h$/] = "c"
 
+Define a new filetype for syntax coloring
+
+	$filetypes[/\.abc$/] = "abc"
+	$syntax_color_lc["abc"] = ["||"]
+	$syntax_color_bc["abc"] = {"|+"=>"+|"}
+	$syntax_color_regex["abc"] = {/abc/=>$color_green}
+
 As you can see, this can be used for simple configuration, or to create
 mods/extenstions to the editor.
 

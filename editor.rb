@@ -503,6 +503,7 @@ class FileBuffer
 		$screen.write_message("Bad script")
 	end
 
+
 	# set the file type from the filename
 	def set_filetype(filename)
 		$filetypes.each{|k,v|
@@ -511,24 +512,9 @@ class FileBuffer
 			end
 		}
 		# set up syntax coloring
-		case @filetype
-			when "shell","ruby"
-				@syntax_color_lc = ["#"]
-				@syntax_color_bc = {}
-				@syntax_color_regex = {}
-			when "c"
-				@syntax_color_bc = {"/*"=>"*/"}
-				@syntax_color_lc = ["//"]
-				@syntax_color_regex = {}
-			when "m"
-				@syntax_color_bc = {}
-				@syntax_color_lc = ["#","%"]
-				@syntax_color_regex = {}
-			when "idl"
-				@syntax_color_bc = {}
-				@syntax_color_lc = [";"]
-				@syntax_color_regex = {}
-		end
+		@syntax_color_lc = $syntax_color_lc[@filetype]
+		@syntax_color_bc = $syntax_color_bc[@filetype]
+		@syntax_color_regex = $syntax_color_regex[@filetype]
 	end
 
 
@@ -1661,15 +1647,19 @@ class FileBuffer
 
 
 
-
 	def syntax_color(sline)
 		aline = sline.dup
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
+		# general regex coloring
+		@syntax_color_regex.each{|k,v|
+			aline.gsub!(k,$color+v+"\\0"+$color+$color_default)
+		}
 		return(aline)
 	end
+
 
 	# functions for converting from column position in buffer
 	# to column position on screen
@@ -2082,6 +2072,39 @@ $color_comment = $color_cyan
 $color_string = $color_yellow
 $color_whitespace = $color_red
 
+# define file types for syntax coloring
+$filetypes = {
+	/\.sh$/ => "shell",
+	/\.csh$/ => "shell",
+	/\.rb$/ => "shell",
+	/\.py$/ => "shell",
+	/\.[cC]$/ => "c",
+	/\.cpp$/ => "c",
+	"COMMIT_EDITMSG" => "shell",
+	/\.m$/ => "m",
+	/\.[fF]$/ => "f"
+}
+
+# --- default syntax coloring rules ---
+# line comments
+$syntax_color_lc = {
+	"shell" => ["#"],
+	"ruby" => ["#"],
+	"c" => ["//"],
+	"f" => ["!",/^c/],
+	"idl" => [";"]
+}
+$syntax_color_lc.default = []
+# block comments
+$syntax_color_bc = {
+	"c" => {"/*"=>"*/"},
+}
+$syntax_color_bc.default = {}
+# general regex
+$syntax_color_regex = {}
+$syntax_color_regex.default = {}
+
+
 # default config
 $tabsize = 4
 $autoindent = true
@@ -2175,19 +2198,6 @@ $viewmode_commandlist = {
 	?: => "buffer.enter_command"
 }
 
-
-# define file types for syntax coloring
-$filetypes = {
-	/\.sh$/ => "shell",
-	/\.csh$/ => "shell",
-	/\.rb$/ => "shell",
-	/\.py$/ => "shell",
-	/\.[cC]$/ => "c",
-	/\.cpp$/ => "c",
-	"COMMIT_EDITMSG" => "shell",
-	/\.m$/ => "m",
-	/\.[fF]$/ => "f"
-}
 
 
 
