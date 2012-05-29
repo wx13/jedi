@@ -2197,10 +2197,12 @@ $commandlist = {
 	$ctrl_6 => "buffer.extramode = true",
 	$ctrl_s => "buffer.run_script"
 }
+$commandlist.default = ""
 $extramode_commandlist = {
 	?b => "buffer.bookmark",
 	?g => "buffer.goto_bookmark"
 }
+$extramode_commandlist.default = ""
 $editmode_commandlist = {
 	Curses::Key::BACKSPACE => "buffer.backspace",
 	$backspace => "buffer.backspace",
@@ -2216,8 +2218,8 @@ $editmode_commandlist = {
 	$ctrl_l => "buffer.justify",
 	$ctrl_i => "buffer.addchar(c)",
 	9 => "buffer.addchar(c)",
-	32..127 => "buffer.addchar(c)"
 }
+$editmode_commandlist.default = ""
 $viewmode_commandlist = {
 	?q => "buffer = $buffers.close",
 	?k => "buffer.cursor_up(1)",
@@ -2243,7 +2245,7 @@ $viewmode_commandlist = {
 	?L => "buffer.screen_right",
 	?: => "buffer.enter_command"
 }
-
+$viewmode_commandlist.default = ""
 
 
 
@@ -2319,42 +2321,6 @@ $copy_buffer = ""
 # for detecting changes to display
 $screen_buffer = []
 
-# Create the case statement from list of keybindings.
-# The variable $case_then contains a string to be executed.
-# It has three sections: all, editmode, viewmode.
-$case_then = "if buffer.extramode\n"
-$case_then += "case c\n"
-$extramode_commandlist.each{|key|
-	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
-}
-$case_then += "end\n"
-$case_then += "buffer.extramode = false\n"
-$case_then += "$screen.write_message(\"\")\n"
-$case_then += "else\n"
-
-$case_then += "case c\n"
-$commandlist.each{|key|
-	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
-}
-$case_then += "end\n"
-
-$case_then += "if buffer.editmode\n"
-$case_then += "case c\n"
-$editmode_commandlist.each{|key|
-	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
-}
-$case_then += "end\n"
-$case_then += "else\n"
-$case_then += "case c\n"
-$viewmode_commandlist.each{|key|
-	if key[0].is_a?(String) then key[0] = key[0].unpack('C')[0] end
-	$case_then += "when "+key[0].to_s+" then "+key[1]+"\n"
-}
-$case_then += "end\n"
-$case_then += "end\n"
-$case_then += "end\n"
-
-
 
 # initialize curses screen and run with it
 $screen = Screen.new
@@ -2384,8 +2350,22 @@ $screen.init_screen do
 		c = Curses.getch
 		if c.is_a?(String) then c = c.unpack('C')[0] end
 
-		# execute case statement
-		eval $case_then
+		# process key press -- run associated command
+		if buffer.extramode
+			eval($extramode_commandlist[c])
+			buffer.extramode = false
+			$screen.write_message("")
+		else
+			eval($commandlist[c])
+			if buffer.editmode
+				eval($editmode_commandlist[c])
+				case c
+					when 32..127 then buffer.addchar(c)
+				end
+			else
+				eval($viewmode_commandlist[c])
+			end
+		end
 
 		buffer.sanitize
 
