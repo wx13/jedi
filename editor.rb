@@ -1585,7 +1585,7 @@ class FileBuffer
 				bline += cline
 				break
 			end
-			bline += cline[0..(k-1)]
+			bline += cline[0..(k-1)] if k > 0
 			cline = cline[k..-1]
 
 			# if it is an escape, then move down 2 chars
