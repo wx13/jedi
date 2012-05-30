@@ -1706,14 +1706,14 @@ class FileBuffer
 
 	def syntax_color(sline)
 		aline = sline.dup
-		# trailing whitespace
-		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
-		# comments & quotes
-		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		# general regex coloring
 		@syntax_color_regex.each{|k,v|
 			aline.gsub!(k,$color+v+"\\0"+$color+$color_default)
 		}
+		# trailing whitespace
+		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
+		# comments & quotes
+		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		return(aline)
 	end
 
@@ -2224,7 +2224,9 @@ $syntax_color_bc = {
 }
 $syntax_color_bc.default = {}
 # general regex
-$syntax_color_regex = {}
+$syntax_color_regex = {
+	"f" => {/^[^cC][^!]{71,}.*$/=>$color_magenta}
+}
 $syntax_color_regex.default = {}
 
 
