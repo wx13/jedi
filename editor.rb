@@ -497,7 +497,7 @@ class FileBuffer
 		@extramode = false
 		@insertmode = true
 		@linewrap = $linewrap
-		@colmode = false
+		@colmode = $colmode
 		@syntax_color = $syntax_color
 
 		# undo-redo history
