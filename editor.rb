@@ -1781,6 +1781,7 @@ class FileBuffer
 			when Curses::BUTTON1_CLICKED
 				@marked = false
 				goto_position(m.y-1,m.x)
+				$screen.write_message("")
 			when Curses::BUTTON1_PRESSED
 				@marked = false
 				goto_position(m.y-1,m.x)
