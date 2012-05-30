@@ -2034,10 +2034,10 @@ class BuffersList
 		if !hists
 			return
 		end
-		$search_hist.concat(hists["search_hist"]).uniq!
-		$replace_hist.concat(hists["replace_hist"]).uniq!
-		$command_hist.concat(hists["command_hist"]).uniq!
-		$script_hist.concat(hists["script_hist"]).uniq!
+		$search_hist.reverse!.concat(hists["search_hist"].reverse!).uniq!.reverse!
+		$replace_hist.reverse!.concat(hists["replace_hist"].reverse!).uniq!.reverse!
+		$command_hist.reverse!.concat(hists["command_hist"].reverse!).uniq!.reverse!
+		$script_hist.reverse!.concat(hists["script_hist"].reverse!).uniq!.reverse!
 	end
 
 	def open
