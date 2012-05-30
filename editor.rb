@@ -1776,6 +1776,7 @@ class FileBuffer
 	#
 	def handle_mouse
 		m = Curses.getmouse
+		return if m == nil
 		case m.bstate
 			when Curses::BUTTON1_CLICKED
 				@marked = false
