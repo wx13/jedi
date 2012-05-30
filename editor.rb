@@ -1148,8 +1148,8 @@ class FileBuffer
 		$screen.write_message("went to line "+@row.to_s)
 	end
 	def goto_position(r,c)
-		@row = r
-		@col = sc2bc(@row,c)
+		@row = r+@linefeed
+		@col = sc2bc(@row,c)+@colfeed
 	end
 	def screen_left
 		@colfeed += 1
