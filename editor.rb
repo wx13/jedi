@@ -33,11 +33,12 @@ require 'yaml'
 
 class Screen
 
-	attr_accessor :rows, :cols
+	attr_accessor :rows, :cols, :mouse
 
 	def initialize
 		Curses.raw
 		Curses.noecho
+		@mouse = $mouse
 	end
 
 	def update_screen_size
@@ -58,11 +59,24 @@ class Screen
 		Curses.init_pair(Curses::COLOR_BLUE, Curses::COLOR_BLUE, Curses::COLOR_BLACK)
 		Curses.init_pair(Curses::COLOR_YELLOW, Curses::COLOR_YELLOW, Curses::COLOR_BLACK)
 		Curses.init_pair(Curses::COLOR_MAGENTA, Curses::COLOR_MAGENTA, Curses::COLOR_BLACK)
+		enable_mouse if @mouse
 		begin
 			yield
 		ensure
 			Curses.close_screen
 		end
+	end
+
+	def enable_mouse
+		Curses.mousemask(Curses::BUTTON1_PRESSED \
+		                |Curses::BUTTON1_RELEASED \
+		                |Curses::BUTTON1_CLICKED \
+		                |Curses::REPORT_MOUSE_POSITION)
+		@mouse = true
+	end
+	def disable_mouse
+		Curses.mousemask(0)
+		@mouse = false
 	end
 
 	def suspend(buffer)
@@ -1133,6 +1147,10 @@ class FileBuffer
 		end
 		$screen.write_message("went to line "+@row.to_s)
 	end
+	def goto_position(r,c)
+		@row = r
+		@col = sc2bc(@row,c)
+	end
 	def screen_left
 		@colfeed += 1
 	end
@@ -1752,6 +1770,28 @@ class FileBuffer
 	# end of text display stuff
 	# -----------------------------------------------
 
+
+	#
+	# mouse handling
+	#
+	def handle_mouse
+		m = Curses.getmouse
+		case m.bstate
+			when Curses::BUTTON1_CLICKED
+				@marked = false
+				goto_position(m.y-1,m.x)
+			when Curses::BUTTON1_PRESSED
+				@marked = false
+				goto_position(m.y-1,m.x)
+				mark
+			when Curses::BUTTON1_RELEASED
+				goto_position(m.y-1,m.x)
+			when Curses::REPORT_MOUSE_POSITION
+				goto_position(m.y-1,m.x)
+				mark if !@marked
+		end
+	end
+
 end
 
 # end of big buffer class
@@ -2192,7 +2232,7 @@ $linewrap = false
 $colmode = false
 $syntax_color = true
 $editmode = true
-
+$mouse = false
 
 
 
@@ -2236,7 +2276,8 @@ $commandlist = {
 	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extramode = true",
-	$ctrl_s => "buffer.run_script"
+	$ctrl_s => "buffer.run_script",
+	Curses::KEY_MOUSE => "buffer.handle_mouse"
 }
 $commandlist.default = ""
 $extramode_commandlist = {
@@ -2290,8 +2331,8 @@ $viewmode_commandlist.default = ""
 $togglelist_array = [
 	[?e, ["@editmode = true","Edit mode","ed"]],
 	[?v, ["@editmode = false","View mode","vu"]],
-	[?a, ["@autoindent = true","Autoindent","ai"]],
-	[?m, ["@autoindent = false","Manual indent","mi"]],
+	[?a, ["@autoindent = true","Autoindent enabled","ai"]],
+	[?n, ["@autoindent = false","Autoindent disabled","na"]],
 	[?i, ["@insertmode = true","Insert mode","ins"]],
 	[?o, ["@insertmode = false","Overwrite mode","ovrw"]],
 	[?w, ["@linewrap = true","Line wrapping enabled","wrap"]],
@@ -2299,11 +2340,12 @@ $togglelist_array = [
 	[?c, ["@colmode = true","Column mode","col"]],
 	[?r, ["@colmode = false","Row mode","row"]],
 	[?s, ["@syntax_color = true","Syntax color enabled","scol"]],
-	[?b, ["@syntax_color = false","Syntax color disabled","bw"]]
+	[?b, ["@syntax_color = false","Syntax color disabled","bw"]],
+	[?m, ["$screen.enable_mouse","Mouse support enabled","mo"]],
+	[?x, ["$screen.disable_mouse","Mouse support disabled","xmo"]]
 ]
 $togglelist = Hash[$togglelist_array]
 $togglelist.default = ["","Unknown toggle",""]
-
 
 
 
@@ -2341,7 +2383,7 @@ optparse = OptionParser.new{|opts|
 	opts.on('-v', '--view', 'Start in view mode'){
 		$editmode = false
 	}
-	opts.on('-m', '--manualindent', 'Turn off autoindent'){
+	opts.on('-n', '--noautoindent', 'Turn off autoindent'){
 		$autoindent = false
 	}
 	opts.on('-w', '--linewrap', 'Turn on linewrap'){
@@ -2355,6 +2397,12 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
 		$syntax_color = false
+	}
+	opts.on('-m', '--mouse', 'Turn on mouse support'){
+		$mouse = true
+	}
+	opts.on('-x', '--nomouse', 'Turn off mouse support'){
+		$mouse = false
 	}
 }
 optparse.parse!
