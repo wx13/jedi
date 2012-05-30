@@ -2213,6 +2213,7 @@ $syntax_color_lc = {
 	"ruby" => ["#"],
 	"c" => ["//"],
 	"f" => ["!",/^c/],
+	"m" => ["#","%"],
 	"idl" => [";"]
 }
 $syntax_color_lc.default = []
