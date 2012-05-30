@@ -71,6 +71,7 @@ class Screen
 		Curses.mousemask(Curses::BUTTON1_PRESSED \
 		                |Curses::BUTTON1_RELEASED \
 		                |Curses::BUTTON1_CLICKED \
+		                |Curses::BUTTON1_DOUBLE_CLICKED \
 		                |Curses::REPORT_MOUSE_POSITION)
 		@mouse = true
 	end
@@ -1151,17 +1152,24 @@ class FileBuffer
 		@row = r+@linefeed
 		@col = sc2bc(@row,c)+@colfeed
 	end
-	def screen_left
-		@colfeed += 1
+	def screen_left(n=1)
+		@colfeed += n
 	end
-	def screen_right
-		@colfeed = [0,@colfeed-1].max
+	def screen_right(n=1)
+		@colfeed = [0,@colfeed-n].max
 	end
-	def screen_up
-		@linefeed = [0,@linefeed-1].max
+	def screen_down(n=1)
+		@linefeed = [0,@linefeed-n].max
 	end
-	def screen_down
-		@linefeed += 1
+	def screen_up(n=1)
+		@linefeed += n
+	end
+	def center_screen(r=(@row-@linefeed))
+		if r < ($rows/2)
+			screen_down(($rows/2)-r)
+		else
+			screen_up(r-($rows/2))
+		end
 	end
 
 
@@ -1791,6 +1799,8 @@ class FileBuffer
 			when Curses::REPORT_MOUSE_POSITION
 				goto_position(m.y-1,m.x)
 				mark if !@marked
+			when Curses::BUTTON1_DOUBLE_CLICKED
+				center_screen(m.y-1)
 		end
 	end
 
@@ -2287,7 +2297,8 @@ $commandlist = {
 $commandlist.default = ""
 $extramode_commandlist = {
 	?b => "buffer.bookmark",
-	?g => "buffer.goto_bookmark"
+	?g => "buffer.goto_bookmark",
+	?c => "buffer.center_screen"
 }
 $extramode_commandlist.default = ""
 $editmode_commandlist = {
@@ -2326,8 +2337,8 @@ $viewmode_commandlist = {
 	?] => "buffer.redo",
 	?{ => "buffer.revert_to_saved",
 	?} => "buffer.unrevert_to_saved",
-	?K => "buffer.screen_up",
-	?J => "buffer.screen_down",
+	?J => "buffer.screen_up",
+	?K => "buffer.screen_down",
 	?H => "buffer.screen_left",
 	?L => "buffer.screen_right",
 	?: => "buffer.enter_command"
