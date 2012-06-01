@@ -242,7 +242,7 @@ class Screen
 				when Curses::Key::UP, Curses::Key::DOWN
 					# up/down treated same as enter
 					return hist.length - ih
-				when 10..127
+				when 10..126
 					# regular character
 					token += c.chr
 					ih = hist[0..ih].rindex{|x|x.match(/^#{token}/)}
@@ -350,7 +350,7 @@ class Screen
 					token0 = token.dup
 					glob = token
 				when $ctrl_m, Curses::Key::ENTER then break
-				when 10..127
+				when 10..126
 					# regular character
 					token.insert(col,c.chr)
 					token0 = token.dup
@@ -2483,7 +2483,7 @@ $screen.init_screen do
 			if buffer.editmode
 				eval($editmode_commandlist[c])
 				case c
-					when 32..127 then buffer.addchar(c)
+					when 32..126 then buffer.addchar(c)
 				end
 			else
 				eval($viewmode_commandlist[c])
