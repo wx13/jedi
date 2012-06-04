@@ -577,7 +577,7 @@ class FileBuffer
 			$screen.write_message("Cancelled");
 		else
 			$screen.write_message("Bookmarked");
-			@bookmarks[answer] = [@row,@col]
+			@bookmarks[answer] = [@row,@col,@linefeed,@colfeed]
 		end
 	end
 
@@ -594,6 +594,8 @@ class FileBuffer
 		end
 		@row = rc[0]
 		@col = rc[1]
+		@linefeed = rc[2]
+		@colfeed = rc[3]
 		$screen.write_message("found it")
 	end
 
