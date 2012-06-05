@@ -1134,6 +1134,22 @@ class FileBuffer
 		end
 		@col = sc2bc(@row,sc)
 	end
+	def page_down
+		r = @row - @linefeed
+		if r < ($rows-3)
+			cursor_down($rows - 3 - r)
+		else
+			cursor_down($rows-3)
+		end
+	end
+	def page_up
+		r = @row - @linefeed
+		if r > 0
+			cursor_up(r)
+		else
+			cursor_up($rows-3)
+		end
+	end
 	def goto_line
 		num = $screen.ask("go to line:",$lineno_hist)
 		if num == nil
@@ -2283,10 +2299,10 @@ $commandlist = {
 	Curses::Key::DOWN => "buffer.cursor_down(1)",
 	Curses::Key::RIGHT => "buffer.cursor_right",
 	Curses::Key::LEFT => "buffer.cursor_left",
-	Curses::Key::NPAGE => "buffer.cursor_down($rows-3)",
-	Curses::Key::PPAGE => "buffer.cursor_up($rows-3)",
-	$ctrl_v => "buffer.cursor_down($rows-3)",
-	$ctrl_y => "buffer.cursor_up($rows-3)",
+	Curses::Key::NPAGE => "buffer.page_down",
+	Curses::Key::PPAGE => "buffer.page_up",
+	$ctrl_v => "buffer.page_down",
+	$ctrl_y => "buffer.page_up",
 	$ctrl_e => "buffer.cursor_eol",
 	$ctrl_a => "buffer.cursor_sol",
 	$ctrl_n => "buffer = $buffers.next",
@@ -2333,8 +2349,8 @@ $viewmode_commandlist = {
 	?j => "buffer.cursor_down(1)",
 	?l => "buffer.cursor_right",
 	?h => "buffer.cursor_left",
-	$space => "buffer.cursor_down($rows-3)",
-	?b => "buffer.cursor_up($rows-3)",
+	$space => "buffer.page_down",
+	?b => "buffer.page_up",
 	?. => "buffer = $buffers.next",
 	?, => "buffer = $buffers.prev",
 	?/ => "buffer.search(0)",
