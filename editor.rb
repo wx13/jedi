@@ -459,7 +459,7 @@ end
 
 class FileBuffer
 
-	attr_accessor :filename, :text, :editmode, :buffer_history, :extramode
+	attr_accessor :filename, :text, :editmode, :buffer_history, :extramode, :cutscore
 
 	def initialize(filename)
 
@@ -485,7 +485,8 @@ class FileBuffer
 
 		# copy,cut,paste stuff
 		@marked = false
-		@cutrow = -2  # keep track of last cut row, to check for consecutiveness
+		@cutrow = -1  # keep track of last cut row, to check for consecutiveness
+		@cutscore = 0  # don't let cuts be consecutive after lots of stuff has happened
 		@mark_col = 0
 		@mark_row = 0
 
@@ -1349,10 +1350,11 @@ class FileBuffer
 			$copy_buffer = ""
 			@marked = false
 		else
-			if @row!=(@cutrow+1-cut)
+			if @row!=(@cutrow+1-cut) || @cutscore <= 0
 				$copy_buffer = ""
 			end
 			@cutrow = @row
+			@cutscore = 25
 			@mark_row = @row
 			@mark_col = 0
 			@col = @text[@row].length
@@ -1407,7 +1409,8 @@ class FileBuffer
 
 
 	def paste
-		@cutrow = -2
+		@cutrow = -1
+		@cutscore = 0
 
 		# merge current line with copy buffer
 		copy_buffer = @text[@row][0,@col] + $copy_buffer + @text[@row][@col..-1]
@@ -2490,6 +2493,8 @@ $screen.init_screen do
 
 		# make sure we are on the current buffer
 		buffer = $buffers.current
+		# reduce time proximity for cuts
+		buffer.cutscore -= 1
 
 		# take a snapshot of the buffer text,
 		# for undo/redo purposes
