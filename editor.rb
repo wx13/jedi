@@ -1166,12 +1166,9 @@ class FileBuffer
 	def screen_up(n=1)
 		@linefeed += n
 	end
-	def center_screen(r=(@row-@linefeed))
-		if r < ($rows/2)
-			screen_down(($rows/2)-r)
-		else
-			screen_up(r-($rows/2))
-		end
+	def center_screen(r=@row)
+		@linefeed = @row - $rows/2
+		@linefeed = 0 if @linefeed < 0
 	end
 
 
@@ -1228,6 +1225,11 @@ class FileBuffer
 		$screen.write_message("Found match")
 		@row = row
 		@col = idx
+		# recenter sreen, when we have gone off page
+		if ((@row - @linefeed) > ($screen.rows - 3)) ||
+		   ((@row - @linefeed) < (0))
+			center_screen(@row)
+		end
 	end
 	def search_and_replace
 		# get starting point, so we can return
@@ -1260,6 +1262,11 @@ class FileBuffer
 				str = @text[row][idx..-1].scan(token)[0]
 				@row = row
 				@col = idx
+				# recenter sreen, when we have gone off page
+				if ((@row - @linefeed) > ($screen.rows - 3)) ||
+				   ((@row - @linefeed) < (0))
+					center_screen(@row)
+				end
 				dump_to_screen($screen,true)
 				highlight(row,idx,idx+str.length-1)
 				yn = $screen.ask_yesno("Replace this occurance?")
