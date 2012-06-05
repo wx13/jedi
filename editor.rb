@@ -1136,7 +1136,9 @@ class FileBuffer
 	end
 	def page_down
 		r = @row - @linefeed
-		if r < ($rows-3)
+		if r < ($rows/2-2)
+			cursor_down($rows/2-2-r)
+		elsif r < ($rows-3)
 			cursor_down($rows - 3 - r)
 		else
 			cursor_down($rows-3)
@@ -1144,17 +1146,21 @@ class FileBuffer
 	end
 	def page_up
 		r = @row - @linefeed
-		if r > 0
+		if r > ($rows/2-2)
+			cursor_up(r-$rows/2+2)
+		elsif r > 0
 			cursor_up(r)
 		else
 			cursor_up($rows-3)
 		end
 	end
-	def goto_line
-		num = $screen.ask("go to line:",$lineno_hist)
-		if num == nil
-			$screen.write_message("Cancelled")
-			return
+	def goto_line(num=nil)
+		if num==nil
+			num = $screen.ask("go to line:",$lineno_hist)
+			if num == nil
+				$screen.write_message("Cancelled")
+				return
+			end
 		end
 		@row = num.to_i
 		@col = 0
@@ -1164,6 +1170,7 @@ class FileBuffer
 		if @row >= @text.length
 			@row = @text.length - 1
 		end
+		center_screen
 		$screen.write_message("went to line "+@row.to_s)
 	end
 	def goto_position(r,c)
@@ -1183,7 +1190,7 @@ class FileBuffer
 		@linefeed += n
 	end
 	def center_screen(r=@row)
-		@linefeed = @row - $rows/2
+		@linefeed = @row - $rows/2 - 2
 		@linefeed = 0 if @linefeed < 0
 	end
 
@@ -2301,6 +2308,8 @@ $commandlist = {
 	Curses::Key::LEFT => "buffer.cursor_left",
 	Curses::Key::NPAGE => "buffer.page_down",
 	Curses::Key::PPAGE => "buffer.page_up",
+	Curses::Key::HOME => "buffer.goto_line(0)",
+	Curses::Key::END => "buffer.goto_line(-1)",
 	$ctrl_v => "buffer.page_down",
 	$ctrl_y => "buffer.page_up",
 	$ctrl_e => "buffer.cursor_eol",
