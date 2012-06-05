@@ -476,9 +476,6 @@ class FileBuffer
 		# position of cursor in buffer
 		@row = 0
 		@col = 0
-		# position of cursor on screen
-		@cursrow = 0
-		@curscol = 0
 		# shifts of the buffer
 		@linefeed = 0
 		@colfeed = 0
@@ -1463,19 +1460,19 @@ class FileBuffer
 			@linefeed += ypos + 3 - screen.rows
 			ypos = screen.rows - 3
 		end
-		@cursrow = ypos+1
-		@curscol = bc2sc(@row,@col) - @colfeed
-		if @curscol > (screen.cols-1)
-			@colfeed += @curscol - screen.cols + 1
-			@curscol = screen.cols - 1
+		cursrow = ypos+1
+		curscol = bc2sc(@row,@col) - @colfeed
+		if curscol > (screen.cols-1)
+			@colfeed += curscol - screen.cols + 1
+			curscol = screen.cols - 1
 		end
-		if @curscol < 0
-			@colfeed += @curscol
-			@curscol = 0
+		if curscol < 0
+			@colfeed += curscol
+			curscol = 0
 		end
 		# report on cursor position
-		r = (@linefeed+@cursrow-1)
-		c = (@colfeed+@curscol)
+		r = (@linefeed+cursrow-1)
+		c = (@colfeed+curscol)
 		r0 = @text.length - 1
 		position = r.to_s + "/" + r0.to_s + "," + c.to_s
 		if @buffer_history.modified?
@@ -1501,7 +1498,7 @@ class FileBuffer
 			$screen.write_message("EXTRAMODE")
 		end
 		# set cursor position
-		Curses.setpos(@cursrow,@curscol)
+		Curses.setpos(cursrow,curscol)
 	end
 	#
 	# just dump the buffer text to the screen
