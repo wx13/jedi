@@ -1152,6 +1152,7 @@ class FileBuffer
 			cursor_up($rows-3)
 		end
 	end
+	# go to a line in the buffer
 	def goto_line(num=nil)
 		if num==nil
 			num = $screen.ask("go to line:",$lineno_hist)
@@ -1168,9 +1169,14 @@ class FileBuffer
 		if @row >= @text.length
 			@row = @text.length - 1
 		end
-		center_screen
+		# only center, if we go off the screen
+		r = @row - @linefeed
+		if r > ($rows-3) || r < 0
+			center_screen
+		end
 		$screen.write_message("went to line "+@row.to_s)
 	end
+	# go to a position on the screen
 	def goto_position(r,c)
 		@row = r+@linefeed
 		@col = sc2bc(@row,c)+@colfeed
@@ -1188,7 +1194,7 @@ class FileBuffer
 		@linefeed += n
 	end
 	def center_screen(r=@row)
-		@linefeed = @row - $rows/2 - 2
+		@linefeed = @row - $rows/2 + 2
 		@linefeed = 0 if @linefeed < 0
 	end
 
