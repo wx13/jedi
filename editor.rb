@@ -1180,6 +1180,7 @@ class FileBuffer
 	def goto_position(r,c)
 		@row = r+@linefeed
 		@col = sc2bc(@row,c)+@colfeed
+		sanitize
 	end
 	def screen_left(n=1)
 		@colfeed += n
@@ -1785,7 +1786,7 @@ class FileBuffer
 	def sc2bc(row,col)
 		bc = 0
 		sc = 0
-		if @text[row] == nil then return end
+		if @text[row] == nil then return(bc) end
 		@text[row].each_char{|c|
 			if c == "\t"
 				sc += @tabsize
