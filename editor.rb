@@ -469,8 +469,11 @@ class Window
 		@pos_col = dimensions[1]
 		@rows = dimensions[2]
 		@cols = dimensions[3]
-		@rows = $screen.rows if @rows <= 0
+		# if size is unset, set it to screen size minus 1 (top bar)
+		@rows = $screen.rows - 1 if @rows <= 0
 		@cols = $screen.cols if @cols <= 0
+		# reduce all windows by 1, for bottom message area
+		@rows -= 1
 	end
 
 	# pass-through to screen class
@@ -1174,22 +1177,22 @@ class FileBuffer
 	end
 	def page_down
 		r = @row - @linefeed
-		if r < ($rows/2-2)
-			cursor_down($rows/2-2-r)
-		elsif r < ($rows-3)
-			cursor_down($rows - 3 - r)
+		if r < (@window.rows/2)
+			cursor_down(@window.rows/2-r)
+		elsif r < (@window.rows-1)
+			cursor_down(@window.rows - 1 - r)
 		else
-			cursor_down($rows-3)
+			cursor_down(@window.rows-1)
 		end
 	end
 	def page_up
 		r = @row - @linefeed
-		if r > ($rows/2-2)
-			cursor_up(r-$rows/2+2)
+		if r > (@window.rows/2)
+			cursor_up(r-@window.rows/2)
 		elsif r > 0
 			cursor_up(r)
 		else
-			cursor_up($rows-3)
+			cursor_up(@window.rows-1)
 		end
 	end
 	# go to a line in the buffer
@@ -1211,7 +1214,7 @@ class FileBuffer
 		end
 		# only center, if we go off the screen
 		r = @row - @linefeed
-		if r > ($rows-3) || r < 0
+		if r > (@window.rows-1) || r < 0
 			center_screen
 		end
 		@window.write_message("went to line "+@row.to_s)
@@ -1235,7 +1238,7 @@ class FileBuffer
 		@linefeed += n
 	end
 	def center_screen(r=@row)
-		@linefeed = @row - $rows/2 + 2
+		@linefeed = @row - @window.rows/2
 		@linefeed = 0 if @linefeed < 0
 	end
 
@@ -1294,7 +1297,7 @@ class FileBuffer
 		@row = row
 		@col = idx
 		# recenter sreen, when we have gone off page
-		if ((@row - @linefeed) > (@window.rows - 3)) ||
+		if ((@row - @linefeed) > (@window.rows - 1)) ||
 		   ((@row - @linefeed) < (0))
 			center_screen(@row)
 		end
@@ -1331,7 +1334,7 @@ class FileBuffer
 				@row = row
 				@col = idx
 				# recenter sreen, when we have gone off page
-				if ((@row - @linefeed) > (@window.rows - 3)) ||
+				if ((@row - @linefeed) > (@window.rows - 1)) ||
 				   ((@row - @linefeed) < (0))
 					center_screen(@row)
 				end
@@ -1506,9 +1509,9 @@ class FileBuffer
 		if ypos < 0
 			@linefeed += ypos
 			ypos = 0
-		elsif ypos >= @window.rows - 3
-			@linefeed += ypos + 3 - @window.rows
-			ypos = @window.rows - 3
+		elsif ypos >= @window.rows - 1
+			@linefeed += ypos + 1 - @window.rows
+			ypos = @window.rows - 1
 		end
 		cursrow = ypos+1
 		curscol = bc2sc(@row,@col) - @colfeed
@@ -1555,7 +1558,7 @@ class FileBuffer
 	#
 	def dump_text(refresh=false)
 		# get only the rows of interest
-		text = @text[@linefeed,@window.rows-2]
+		text = @text[@linefeed,@window.rows]
 		# store up lines
 		screen_buffer = []
 		ir = 0
