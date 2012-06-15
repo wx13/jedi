@@ -39,17 +39,6 @@ class Screen
 		Curses.raw
 		Curses.noecho
 		@mouse = $mouse
-	end
-
-	def update_screen_size
-		@cols = @screen.maxx
-		@rows = @screen.maxy
-	end
-
-	# This starts the curses session.
-	# When this exits, screen closes.
-	def init_screen
-		@screen = Curses.init_screen
 		Curses.start_color
 		Curses.stdscr.keypad(true)
 		Curses.init_pair(Curses::COLOR_GREEN, Curses::COLOR_GREEN, Curses::COLOR_BLACK)
@@ -60,6 +49,18 @@ class Screen
 		Curses.init_pair(Curses::COLOR_YELLOW, Curses::COLOR_YELLOW, Curses::COLOR_BLACK)
 		Curses.init_pair(Curses::COLOR_MAGENTA, Curses::COLOR_MAGENTA, Curses::COLOR_BLACK)
 		enable_mouse if @mouse
+		@screen = Curses.init_screen
+		update_screen_size
+	end
+
+	def update_screen_size
+		@cols = @screen.maxx
+		@rows = @screen.maxy
+	end
+
+	# This starts the curses session.
+	# When this exits, screen closes.
+	def start_screen_loop
 		begin
 			yield
 		ensure
@@ -450,6 +451,42 @@ end
 
 
 
+# ---------------------------------------------------------
+# Window class
+#
+# This is a virtual window that fits inside of the screen.
+# Each buffer has a window that it writes to, and each
+# window keeps track of its position and size.
+# ---------------------------------------------------------
+
+class Window
+
+	attr_accessor :rows, :cols
+
+	# optional dimensions are: upper left row, col; num rows, num cols
+	def initialize(dimensions=[0,0,0,0])
+		@pos_row = dimensions[0]
+		@pos_col = dimensions[1]
+		@rows = dimensions[2]
+		@cols = dimensions[3]
+		@rows = $screen.rows if @rows <= 0
+		@cols = $screen.cols if @cols <= 0
+	end
+
+	# pass-through to screen class
+	def method_missing(method,*args,&block)
+		$screen.send method, *args, &block
+	end
+
+end
+
+
+
+
+
+
+
+
 
 # ---------------------------------------------------------
 # This is the big main class, which handles a file
@@ -509,6 +546,9 @@ class FileBuffer
 		@bookmarks = {}
 		@bookmarks_hist = [""]
 
+		# grab a window to write to
+		@window = Window.new
+
 		# This does nothing, by default; it is here to allow
 		# a user script to modify each text buffer that is opened.
 		perbuffer_userscript
@@ -521,18 +561,18 @@ class FileBuffer
 
 	# Enter arbitrary ruby command.
 	def enter_command
-		answer = $screen.ask("command:",$command_hist)
+		answer = @window.ask("command:",$command_hist)
 		eval(answer)
-		$screen.write_message("done")
+		@window.write_message("done")
 	rescue
-		$screen.write_message("Unknown command")
+		@window.write_message("Unknown command")
 	end
 
 
 	def run_script
-		file = $screen.ask("run script file: ",$scriptfile_hist,false,true)
+		file = @window.ask("run script file: ",$scriptfile_hist,false,true)
 		if (file==nil) || (file=="")
-			$screen.write_message("cancelled")
+			@window.write_message("cancelled")
 			return
 		end
 		if File.directory?(file)
@@ -540,17 +580,17 @@ class FileBuffer
 			list.each{|f|
 				script = File.read(f)
 				eval(script)
-				$screen.write_message("done")
+				@window.write_message("done")
 			}
 		elsif File.exist?(file)
 			script = File.read(file)
 			eval(script)
-			$screen.write_message("done")
+			@window.write_message("done")
 		else
-			$screen.write_message("script file #{file} doesn't exist")
+			@window.write_message("script file #{file} doesn't exist")
 		end
 	rescue
-		$screen.write_message("Bad script")
+		@window.write_message("Bad script")
 	end
 
 
@@ -570,31 +610,31 @@ class FileBuffer
 
 	# remember a position in the text
 	def bookmark
-		answer = $screen.ask("bookmark:",@bookmarks_hist)
+		answer = @window.ask("bookmark:",@bookmarks_hist)
 		if answer == nil
-			$screen.write_message("Cancelled");
+			@window.write_message("Cancelled");
 		else
-			$screen.write_message("Bookmarked");
+			@window.write_message("Bookmarked");
 			@bookmarks[answer] = [@row,@col,@linefeed,@colfeed]
 		end
 	end
 
 	def goto_bookmark
-		answer = $screen.ask("go to:",@bookmarks_hist)
+		answer = @window.ask("go to:",@bookmarks_hist)
 		if answer == nil
-			$screen.write_message("Cancelled")
+			@window.write_message("Cancelled")
 			return
 		end
 		rc = @bookmarks[answer]
 		if rc == nil
-			$screen.write_message("Invalid bookmark")
+			@window.write_message("Invalid bookmark")
 			return
 		end
 		@row = rc[0]
 		@col = rc[1]
 		@linefeed = rc[2]
 		@colfeed = rc[3]
-		$screen.write_message("found it")
+		@window.write_message("found it")
 	end
 
 
@@ -605,17 +645,17 @@ class FileBuffer
 		str = ""
 		$togglelist_array.each{|a| str += a[1][2] + ","}
 		str.chop!
-		$screen.write_message(str)
+		@window.write_message(str)
 		# get answer and execute the code
 		c = Curses.getch
 		eval($togglelist[c][0])
-		$screen.write_message($togglelist[c][1])
+		@window.write_message($togglelist[c][1])
 	end
 
 	# Go back to edit mode.
 	def toggle_editmode
 		@editmode = true
-		$screen.write_message("Edit mode")
+		@window.write_message("Edit mode")
 	end
 
 
@@ -649,25 +689,25 @@ class FileBuffer
 	def save
 		# Ask the user for a file.
 		# Defaults to current file.
-		ans = $screen.ask("save to: ",[@filename],true,true)
+		ans = @window.ask("save to: ",[@filename],true,true)
 		if ans == nil
-			$screen.write_message("Cancelled")
+			@window.write_message("Cancelled")
 			return
 		end
 		if ans == "" then ans = @filename end
 		if ans == ""
-			$screen.write_message("Cancelled")
+			@window.write_message("Cancelled")
 			return
 		end
 		# If name is different from current file name,
 		# ask for verification.
 		if ans != @filename
-			yn = $screen.ask_yesno("save to different file: "+ans+" ? [y/n]")
+			yn = @window.ask_yesno("save to different file: "+ans+" ? [y/n]")
 			if yn == "yes"
 				@filename = ans
 				set_filetype(@filename)
 			else
-				$screen.write_message("aborted")
+				@window.write_message("aborted")
 				return
 			end
 		end
@@ -683,7 +723,7 @@ class FileBuffer
 		if $hist_file != nil
 			$buffers.save_hists
 		end
-		$screen.write_message("saved to: "+@filename)
+		@window.write_message("saved to: "+@filename)
 	end
 
 
@@ -946,7 +986,7 @@ class FileBuffer
 	# justify a block of text
 	def justify(linewrap=false)
 
-		if @linelength == 0 then @linelength = $screen.cols end
+		if @linelength == 0 then @linelength = @window.cols end
 
 		if linewrap
 			cols = @linelength
@@ -954,17 +994,17 @@ class FileBuffer
 		else
 			# ask for screen width
 			# nil means cancel, empty means screen width
-			ans = $screen.ask("Justify width: ",[@linelength.to_s],true)
+			ans = @window.ask("Justify width: ",[@linelength.to_s],true)
 			if ans == nil
-				$screen.write_message("Cancelled")
+				@window.write_message("Cancelled")
 				return
 			end
 			if ans == ""
 				cols = @linelength
 			elsif ans == "0"
-				cols = $screen.cols
+				cols = @window.cols
 			elsif ans.to_i < 0
-				cols = $screen.cols + ans.to_i
+				cols = @window.cols + ans.to_i
 			else
 				cols = ans.to_i
 			end
@@ -1011,7 +1051,7 @@ class FileBuffer
 			end
 		end
 		insertrow(r,text)
-		$screen.write_message("Justified to "+cols.to_s+" columns")
+		@window.write_message("Justified to "+cols.to_s+" columns")
 		if linewrap
 			if @col >= @text[@row].length+1
 				@col = @col - @text[@row].length - 1
@@ -1155,9 +1195,9 @@ class FileBuffer
 	# go to a line in the buffer
 	def goto_line(num=nil)
 		if num==nil
-			num = $screen.ask("go to line:",$lineno_hist)
+			num = @window.ask("go to line:",$lineno_hist)
 			if num == nil
-				$screen.write_message("Cancelled")
+				@window.write_message("Cancelled")
 				return
 			end
 		end
@@ -1174,7 +1214,7 @@ class FileBuffer
 		if r > ($rows-3) || r < 0
 			center_screen
 		end
-		$screen.write_message("went to line "+@row.to_s)
+		@window.write_message("went to line "+@row.to_s)
 	end
 	# go to a position on the screen
 	def goto_position(r,c)
@@ -1208,12 +1248,12 @@ class FileBuffer
 	def search(p)
 		if p == 0
 			# get search string from user
-			token = $screen.ask("Search:",$search_hist)
+			token = @window.ask("Search:",$search_hist)
 		elsif
 			token = $search_hist[-1]
 		end
 		if token == nil || token == ""
-			$screen.write_message("Cancelled")
+			@window.write_message("Cancelled")
 			return
 		end
 		# is it a regexp
@@ -1230,7 +1270,7 @@ class FileBuffer
 				row = (row+1).modulo(nlines)  # next line
 				idx = @text[row].index(token)
 				if (row == @row) && (idx==nil)  # stop if we wrap back around
-					$screen.write_message("No matches")
+					@window.write_message("No matches")
 					return
 				end
 			end
@@ -1245,16 +1285,16 @@ class FileBuffer
 				if row < 0 then row = nlines-1 end
 				idx = @text[row].rindex(token)
 				if (row == @row) && (idx==nil)
-					$screen.write_message("No matches")
+					@window.write_message("No matches")
 					return
 				end
 			end
 		end
-		$screen.write_message("Found match")
+		@window.write_message("Found match")
 		@row = row
 		@col = idx
 		# recenter sreen, when we have gone off page
-		if ((@row - @linefeed) > ($screen.rows - 3)) ||
+		if ((@row - @linefeed) > (@window.rows - 3)) ||
 		   ((@row - @linefeed) < (0))
 			center_screen(@row)
 		end
@@ -1264,9 +1304,9 @@ class FileBuffer
 		row0 = @row
 		col0 = @col
 		# get search string from user
-		token = $screen.ask("Search:",$search_hist)
+		token = @window.ask("Search:",$search_hist)
 		if token == nil
-			$screen.write_message("Cancelled")
+			@window.write_message("Cancelled")
 			return
 		end
 		# is it a regexp
@@ -1274,9 +1314,9 @@ class FileBuffer
 			token = eval(token)
 		end
 		# get replace string from user
-		replacement = $screen.ask("Replace:",$replace_hist)
+		replacement = @window.ask("Replace:",$replace_hist)
 		if replacement == nil
-			$screen.write_message("Cancelled")
+			@window.write_message("Cancelled")
 			return
 		end
 		row = @row
@@ -1291,21 +1331,21 @@ class FileBuffer
 				@row = row
 				@col = idx
 				# recenter sreen, when we have gone off page
-				if ((@row - @linefeed) > ($screen.rows - 3)) ||
+				if ((@row - @linefeed) > (@window.rows - 3)) ||
 				   ((@row - @linefeed) < (0))
 					center_screen(@row)
 				end
-				dump_to_screen($screen,true)
+				dump_to_screen(true)
 				highlight(row,idx,idx+str.length-1)
-				yn = $screen.ask_yesno("Replace this occurance?")
+				yn = @window.ask_yesno("Replace this occurance?")
 				l = str.length
 				if yn == "yes"
 					temp = @text[row].dup
 					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
 					col = idx+replacement.length
 				elsif yn == "cancel"
-					dump_to_screen($screen,true)
-					$screen.write_message("Cancelled")
+					dump_to_screen(true)
+					@window.write_message("Cancelled")
 					@row = row0
 					@col = col0
 					return
@@ -1323,8 +1363,8 @@ class FileBuffer
 		end
 		@row = row0
 		@col = col0
-		dump_to_screen($screen,true)
-		$screen.write_message("No more matches")
+		dump_to_screen(true)
+		@window.write_message("No more matches")
 	end
 
 
@@ -1340,11 +1380,11 @@ class FileBuffer
 	def mark
 		if @marked
 			@marked = false
-			$screen.write_message("Unmarked")
+			@window.write_message("Unmarked")
 			return
 		end
 		@marked = true
-		$screen.write_message("Marked")
+		@window.write_message("Marked")
 		@mark_col = @col
 		@mark_row = @row
 	end
@@ -1460,21 +1500,21 @@ class FileBuffer
 
 
 	# write everything, including status lines
-	def dump_to_screen(screen,refresh=false)
+	def dump_to_screen(refresh=false)
 		# get cursor position
 		ypos = @row - @linefeed
 		if ypos < 0
 			@linefeed += ypos
 			ypos = 0
-		elsif ypos >= screen.rows - 3
-			@linefeed += ypos + 3 - screen.rows
-			ypos = screen.rows - 3
+		elsif ypos >= @window.rows - 3
+			@linefeed += ypos + 3 - @window.rows
+			ypos = @window.rows - 3
 		end
 		cursrow = ypos+1
 		curscol = bc2sc(@row,@col) - @colfeed
-		if curscol > (screen.cols-1)
-			@colfeed += curscol - screen.cols + 1
-			curscol = screen.cols - 1
+		if curscol > (@window.cols-1)
+			@colfeed += curscol - @window.cols + 1
+			curscol = @window.cols - 1
 		end
 		if curscol < 0
 			@colfeed += curscol
@@ -1501,11 +1541,11 @@ class FileBuffer
 			ib = $buffers.ibuf
 			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
 		end
-		screen.write_top_line(lstr,status,position)
+		@window.write_top_line(lstr,status,position)
 		# write the text to the screen
-		dump_text(screen,refresh)
+		dump_text(refresh)
 		if @extramode
-			$screen.write_message("EXTRAMODE")
+			@window.write_message("EXTRAMODE")
 		end
 		# set cursor position
 		Curses.setpos(cursrow,curscol)
@@ -1513,9 +1553,9 @@ class FileBuffer
 	#
 	# just dump the buffer text to the screen
 	#
-	def dump_text(screen,refresh=false)
+	def dump_text(refresh=false)
 		# get only the rows of interest
-		text = @text[@linefeed,screen.rows-2]
+		text = @text[@linefeed,@window.rows-2]
 		# store up lines
 		screen_buffer = []
 		ir = 0
@@ -1531,8 +1571,8 @@ class FileBuffer
 		}
 		# vi-style blank lines
 		ir+=1
-		while ir < (screen.rows-1)
-			screen_buffer.push("~"+" "*(screen.cols-1))
+		while ir < (@window.rows-1)
+			screen_buffer.push("~"+" "*(@window.cols-1))
 			ir += 1
 		end
 
@@ -1545,12 +1585,12 @@ class FileBuffer
 				if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1])
 					next
 				end
-				screen.write_line(ir,@colfeed,line)
+				@window.write_line(ir,@colfeed,line)
 			}
 		else
 			screen_buffer.each { |line|
 				ir += 1
-				screen.write_line(ir,@colfeed,line)
+				@window.write_line(ir,@colfeed,line)
 			}
 		end
 		$screen_buffer = screen_buffer.dup
@@ -1605,7 +1645,7 @@ class FileBuffer
 	def highlight(row,scol,ecol)
 		# only do rows that are on the screen
 		if row < @linefeed then return end
-		if row > (@linefeed + $screen.rows - 2) then return end
+		if row > (@linefeed + @window.rows - 2) then return end
 
 		if @text[row].length < 1 then return end
 
@@ -1623,13 +1663,13 @@ class FileBuffer
 		ssc = sc - @colfeed
 		sec = ec - @colfeed
 
-		if (str.length+ssc) >= $screen.cols
-			str = str[0,($screen.cols-ssc)]
+		if (str.length+ssc) >= @window.cols
+			str = str[0,(@window.cols-ssc)]
 		end
 
-		$screen.text_reverse(true)
-		$screen.write_str((row-@linefeed+1),ssc,str)
-		$screen.text_reverse(false)
+		@window.text_reverse(true)
+		@window.write_str((row-@linefeed+1),ssc,str)
+		@window.text_reverse(false)
 	end
 
 
@@ -1828,7 +1868,7 @@ class FileBuffer
 			when Curses::BUTTON1_CLICKED
 				@marked = false
 				goto_position(m.y-1,m.x)
-				$screen.write_message("")
+				@window.write_message("")
 			when Curses::BUTTON1_PRESSED
 				@marked = false
 				goto_position(m.y-1,m.x)
@@ -2465,7 +2505,6 @@ optparse = OptionParser.new{|opts|
 optparse.parse!
 
 
-
 # intitialize histories
 $search_hist = [""]
 $replace_hist = [""]
@@ -2474,6 +2513,9 @@ $lineno_hist = [""]
 $command_hist = [""]
 $scriptfile_hist = [""]
 $script_hist = [""]
+
+# start screen
+$screen = Screen.new
 
 # read specified files into buffers of buffer list
 $buffers = BuffersList.new(ARGV)
@@ -2487,8 +2529,7 @@ $screen_buffer = []
 
 
 # initialize curses screen and run with it
-$screen = Screen.new
-$screen.init_screen do
+$screen.start_screen_loop do
 
 	# this is the main action loop
 	loop do
