@@ -461,7 +461,7 @@ end
 
 class Window
 
-	attr_accessor :rows, :cols
+	attr_accessor :rows, :cols, :pos_row, :pos_col
 
 	# optional dimensions are: upper left row, col; num rows, num cols
 	def initialize(dimensions=[0,0,0,0])
@@ -484,6 +484,10 @@ class Window
 		$screen.write_line(row+1+@pos_row,@pos_col,@cols,colfeed,line)
 	end
 
+	def setpos(r,c)
+		Curses.setpos(r+@pos_row,c+@pos_col)
+	end
+
 	# pass-through to screen class
 	def method_missing(method,*args,&block)
 		$screen.send method, *args, &block
@@ -491,6 +495,8 @@ class Window
 
 end
 
+# end of Window class
+#----------------------------------------------------------
 
 
 
@@ -507,9 +513,10 @@ end
 
 class FileBuffer
 
-	attr_accessor :filename, :text, :editmode, :buffer_history, :extramode, :cutscore
+	attr_accessor :filename, :text, :editmode, :buffer_history,\
+	              :extramode, :cutscore, :tag, :order, :window
 
-	def initialize(filename)
+	def initialize(filename,tag)
 
 		# set some parameters
 		@tabsize = $tabsize
@@ -559,6 +566,8 @@ class FileBuffer
 
 		# grab a window to write to
 		@window = Window.new
+		@tag = tag
+		@order = 0
 
 		# This does nothing, by default; it is here to allow
 		# a user script to modify each text buffer that is opened.
@@ -1550,7 +1559,7 @@ class FileBuffer
 		else
 			nb = $buffers.nbuf
 			ib = $buffers.ibuf
-			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
+			lstr = sprintf("%s (%d/%d) %d",@filename,ib+1,nb,@tag)
 		end
 		@window.write_top_line(lstr,status,position)
 		# write the text to the screen
@@ -1559,7 +1568,7 @@ class FileBuffer
 			@window.write_message("EXTRAMODE")
 		end
 		# set cursor position
-		Curses.setpos(cursrow,curscol)
+		@window.setpos(cursrow,curscol)
 	end
 	#
 	# just dump the buffer text to the screen
@@ -2058,15 +2067,18 @@ class BuffersList
 	# Read in all input files into buffers.
 	# One buffer for each file.
 	def initialize(files)
+
 		@buffers = []
 		@nbuf = 0
 		@ibuf = 0
+
 		for filename in files
-			@buffers[@nbuf] = FileBuffer.new(filename)
+			@buffers[@nbuf] = FileBuffer.new(filename,@nbuf)
 			@nbuf += 1
 		end
 		if @nbuf == 0
-			@buffers[@nbuf] = FileBuffer.new("")
+			@buffers[@nbuf] = FileBuffer.new("",@nbuf)
+			@tags[@nbuf] = @nbuf
 			@nbuf += 1
 		end
 		if ($hist_file != nil) && (File.exist?($hist_file))
@@ -2145,11 +2157,34 @@ class BuffersList
 			$screen.write_message("cancelled")
 			return(@buffers[@ibuf])
 		end
-		@buffers[@nbuf] = FileBuffer.new(ans)
+		@buffers[@nbuf] = FileBuffer.new(ans,@nbuf)
 		@nbuf += 1
 		@ibuf = @nbuf-1
 		$screen.write_message("Opened file: "+ans)
 		return(@buffers[@ibuf])
+	end
+
+	# set the tag on the current buffer
+	def set_tag(n)
+		k = 0
+		@buffers.each{|buf|
+			k += 1 if buf.tag == n
+		}
+		@buffers[@ibuf].tag = n
+		@buffers[@ibuf].order = k
+		k += 1
+		j = 0
+		@buffers.each{|buf|
+			if buf.tag == n
+				buf.window.pos_row = j*($screen.rows)/k
+				buf.window.rows = ($screen.rows)/k - 1
+				j += 1
+				if j==k
+					buf.window.rows = $screen.rows - buf.window.pos_row - 2
+				end
+				buf.dump_to_screen($screen)
+			end
+		}
 	end
 
 end
@@ -2389,7 +2424,17 @@ $commandlist.default = ""
 $extramode_commandlist = {
 	?b => "buffer.bookmark",
 	?g => "buffer.goto_bookmark",
-	?c => "buffer.center_screen"
+	?c => "buffer.center_screen",
+	?0 => "$buffers.set_tag(0)",
+	?1 => "$buffers.set_tag(1)",
+	?2 => "$buffers.set_tag(2)",
+	?3 => "$buffers.set_tag(3)",
+	?4 => "$buffers.set_tag(4)",
+	?5 => "$buffers.set_tag(5)",
+	?6 => "$buffers.set_tag(6)",
+	?7 => "$buffers.set_tag(7)",
+	?8 => "$buffers.set_tag(8)",
+	?9 => "$buffers.set_tag(9)"
 }
 $extramode_commandlist.default = ""
 $editmode_commandlist = {
