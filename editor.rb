@@ -98,20 +98,20 @@ class Screen
 	end
 
 	# Write a line of text.
-	def write_line(row,colfeed,line)
+	def write_line(row,scol,width,colfeed,line)
 
 		if line == nil || line == ""
 			return
 		end
 
-		write_str(row,0," "*@cols)  # clear row
+		write_str(row,scol," "*width)  # clear row
 
 		substrings = line.split($color)  # split at color escape
 
 		# Write from colfeed to first color escape.
 		# If colfeed is larger than the first substring,
 		# this will naturally write nothing.
-		write_str(row,0,substrings[0][colfeed,@cols])
+		write_str(row,scol,substrings[0][colfeed,width])
 		pos = substrings[0].length
 		substrings = substrings[1..-1]
 		return if substrings == nil
@@ -137,14 +137,14 @@ class Screen
 				# We must chop off first part of the substring,
 				# because we are writing off the left edge of the screen.
 				str_start = colfeed - pos
-				col = 0
+				col = scol
 			else
 				# We write the entire string, but starting some number of
 				# spaces in from the edge.
-				col = pos - colfeed
+				col = pos - colfeed + scol
 				str_start = 0
 			end
-			write_str(row,col,substring[str_start,(@cols-col)])
+			write_str(row,col,substring[str_start,(width-col)])
 			pos += substring.length
 		}
 	end
@@ -478,6 +478,10 @@ class Window
 
 	def write_top_line(l,c,r)
 		$screen.write_top_line(l,c,r,@pos_row,@pos_col,@cols)
+	end
+
+	def write_line(row,colfeed,line)
+		$screen.write_line(row+1+@pos_row,@pos_col,@cols,colfeed,line)
 	end
 
 	# pass-through to screen class
@@ -1578,7 +1582,7 @@ class FileBuffer
 		}
 		# vi-style blank lines
 		ir+=1
-		while ir < (@window.rows-1)
+		while ir <= (@window.rows)
 			screen_buffer.push("~"+" "*(@window.cols-1))
 			ir += 1
 		end
@@ -1588,16 +1592,16 @@ class FileBuffer
 		if (@colfeed==@colfeed_old) && (@marked==false) \
 		&& (@marked_old==false) && (refresh==false)
 			screen_buffer.each { |line|
-				ir += 1
 				if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1])
 					next
 				end
 				@window.write_line(ir,@colfeed,line)
+				ir += 1
 			}
 		else
 			screen_buffer.each { |line|
-				ir += 1
 				@window.write_line(ir,@colfeed,line)
+				ir += 1
 			}
 		end
 		$screen_buffer = screen_buffer.dup
