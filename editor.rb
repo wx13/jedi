@@ -2089,10 +2089,20 @@ class BuffersList
 	# return next, previous, or current buffer
 	def next
 		@ibuf = (@ibuf+1).modulo(@nbuf)
+		# redump the buffers
+		@buffers.each{|buf|
+			next if buf.tag != @buffers[@ibuf].tag
+			buf.dump_to_screen($screen)
+		}
 		@buffers[@ibuf]
 	end
 	def prev
 		@ibuf = (@ibuf-1).modulo(@nbuf)
+		# redump the buffers
+		@buffers.each{|buf|
+			next if buf.tag != @buffers[@ibuf].tag
+			buf.dump_to_screen($screen)
+		}
 		@buffers[@ibuf]
 	end
 	def current
@@ -2164,6 +2174,21 @@ class BuffersList
 		return(@buffers[@ibuf])
 	end
 
+
+	def resize_buffers(tag,k)
+		j = 0
+		@buffers.each{|buf|
+			next if buf.tag != tag
+			buf.window.pos_row = j*($screen.rows)/k
+			buf.window.rows = ($screen.rows)/k - 1
+			if j==k
+				buf.window.rows = $screen.rows - @buf.window.pos_row - 2
+			end
+			j += 1
+		}
+	end
+
+
 	# set the tag on the current buffer
 	def set_tag(n)
 
@@ -2184,15 +2209,12 @@ class BuffersList
 		@buffers[@ibuf].tag = n
 		@buffers[@ibuf].order = k
 		k += 1
-		j = 0
+
+		resize_buffers(n,k)
+
+		# redump the buffers
 		@buffers.each{|buf|
 			next if buf.tag != n
-			buf.window.pos_row = j*($screen.rows)/k
-			buf.window.rows = ($screen.rows)/k - 1
-			j += 1
-			if j==k
-				buf.window.rows = $screen.rows - buf.window.pos_row - 2
-			end
 			buf.dump_to_screen($screen)
 		}
 
@@ -2203,15 +2225,7 @@ class BuffersList
 		}
 
 		# resize screens for old tag
-		@buffers.each{|buf|
-			next if buf.tag != oldtag
-			buf.window.pos_row = j*($screen.rows)/k
-			buf.window.rows = ($screen.rows)/k - 1
-			j += 1
-			if j==k
-				buf.window.rows = $screen.rows - buf.window.pos_row - 2
-			end
-		}
+		resize_buffers(oldtag,k)
 
 
 	end
