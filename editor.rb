@@ -2166,25 +2166,54 @@ class BuffersList
 
 	# set the tag on the current buffer
 	def set_tag(n)
+
+		# if tag is current tag, do nothing
+		if @buffers[@ibuf].tag == n
+			return
+		end
+
+		oldtag = @buffers[@ibuf].tag
+
+		# count up number of buffers with this tag
 		k = 0
 		@buffers.each{|buf|
 			k += 1 if buf.tag == n
 		}
+
+		# give current buffer its new tag and make it last in order
 		@buffers[@ibuf].tag = n
 		@buffers[@ibuf].order = k
 		k += 1
 		j = 0
 		@buffers.each{|buf|
-			if buf.tag == n
-				buf.window.pos_row = j*($screen.rows)/k
-				buf.window.rows = ($screen.rows)/k - 1
-				j += 1
-				if j==k
-					buf.window.rows = $screen.rows - buf.window.pos_row - 2
-				end
-				buf.dump_to_screen($screen)
+			next if buf.tag != n
+			buf.window.pos_row = j*($screen.rows)/k
+			buf.window.rows = ($screen.rows)/k - 1
+			j += 1
+			if j==k
+				buf.window.rows = $screen.rows - buf.window.pos_row - 2
+			end
+			buf.dump_to_screen($screen)
+		}
+
+		# count up number of buffers with old tag
+		k = 0
+		@buffers.each{|buf|
+			k += 1 if buf.tag == oldtag
+		}
+
+		# resize screens for old tag
+		@buffers.each{|buf|
+			next if buf.tag != oldtag
+			buf.window.pos_row = j*($screen.rows)/k
+			buf.window.rows = ($screen.rows)/k - 1
+			j += 1
+			if j==k
+				buf.window.rows = $screen.rows - buf.window.pos_row - 2
 			end
 		}
+
+
 	end
 
 end
