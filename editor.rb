@@ -154,7 +154,7 @@ class Screen
 	end
 
 	# write the info line at top of screen
-	def write_top_line(lstr,cstr,rstr)
+	def write_top_line(lstr,cstr,rstr,row,col,width)
 
 		update_screen_size
 		rstr = cstr + "  " + rstr
@@ -162,18 +162,18 @@ class Screen
 		lr = rstr.length
 
 		# if line is too long, chop off start of left string
-		if (ll+lr+3) > @cols
-			xxx = @cols - lr - 8
+		if (ll+lr+3) > width
+			xxx = width - lr - 8
 			return if xxx < 0
 			lstr = "..." + lstr[(-xxx)..-1]
 			ll = lstr.length
 		end
 
-		nspaces = @cols - ll - lr
+		nspaces = width - ll - lr
 		return if nspaces < 0  # line is too long to write
 		all = lstr + (" "*nspaces) + rstr
 		@screen.attron Curses::A_REVERSE
-		write_str(0,0,all)
+		write_str(row,col,all)
 		@screen.attroff Curses::A_REVERSE
 
 	end
@@ -474,6 +474,10 @@ class Window
 		@cols = $screen.cols if @cols <= 0
 		# reduce all windows by 1, for bottom message area
 		@rows -= 1
+	end
+
+	def write_top_line(l,c,r)
+		$screen.write_top_line(l,c,r,@pos_row,@pos_col,@cols)
 	end
 
 	# pass-through to screen class
@@ -2053,7 +2057,6 @@ class BuffersList
 		@buffers = []
 		@nbuf = 0
 		@ibuf = 0
-		#@copy_buffer = ""
 		for filename in files
 			@buffers[@nbuf] = FileBuffer.new(filename)
 			@nbuf += 1
