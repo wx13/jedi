@@ -85,7 +85,7 @@ class Screen
 		Curses.close_screen
 		Process.kill("SIGSTOP",0)
 		Curses.refresh
-		buffer.dump_to_screen($screen,true)
+		buffer.dump_to_screen(true)
 	end
 
 	# Write a string at a position.
@@ -514,7 +514,7 @@ end
 class FileBuffer
 
 	attr_accessor :filename, :text, :editmode, :buffer_history,\
-	              :extramode, :cutscore, :tag, :order, :window
+	              :extramode, :cutscore, :window
 
 	def initialize(filename,tag)
 
@@ -566,8 +566,6 @@ class FileBuffer
 
 		# grab a window to write to
 		@window = Window.new
-		@tag = tag
-		@order = 0
 
 		# This does nothing, by default; it is here to allow
 		# a user script to modify each text buffer that is opened.
@@ -1559,7 +1557,7 @@ class FileBuffer
 		else
 			nb = $buffers.nbuf
 			ib = $buffers.ibuf
-			lstr = sprintf("%s (%d/%d) %d",@filename,ib+1,nb,@tag)
+			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
 		end
 		@window.write_top_line(lstr,status,position)
 		# write the text to the screen
@@ -2058,79 +2056,88 @@ end
 
 
 # ---------------------------------------------------
-# This is a list of buffers
+# This is a list of buffers.
 # ---------------------------------------------------
 class BuffersList
 
-	attr_accessor :copy_buffer, :nbuf, :ibuf
+	attr_accessor :copy_buffer, :npage, :ipage
 
 	# Read in all input files into buffers.
 	# One buffer for each file.
 	def initialize(files)
 
 		@buffers = []
-		@nbuf = 0
-		@ibuf = 0
+		@nbuf = []
+		@ibuf = []
+		@npage = 0
+		@ipage = 0
 
 		for filename in files
-			@buffers[@nbuf] = FileBuffer.new(filename,@nbuf)
-			@nbuf += 1
+			@buffers[@npage] = [FileBuffer.new(filename,@nbuf)]
+			@nbuf[@npage] += 1
+			@ibuf[@npage] = 0
+			@npage += 1
 		end
-		if @nbuf == 0
-			@buffers[@nbuf] = FileBuffer.new("",@nbuf)
-			@tags[@nbuf] = @nbuf
-			@nbuf += 1
+		if @npage == 0
+			@buffers[@npage] = [FileBuffer.new("",@nbuf)]
+			@nbuf[@npage] += 1
+			@ibuf[@npage] = 0
+			@npage += 1
 		end
+		@ipage = 0
 		if ($hist_file != nil) && (File.exist?($hist_file))
 			read_hists
 		end
 	end
 
 	# return next, previous, or current buffer
-	def next
-		@ibuf = (@ibuf+1).modulo(@nbuf)
+	def next_page
+		@ipage = (@ipage+1).modulo(@npage)
 		# redump the buffers
-		@buffers.each{|buf|
-			next if buf.tag != @buffers[@ibuf].tag
-			buf.dump_to_screen($screen)
+		@buffers[@ipage].each{|buf|
+			buf.dump_to_screen(true)
 		}
-		@buffers[@ibuf]
+		@buffers[@ipage][@ibuf[@ipage]]
 	end
-	def prev
-		@ibuf = (@ibuf-1).modulo(@nbuf)
+	def prev_page
+		@ipage = (@ipage-1).modulo(@npage)
 		# redump the buffers
-		@buffers.each{|buf|
-			next if buf.tag != @buffers[@ibuf].tag
-			buf.dump_to_screen($screen)
+		@buffers[@ipage].each{|buf|
+			buf.dump_to_screen(true)
 		}
-		@buffers[@ibuf]
+		@buffers[@ipage][@ibuf[@ipage]]
 	end
 	def current
-		@buffers[@ibuf]
+		@buffers[@ipage][@ibuf[@ipage]]
 	end
 
 	# close a buffer
 	def close
-		if @buffers[@ibuf].modified?
+		buf = @buffers[@ipage][@ibuf[@ipage]]
+		if buf.modified?
 			ys = $screen.ask_yesno("Save changes?")
 			if ys == "yes"
-				@buffers[@ibuf].save
+				buf.save
 			elsif ys == "cancel"
 				$screen.write_message("Cancelled")
-				return(@buffers[@ibuf])
+				return(buf)
 			end
 		end
-		@buffers.delete_at(@ibuf)
-		@nbuf -= 1
-		@ibuf = 0
+		@buffers[@ipage].delete_at(@ibuf[@ipage])
+		@nbuf[@ipage] -= 1
+		if @nbuf[@ipage] == 0
+			@buffers.delete_at(@ipage)
+			@npage -= 1
+			@ipage = 0
+		end
 		$screen.write_message("")
-		if @nbuf == 0 || @buffers[0] == nil
+		if @npage == 0 || @buffers[0][0] == nil
 			if $hist_file != nil
 				save_hists
 			end
 			exit
 		end
-		@buffers[0]
+		@buffers[@ipage][@ibuf[@ipage]]
 	end
 
 	def save_hists
@@ -2649,7 +2656,7 @@ $screen.start_screen_loop do
 		end
 
 		# display the current buffer
-		buffer.dump_to_screen($screen)
+		buffer.dump_to_screen
 
 		# wait for a key press
 		c = Curses.getch
