@@ -516,7 +516,7 @@ class FileBuffer
 	attr_accessor :filename, :text, :editmode, :buffer_history,\
 	              :extramode, :cutscore, :window
 
-	def initialize(filename,tag)
+	def initialize(filename)
 
 		# set some parameters
 		@tabsize = $tabsize
@@ -1552,11 +1552,11 @@ class FileBuffer
 			status = status + "  VIEW"
 		end
 		# report on number of open buffers
-		if $buffers.nbuf <= 1
+		if $buffers.npage <= 1
 			lstr = @filename
 		else
-			nb = $buffers.nbuf
-			ib = $buffers.ibuf
+			nb = $buffers.npage
+			ib = $buffers.ipage
 			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
 		end
 		@window.write_top_line(lstr,status,position)
@@ -2073,14 +2073,14 @@ class BuffersList
 		@ipage = 0
 
 		for filename in files
-			@buffers[@npage] = [FileBuffer.new(filename,@nbuf)]
-			@nbuf[@npage] += 1
+			@buffers[@npage] = [FileBuffer.new(filename)]
+			@nbuf[@npage] = 1
 			@ibuf[@npage] = 0
 			@npage += 1
 		end
 		if @npage == 0
-			@buffers[@npage] = [FileBuffer.new("",@nbuf)]
-			@nbuf[@npage] += 1
+			@buffers[@npage] = [FileBuffer.new("")]
+			@nbuf[@npage] = 1
 			@ibuf[@npage] = 0
 			@npage += 1
 		end
@@ -2172,68 +2172,50 @@ class BuffersList
 		ans = $screen.ask("open file: ",[""],false,true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
-			return(@buffers[@ibuf])
+			return(@buffers[@ipage][@ibuf[@ipage]])
 		end
-		@buffers[@nbuf] = FileBuffer.new(ans,@nbuf)
-		@nbuf += 1
-		@ibuf = @nbuf-1
+		@buffers[@npage][0] = FileBuffer.new(ans,@nbuf)
+		@npage += 1
+		@ipage = @npage-1
+		@nbuf[@ipage] = 1
+		@ibuf[@ipage] = 0
 		$screen.write_message("Opened file: "+ans)
-		return(@buffers[@ibuf])
+		return(@buffers[@ipage][@ibuf[@ipage]])
 	end
 
 
-	def resize_buffers(tag,k)
-		j = 0
-		@buffers.each{|buf|
-			next if buf.tag != tag
+	def resize_buffers(ipage)
+		j = 0;
+		k = @nbuf[ipage]
+		@buffers[ipage].each{|buf|
 			buf.window.pos_row = j*($screen.rows)/k
 			buf.window.rows = ($screen.rows)/k - 1
-			if j==k
-				buf.window.rows = $screen.rows - @buf.window.pos_row - 2
-			end
 			j += 1
 		}
+		buf = @buffers[ipage][@nbuf[ipage]-1]
+		buf.window.rows = $screen.rows - @buf.window.pos_row - 2
 	end
 
 
-	# set the tag on the current buffer
-	def set_tag(n)
+	# move buffer to page n
+	def move_to_page(n)
 
-		# if tag is current tag, do nothing
-		if @buffers[@ibuf].tag == n
-			return
+		buf = @buffers[@ipage][@ibuf[@ipage]]
+		@buffers[@ipage].delete_at(@ibuf[@ipage])
+		@ibuf[@ipage] -= 1
+		if @ibuf[@ipage] <= 0
+			@buffers.delete_at(@ipage)
+			@ipage = 0
+			@npage -= 1
 		end
+		$screen.write_message(n.to_s)
+		Curses.getch
+		@buffers[n][@nbuf[n]] = buf
+		@nbuf[n] += 1
 
-		oldtag = @buffers[@ibuf].tag
+		resize_buffers(@ipage)
 
-		# count up number of buffers with this tag
-		k = 0
-		@buffers.each{|buf|
-			k += 1 if buf.tag == n
-		}
-
-		# give current buffer its new tag and make it last in order
-		@buffers[@ibuf].tag = n
-		@buffers[@ibuf].order = k
-		k += 1
-
-		resize_buffers(n,k)
-
-		# redump the buffers
-		@buffers.each{|buf|
-			next if buf.tag != n
-			buf.dump_to_screen($screen)
-		}
-
-		# count up number of buffers with old tag
-		k = 0
-		@buffers.each{|buf|
-			k += 1 if buf.tag == oldtag
-		}
-
-		# resize screens for old tag
-		resize_buffers(oldtag,k)
-
+		return(@buffers[@ipage][@ibuf[@ipage]])
 
 	end
 
@@ -2456,8 +2438,8 @@ $commandlist = {
 	$ctrl_y => "buffer.page_up",
 	$ctrl_e => "buffer.cursor_eol",
 	$ctrl_a => "buffer.cursor_sol",
-	$ctrl_n => "buffer = $buffers.next",
-	$ctrl_b => "buffer = $buffers.prev",
+	$ctrl_n => "buffer = $buffers.next_page",
+	$ctrl_b => "buffer = $buffers.prev_page",
 	$ctrl_x => "buffer.mark",
 	$ctrl_p => "buffer.copy",
 	$ctrl_w => "buffer.search(0)",
@@ -2475,16 +2457,16 @@ $extramode_commandlist = {
 	?b => "buffer.bookmark",
 	?g => "buffer.goto_bookmark",
 	?c => "buffer.center_screen",
-	?0 => "$buffers.set_tag(0)",
-	?1 => "$buffers.set_tag(1)",
-	?2 => "$buffers.set_tag(2)",
-	?3 => "$buffers.set_tag(3)",
-	?4 => "$buffers.set_tag(4)",
-	?5 => "$buffers.set_tag(5)",
-	?6 => "$buffers.set_tag(6)",
-	?7 => "$buffers.set_tag(7)",
-	?8 => "$buffers.set_tag(8)",
-	?9 => "$buffers.set_tag(9)"
+	?0 => "$buffers.move_to_page(0)",
+	?1 => "$buffers.move_to_page(1)",
+	?2 => "$buffers.move_to_page(2)",
+	?3 => "$buffers.move_to_page(3)",
+	?4 => "$buffers.move_to_page(4)",
+	?5 => "$buffers.move_to_page(5)",
+	?6 => "$buffers.move_to_page(6)",
+	?7 => "$buffers.move_to_page(7)",
+	?8 => "$buffers.move_to_page(8)",
+	?9 => "$buffers.move_to_page(9)"
 }
 $extramode_commandlist.default = ""
 $editmode_commandlist = {
