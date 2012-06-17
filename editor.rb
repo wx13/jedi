@@ -2193,7 +2193,7 @@ class BuffersList
 			j += 1
 		}
 		buf = @buffers[ipage][@nbuf[ipage]-1]
-		buf.window.rows = $screen.rows - @buf.window.pos_row - 2
+		buf.window.rows = $screen.rows - buf.window.pos_row - 2
 	end
 
 
@@ -2208,10 +2208,15 @@ class BuffersList
 			@ipage = 0
 			@npage -= 1
 		end
-		$screen.write_message(n.to_s)
-		Curses.getch
-		@buffers[n][@nbuf[n]] = buf
-		@nbuf[n] += 1
+		if @npage > n
+			@buffers[n][@nbuf[n]] = buf
+			@nbuf[n] += 1
+		else
+			@buffers[@npage] = []
+			@buffers[@npage][0] = buf
+			@nbuf[@npage] = 1
+			@npage += 1
+		end
 
 		resize_buffers(@ipage)
 
