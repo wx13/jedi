@@ -2202,8 +2202,8 @@ class BuffersList
 
 		buf = @buffers[@ipage][@ibuf[@ipage]]
 		@buffers[@ipage].delete_at(@ibuf[@ipage])
-		@ibuf[@ipage] -= 1
-		if @ibuf[@ipage] <= 0
+		@nbuf[@ipage] -= 1
+		if @nbuf[@ipage] <= 0
 			@buffers.delete_at(@ipage)
 			@ipage = 0
 			@npage -= 1
