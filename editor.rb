@@ -2093,18 +2093,14 @@ class BuffersList
 	# return next, previous, or current buffer
 	def next_page
 		@ipage = (@ipage+1).modulo(@npage)
-		# redump the buffers
-		@buffers[@ipage].each{|buf|
-			buf.dump_to_screen(true)
-		}
+		resize_buffers(@ipage)
+		refresh_buffers(@ipage)
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
 	def prev_page
 		@ipage = (@ipage-1).modulo(@npage)
-		# redump the buffers
-		@buffers[@ipage].each{|buf|
-			buf.dump_to_screen(true)
-		}
+		resize_buffers(@ipage)
+		refresh_buffers(@ipage)
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
 	def current
@@ -2196,6 +2192,9 @@ class BuffersList
 		buf.window.rows = $screen.rows - buf.window.pos_row - 2
 	end
 
+	def refresh_buffers(ipage)
+		@buffers[ipage].each{|buf| buf.dump_to_screen(true)}
+	end
 
 	# move buffer to page n
 	def move_to_page(n)
@@ -2219,6 +2218,7 @@ class BuffersList
 		end
 
 		resize_buffers(@ipage)
+		refresh_buffers(@ipage)
 
 		return(@buffers[@ipage][@ibuf[@ipage]])
 
