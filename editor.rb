@@ -2244,6 +2244,22 @@ class BuffersList
 		@buffers[ipage].each{|buf| buf.dump_to_screen(true)}
 	end
 
+	# put all buffers on the same page,
+	# unlesss they already are => then spread them out
+	def all_on_one_page
+		if @npage > 1
+			while @npage > 1
+				@ipage = @npage - 1
+				move_to_page(1)
+			end
+		else
+			while @nbuf[@ipage] > 1
+				$screen.write_message(@nbuf[@ipage].to_s)
+				move_to_page(@npage+1)
+			end
+		end
+	end
+
 	# move buffer to page n
 	def move_to_page(n)
 
@@ -2541,7 +2557,7 @@ $extramode_commandlist = {
 	?b => "buffer.bookmark",
 	?g => "buffer.goto_bookmark",
 	?c => "buffer.center_screen",
-	?0 => "$buffers.move_to_page(0)",
+	?0 => "$buffers.all_on_one_page",
 	?1 => "$buffers.move_to_page(1)",
 	?2 => "$buffers.move_to_page(2)",
 	?3 => "$buffers.move_to_page(3)",
