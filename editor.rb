@@ -2139,6 +2139,7 @@ class BuffersList
 		# delete current buffer from current page
 		@buffers[@ipage].delete_at(@ibuf[@ipage])
 		@nbuf[@ipage] -= 1
+		@ibuf[@ipage] -= 1
 
 		# if no buffers left on page,
 		# then remove the page
@@ -2160,6 +2161,9 @@ class BuffersList
 			end
 			exit
 		end
+
+		resize_buffers(@ipage)
+		refresh_buffers(@ipage)
 
 		# return the (new) current buffer
 		@buffers[@ipage][@ibuf[@ipage]]
@@ -2208,7 +2212,7 @@ class BuffersList
 		end
 
 		# create a new page at the end of the list
-		@buffers[@npage][0] = FileBuffer.new(ans,@nbuf)
+		@buffers[@npage] = [FileBuffer.new(ans)]
 		@npage += 1
 		@ipage = @npage-1
 		@nbuf[@ipage] = 1
@@ -2242,14 +2246,33 @@ class BuffersList
 	# move buffer to page n
 	def move_to_page(n)
 
+		# adjust for zero indexing
+		n -= 1
+
+		# if same page, don't do anything
+		if n == @ipage
+			return
+		end
+
 		buf = @buffers[@ipage][@ibuf[@ipage]]
+
+		# delete current buffer from current page
 		@buffers[@ipage].delete_at(@ibuf[@ipage])
 		@nbuf[@ipage] -= 1
-		if @nbuf[@ipage] <= 0
+
+		# if no buffers left on page,
+		# then remove the page
+		if @nbuf[@ipage] == 0
 			@buffers.delete_at(@ipage)
-			@ipage = 0
+			@nbuf.delete_at(@ipage)
+			if n >= @ipage
+				n -= 1
+			end
 			@npage -= 1
+			@ipage = 0
 		end
+
+		# put on new page
 		if @npage > n
 			@buffers[n][@nbuf[n]] = buf
 			@nbuf[n] += 1
