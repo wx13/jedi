@@ -2247,17 +2247,18 @@ class BuffersList
 	# put all buffers on the same page,
 	# unlesss they already are => then spread them out
 	def all_on_one_page
-		if @npage > 1
+		if @npage == 1
+			while @nbuf[0] > 1
+				move_to_page(@npage+1)
+			end
+		else
 			while @npage > 1
 				@ipage = @npage - 1
 				move_to_page(1)
 			end
-		else
-			while @nbuf[@ipage] > 1
-				$screen.write_message(@nbuf[@ipage].to_s)
-				move_to_page(@npage+1)
-			end
 		end
+		@ipage = 0
+		@ibuf[@ipage] = 0
 	end
 
 	# move buffer to page n
@@ -2298,6 +2299,9 @@ class BuffersList
 			@buffers[@npage][0] = buf
 			@nbuf[@npage] = 1
 			@npage += 1
+		end
+		if(@ibuf[@ipage] >= @nbuf[@ipage])
+			@ibuf[@ipage] = 0
 		end
 
 		resize_buffers(@ipage)
