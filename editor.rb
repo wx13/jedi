@@ -1568,13 +1568,17 @@ class FileBuffer
 		# set cursor position
 		@window.setpos(cursrow,curscol)
 	end
+
+
 	#
 	# just dump the buffer text to the screen
 	#
 	def dump_text(refresh=false)
+
 		# get only the rows of interest
 		text = @text[@linefeed,@window.rows]
-		# store up lines
+
+		# store up lines, so we can see if they changed
 		screen_buffer = []
 		ir = 0
 		text.each{ |line|
@@ -1594,28 +1598,22 @@ class FileBuffer
 			ir += 1
 		end
 
-		#write out the text
-		ir = 0  # counter for which screen line to write text on
-		if (@colfeed==@colfeed_old) && (@marked==false) \
-		&& (@marked_old==false) && (refresh==false)
-			screen_buffer.each { |line|
-				if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1])
+		# write out the text if anything has changed
+		if (@colfeed!=@colfeed_old) || (@marked==true) \
+		|| (@marked_old==true) || (refresh=true) \
+		|| (@linefeed!=@linefeed_old)
+			if screen_buffer != $screen_buffer
+				ir = 0
+				screen_buffer.each{|line|
+					@window.write_line(ir,@colfeed,line)
 					ir += 1
-					next
-				end
-				@window.write_line(ir,@colfeed,line)
-				#$screen.write_message(line+"<==>"+$screen_buffer[ir].to_s)
-				#Curses.getch
-				ir += 1
-			}
-		else
-			screen_buffer.each { |line|
-				@window.write_line(ir,@colfeed,line)
-				ir += 1
-			}
+				}
+			end
 		end
+
 		$screen_buffer = screen_buffer.dup
 		@colfeed_old = @colfeed
+		@linefeed_old = @linefeed
 		@marked_old = @marked
 		# now go back and do marked text highlighting
 		if @marked
@@ -2724,7 +2722,7 @@ $screen.start_screen_loop do
 		end
 
 		# display the current buffer
-		buffer.dump_to_screen(true)
+		buffer.dump_to_screen
 
 		# wait for a key press
 		c = Curses.getch
