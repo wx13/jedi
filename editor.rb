@@ -1598,7 +1598,6 @@ class FileBuffer
 			ir += 1
 		end
 
-		$screen.write_message("unchanged")
 		# write out the text if anything has changed
 		if (@colfeed!=@colfeed_old) || (@marked==true) \
 		|| (@marked_old==true) || (refresh==true) \
@@ -1609,7 +1608,6 @@ class FileBuffer
 				@window.write_line(ir,@colfeed,line)
 				ir += 1
 			}
-			$screen.write_message("Updated!")
 		end
 
 		$screen_buffer = screen_buffer.dup
@@ -2141,7 +2139,7 @@ class BuffersList
 		# delete current buffer from current page
 		@buffers[@ipage].delete_at(@ibuf[@ipage])
 		@nbuf[@ipage] -= 1
-		@ibuf[@ipage] -= 1
+		@ibuf[@ipage] = 0
 
 		# if no buffers left on page,
 		# then remove the page
@@ -2151,6 +2149,7 @@ class BuffersList
 			@npage -= 1
 			@ipage = 0
 		end
+
 
 		# clear message area
 		$screen.write_message("")
