@@ -1598,17 +1598,18 @@ class FileBuffer
 			ir += 1
 		end
 
+		$screen.write_message("unchanged")
 		# write out the text if anything has changed
 		if (@colfeed!=@colfeed_old) || (@marked==true) \
-		|| (@marked_old==true) || (refresh=true) \
-		|| (@linefeed!=@linefeed_old)
-			if screen_buffer != $screen_buffer
-				ir = 0
-				screen_buffer.each{|line|
-					@window.write_line(ir,@colfeed,line)
-					ir += 1
-				}
-			end
+		|| (@marked_old==true) || (refresh==true) \
+		|| (@linefeed!=@linefeed_old) \
+		|| (screen_buffer != $screen_buffer)
+			ir = 0
+			screen_buffer.each{|line|
+				@window.write_line(ir,@colfeed,line)
+				ir += 1
+			}
+			$screen.write_message("Updated!")
 		end
 
 		$screen_buffer = screen_buffer.dup
