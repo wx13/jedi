@@ -1633,16 +1633,24 @@ class FileBuffer
 	end
 
 
-
+	#
+	# INPUT:
+	#	bline -- string to add result to
+	#	cline -- string to inspect
+	#	cqc -- current quote character (to look for)
+	# OUTPUT:
+	#	bline -- updated bline string
+	#	cline -- remainder of cline strin
+	#
 	def syntax_find_match(cline,cqc,bline)
-		bline += cline[0].chr
-		cline = cline[1..-1]
-		k = cline.index(cqc)
+
+		k = cline[1..-1].index(cqc)
 		if k==nil
-			bline += cline
-			cline = ""
-			return(bline)
+			# didn't find the character
+			return nil
 		end
+		bline = cline[0].chr
+		cline = cline[1..-1]
 		while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
 			bline += cline[0,k+cqc.length]
 			cline = cline[k+cqc.length..-1]
@@ -1724,10 +1732,14 @@ class FileBuffer
 			flag = false
 			bccs.each{|sc,ec|
 				if cline.index(sc)==0
-					flag = true
-					bline += $color+$color_comment
-					bline,cline = syntax_find_match(cline,ec,bline)
-					bline += $color+$color_default
+					b,c = syntax_find_match(cline,ec,bline)
+					if b != nil
+						bline += $color+$color_comment
+						bline += b
+						bline += $color+$color_default
+						cline = c
+						flag = true
+					end
 				end
 			}
 			next if flag
@@ -1735,10 +1747,14 @@ class FileBuffer
 			# if quote, then look for match
 			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
 				cqc = cline[0].chr
-				bline += $color+$color_string
-				bline,cline = syntax_find_match(cline,cqc,bline)
-				bline += $color+$color_default
-				next
+				b,c = syntax_find_match(cline,cqc,bline)
+				if b != nil
+					bline += $color+$color_string
+					bline += b
+					bline += $color+$color_default
+					cline = c
+					next
+				end
 			end
 
 			bline += cline[0].chr
