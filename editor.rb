@@ -470,7 +470,7 @@ class Window
 		@rows = dimensions[2]
 		@cols = dimensions[3]
 		# if size is unset, set it to screen size minus 1 (top bar)
-		@rows = $screen.rows if @rows <= 0
+		@rows = $screen.rows - 1 if @rows <= 0
 		@cols = $screen.cols if @cols <= 0
 		# reduce all windows by 1, for bottom message area
 		#@rows -= 1
@@ -1595,14 +1595,17 @@ class FileBuffer
 		end
 
 		#write out the text
-		ir = 0
+		ir = 0  # counter for which screen line to write text on
 		if (@colfeed==@colfeed_old) && (@marked==false) \
 		&& (@marked_old==false) && (refresh==false)
 			screen_buffer.each { |line|
 				if ($screen_buffer.length >= ir) && (line == $screen_buffer[ir-1])
+					ir += 1
 					next
 				end
 				@window.write_line(ir,@colfeed,line)
+				#$screen.write_message(line+"<==>"+$screen_buffer[ir].to_s)
+				#Curses.getch
 				ir += 1
 			}
 		else
