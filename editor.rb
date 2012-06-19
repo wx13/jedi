@@ -55,7 +55,7 @@ class Screen
 
 	def update_screen_size
 		@cols = @screen.maxx
-		@rows = @screen.maxy
+		@rows = @screen.maxy - 1
 	end
 
 	# This starts the curses session.
@@ -192,9 +192,9 @@ class Screen
 		update_screen_size
 		xpos = (@cols - message.length)/2
 		@screen.attroff Curses::A_REVERSE
-		write_str(@rows-1,0," "*@cols)
+		write_str(@rows,0," "*@cols)
 		@screen.attron Curses::A_REVERSE
-		write_str(@rows-1,xpos,message)
+		write_str(@rows,xpos,message)
 		@screen.attroff Curses::A_REVERSE
 	end
 
@@ -213,8 +213,8 @@ class Screen
 		loop do
 
 			# write out current match status
-			write_str(@rows-1,0," "*@cols)
-			write_str(@rows-1,0,"(reverse-i-search) #{token}: #{mline}")
+			write_str(@rows,0," "*@cols)
+			write_str(@rows,0,"(reverse-i-search) #{token}: #{mline}")
 
 			# get user input
 			c = Curses.getch
@@ -278,8 +278,8 @@ class Screen
 		end
 		token0 = token.dup  # remember typed string, even if we move away
 		col = token.length  # put cursor at end of string
-		write_str(@rows-1,0," "*@cols)  # blank the line
-		write_str(@rows-1,0,question+" "+token)
+		write_str(@rows,0," "*@cols)  # blank the line
+		write_str(@rows,0,question+" "+token)
 		shift = 0  # shift: in case we go past edge of screen
 		idx = 0  # for tabbing through files
 		glob = token  # for file globbing
@@ -386,14 +386,14 @@ class Screen
 			end
 
 			# display the answer so far
-			write_str(@rows-1,0," "*$cols)
+			write_str(@rows,0," "*$cols)
 			if (col+question.length+2) > $cols
 				shift = col - $cols + question.length + 2
 			else
 				shift = 0
 			end
-			write_str(@rows-1,0,question+" "+token[shift..-1])
-			Curses.setpos(@rows-1,(col-shift)+question.length+1)
+			write_str(@rows,0,question+" "+token[shift..-1])
+			Curses.setpos(@rows,(col-shift)+question.length+1)
 
 		end
 		@screen.attroff Curses::A_REVERSE
@@ -413,8 +413,8 @@ class Screen
 	def ask_yesno(question)
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
-		write_str(@rows-1,0," "*@cols)
-		write_str(@rows-1,0,question)
+		write_str(@rows,0," "*@cols)
+		write_str(@rows,0,question)
 		answer = "cancel"
 		loop do
 			c = Curses.getch
@@ -470,10 +470,10 @@ class Window
 		@rows = dimensions[2]
 		@cols = dimensions[3]
 		# if size is unset, set it to screen size minus 1 (top bar)
-		@rows = $screen.rows - 1 if @rows <= 0
+		@rows = $screen.rows if @rows <= 0
 		@cols = $screen.cols if @cols <= 0
 		# reduce all windows by 1, for bottom message area
-		@rows -= 1
+		#@rows -= 1
 	end
 
 	def write_top_line(l,c,r)
@@ -2066,25 +2066,29 @@ class BuffersList
 	# One buffer for each file.
 	def initialize(files)
 
-		@buffers = []
-		@nbuf = []
-		@ibuf = []
-		@npage = 0
-		@ipage = 0
+		@buffers = []  # big list of buffers (stored per page)
+		@nbuf = []     # number of buffers on each page
+		@ibuf = []     # current buffer number per page
+		@npage = 0     # number of pages
+		@ipage = 0     # current page number
 
+		# for each file on the command line,
+		# put text on its own page
 		for filename in files
 			@buffers[@npage] = [FileBuffer.new(filename)]
 			@nbuf[@npage] = 1
 			@ibuf[@npage] = 0
 			@npage += 1
 		end
+		# if no pages, then open a blank file
 		if @npage == 0
 			@buffers[@npage] = [FileBuffer.new("")]
 			@nbuf[@npage] = 1
 			@ibuf[@npage] = 0
 			@npage += 1
 		end
-		@ipage = 0
+		@ipage = 0  # start on the first buffer
+		# read in histories
 		if ($hist_file != nil) && (File.exist?($hist_file))
 			read_hists
 		end
@@ -2107,9 +2111,13 @@ class BuffersList
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
 
+
 	# close a buffer
 	def close
-		buf = @buffers[@ipage][@ibuf[@ipage]]
+
+		buf = @buffers[@ipage][@ibuf[@ipage]]  # current buffer
+
+		# if modified, ask about saving to file
 		if buf.modified?
 			ys = $screen.ask_yesno("Save changes?")
 			if ys == "yes"
@@ -2119,23 +2127,38 @@ class BuffersList
 				return(buf)
 			end
 		end
+
+		# delete current buffer from current page
 		@buffers[@ipage].delete_at(@ibuf[@ipage])
 		@nbuf[@ipage] -= 1
+
+		# if no buffers left on page,
+		# then remove the page
 		if @nbuf[@ipage] == 0
 			@buffers.delete_at(@ipage)
+			@nbuf.delete_at(@ipage)
 			@npage -= 1
 			@ipage = 0
 		end
+
+		# clear message area
 		$screen.write_message("")
+
+		# if no pages left, or if only buffer is nil,
+		# then exit the editor
 		if @npage == 0 || @buffers[0][0] == nil
 			if $hist_file != nil
 				save_hists
 			end
 			exit
 		end
+
+		# return the (new) current buffer
 		@buffers[@ipage][@ibuf[@ipage]]
+
 	end
 
+	# save histories to histories file
 	def save_hists
 		if ($hist_file != nil) && (File.exist?($hist_file))
 			read_hists
@@ -2150,6 +2173,7 @@ class BuffersList
 		}
 	end
 
+	# read histories from histories file
 	def read_hists
 		if ($hist_file == nil) || (!File.exist?($hist_file))
 			return
@@ -2164,22 +2188,33 @@ class BuffersList
 		$script_hist.reverse!.concat(hists["script_hist"].reverse!).uniq!.reverse!
 	end
 
+
+	# open a new file into a new buffer
 	def open
+
+		# ask for the file to open
 		ans = $screen.ask("open file: ",[""],false,true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
 			return(@buffers[@ipage][@ibuf[@ipage]])
 		end
+
+		# create a new page at the end of the list
 		@buffers[@npage][0] = FileBuffer.new(ans,@nbuf)
 		@npage += 1
 		@ipage = @npage-1
 		@nbuf[@ipage] = 1
 		@ibuf[@ipage] = 0
+
+		# report that the file has been opened,
+		# and return the new file as the current buffer
 		$screen.write_message("Opened file: "+ans)
 		return(@buffers[@ipage][@ibuf[@ipage]])
+
 	end
 
 
+	# resize buffers for current number of buffers on the page
 	def resize_buffers(ipage)
 		j = 0;
 		k = @nbuf[ipage]
@@ -2189,7 +2224,7 @@ class BuffersList
 			j += 1
 		}
 		buf = @buffers[ipage][@nbuf[ipage]-1]
-		buf.window.rows = $screen.rows - buf.window.pos_row - 2
+		buf.window.rows = $screen.rows - buf.window.pos_row - 1
 	end
 
 	def refresh_buffers(ipage)
@@ -2643,7 +2678,7 @@ $screen.start_screen_loop do
 		end
 
 		# display the current buffer
-		buffer.dump_to_screen
+		buffer.dump_to_screen(true)
 
 		# wait for a key press
 		c = Curses.getch
