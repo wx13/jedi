@@ -936,6 +936,7 @@ class FileBuffer
 	end
 	# insert a char and move to the right
 	def addchar(c)
+		return if c > 255
 		if @marked == false
 			insertchar(@row,@col,c.chr)
 		else
