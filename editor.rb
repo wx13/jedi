@@ -2107,6 +2107,14 @@ class BuffersList
 		refresh_buffers(@ipage)
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
+	def next_buffer
+		@ibuf[@ipage] = (@ibuf[@ipage]+1).modulo(@nbuf[@ipage])
+		@buffers[@ipage][@ibuf[@ipage]]
+	end
+	def prev_buffer
+		@ibuf[@ipage] = (@ibuf-1).modulo(@nbuf[@ipage])
+		@buffers[@ipage][@ibuf[@ipage]]
+	end
 	def current
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
@@ -2367,6 +2375,14 @@ $ctrl_5 = 29
 $ctrl_6 = 30
 $ctrl_7 = 31
 $ctrl_8 = 127
+$ctrl_comma = 44
+$ctrl_dot = 46
+$ctrl_lessthan = 60
+$ctrl_morethan = 62
+$ctrl_colon = 58
+$ctrl_semicolon = 59
+$ctrl_squote = 39
+$ctrl_dquote = 34
 $backspace = 127
 $backspace2 = 263
 $space = 32
@@ -2490,6 +2506,10 @@ $commandlist = {
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extramode = true",
 	$ctrl_s => "buffer.run_script",
+	$ctrl_lessthan => "buffer.undo",
+	$ctrl_morethan => "buffer.redo",
+	$ctrl_semicolon => "$buffers.next_buffer",
+	$ctrl_colon => "$buffers.prev_buffer",
 	Curses::KEY_MOUSE => "buffer.handle_mouse"
 }
 $commandlist.default = ""
@@ -2685,16 +2705,19 @@ $screen.start_screen_loop do
 		if c.is_a?(String) then c = c.unpack('C')[0] end
 
 		# process key press -- run associated command
+		did_something = true
 		if buffer.extramode
 			eval($extramode_commandlist[c])
 			buffer.extramode = false
 			$screen.write_message("")
 		else
-			eval($commandlist[c])
-			if buffer.editmode
-				eval($editmode_commandlist[c])
-				case c
-					when 32..126 then buffer.addchar(c)
+			command = $commandlist[c]
+			eval(command)
+			if command=="" && buffer.editmode
+				command = $editmode_commandlist[c]
+				eval(command)
+				if command == ""
+					buffer.addchar(c)
 				end
 			else
 				eval($viewmode_commandlist[c])
