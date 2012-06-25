@@ -2758,14 +2758,16 @@ $screen.start_screen_loop do
 		else
 			command = $commandlist[c]
 			eval(command)
-			if command=="" && buffer.editmode
-				command = $editmode_commandlist[c]
-				eval(command)
-				if command == ""
-					buffer.addchar(c)
+			if command==""
+				if buffer.editmode
+					command = $editmode_commandlist[c]
+					eval(command)
+					if command == ""
+						buffer.addchar(c)
+					end
+				else
+					eval($viewmode_commandlist[c])
 				end
-			else
-				eval($viewmode_commandlist[c])
 			end
 		end
 
