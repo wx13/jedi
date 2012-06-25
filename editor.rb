@@ -2113,7 +2113,7 @@ class BuffersList
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
 	def prev_buffer
-		@ibuf[@ipage] = (@ibuf-1).modulo(@nbuf[@ipage])
+		@ibuf[@ipage] = (@ibuf[@ipage]-1).modulo(@nbuf[@ipage])
 		@buffers[@ipage][@ibuf[@ipage]]
 	end
 	def current
