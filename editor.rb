@@ -472,8 +472,7 @@ class Window
 		# if size is unset, set it to screen size minus 1 (top bar)
 		@rows = $screen.rows - 1 if @rows <= 0
 		@cols = $screen.cols if @cols <= 0
-		# reduce all windows by 1, for bottom message area
-		#@rows -= 1
+		@stack = "v"  # vertical ("v") or horizontal ("h")
 	end
 
 	def write_top_line(l,c,r)
@@ -486,6 +485,19 @@ class Window
 
 	def setpos(r,c)
 		Curses.setpos(r+@pos_row,c+@pos_col)
+	end
+
+	# set the window size, where k is the number of windows
+	# and j is the number of this window
+	def set_window_size(j,k)
+		@pos_row = j*($screen.rows)/k
+		@rows = ($screen.rows)/k - 1
+	end
+
+	# set the size of the last window to fit to the remainder of
+	# the screen
+	def set_last_window_size
+		@rows = $screen.rows - @pos_row - 1
 	end
 
 	# pass-through to screen class
@@ -2233,12 +2245,11 @@ class BuffersList
 		j = 0;
 		k = @nbuf[ipage]
 		@buffers[ipage].each{|buf|
-			buf.window.pos_row = j*($screen.rows)/k
-			buf.window.rows = ($screen.rows)/k - 1
+			buf.window.set_window_size(j,k)
 			j += 1
 		}
 		buf = @buffers[ipage][@nbuf[ipage]-1]
-		buf.window.rows = $screen.rows - buf.window.pos_row - 1
+		buf.window.set_last_window_size
 	end
 
 	def refresh_buffers(ipage)
