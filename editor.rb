@@ -1283,9 +1283,11 @@ class FileBuffer
 	end
 	def screen_down(n=1)
 		@linefeed = [0,@linefeed-n].max
+		@row = [@row,@linefeed+@window.rows-1].min
 	end
 	def screen_up(n=1)
 		@linefeed += n
+		@row = [@row,@linefeed].max
 	end
 	def center_screen(r=@row)
 		@linefeed = @row - @window.rows/2
@@ -2380,6 +2382,19 @@ class BuffersList
 
 	end
 
+	def screen_up
+		@pages[@ipage].buffers.each{|buf|
+			buf.screen_up
+		}
+		@pages[@ipage].refresh_buffers
+	end
+	def screen_down
+		@pages[@ipage].buffers.each{|buf|
+			buf.screen_down
+		}
+		@pages[@ipage].refresh_buffers
+	end
+
 end
 
 # end of buffers list class
@@ -2499,6 +2514,16 @@ $ctrl_dquote = 34
 $backspace = 127
 $backspace2 = 263
 $space = 32
+$ctrl_down = 520
+$ctrl_up = 561
+$ctrl_left = 540
+$ctrl_right = 555
+$ctrl_pagedown = 545
+$ctrl_pageup = 550
+$shift_down = 336
+$shift_up = 337
+$shift_left = 393
+$shift_right = 402
 
 # color escape
 $color = "\300"
@@ -2623,7 +2648,13 @@ $commandlist = {
 	$ctrl_morethan => "buffer.redo",
 	$ctrl_semicolon => "$buffers.next_buffer",
 	$ctrl_colon => "$buffers.prev_buffer",
-	Curses::KEY_MOUSE => "buffer.handle_mouse"
+	Curses::KEY_MOUSE => "buffer.handle_mouse",
+	$shift_up => "buffer.screen_down",
+	$shift_down => "buffer.screen_up",
+	$shift_right => "buffer.screen_right",
+	$shift_left => "buffer.screen_left",
+	$ctrl_up => "$buffers.screen_down",
+	$ctrl_down => "$buffers.screen_up"
 }
 $commandlist.default = ""
 $extramode_commandlist = {
