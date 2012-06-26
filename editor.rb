@@ -2075,29 +2075,68 @@ class BuffersList
 
 	attr_accessor :copy_buffer, :npage, :ipage
 
+	class Page
+		attr_accessor :buffers, :nbuf, :ibuf, :stack_orientation
+		def initialize(buffers=[])
+			@buffers = buffers
+			@nbuf = @buffers.length
+			@ibuf = 0
+			@stack_orientation = "v"
+		end
+		def delete_buffer(n=@ibuf)
+			@buffers.delete_at(n)
+			@nbuf = @buffers.length
+			if @ibuf >= @nbuf
+				@ibuf = 0
+			end
+		end
+		def add_buffer(buffer)
+			@buffers += [buffer]
+			@nbuf = @buffers.length
+			@ibuf = @nbuf - 1
+		end
+		def buffer
+			@buffers[@ibuf]
+		end
+		def next_buffer
+			@ibuf = (@ibuf+1).modulo(@nbuf)
+			@buffers[@ibuf]
+		end
+		def prev_buffer
+			@ibuf = (@ibuf-1).modulo(@nbuf)
+			@buffers[@ibuf]
+		end
+		def resize_buffers
+			j = 0;
+			@buffers.each{|buf|
+				buf.window.set_window_size(j,@nbuf)
+				j += 1
+			}
+			buf = @buffers[@nbuf-1]
+			buf.window.set_last_window_size
+		end
+		def refresh_buffers
+			@buffers.each{|buf| buf.dump_to_screen(true)}
+		end
+	end
+
 	# Read in all input files into buffers.
 	# One buffer for each file.
 	def initialize(files)
 
-		@buffers = []  # big list of buffers (stored per page)
-		@nbuf = []     # number of buffers on each page
-		@ibuf = []     # current buffer number per page
+		@pages = []  # big list of buffers (stored per page)
 		@npage = 0     # number of pages
 		@ipage = 0     # current page number
 
 		# for each file on the command line,
 		# put text on its own page
 		for filename in files
-			@buffers[@npage] = [FileBuffer.new(filename)]
-			@nbuf[@npage] = 1
-			@ibuf[@npage] = 0
+			@pages[@npage] = Page.new([FileBuffer.new(filename)])
 			@npage += 1
 		end
 		# if no pages, then open a blank file
 		if @npage == 0
-			@buffers[@npage] = [FileBuffer.new("")]
-			@nbuf[@npage] = 1
-			@ibuf[@npage] = 0
+			@pages[@npage] = Page.new([FileBuffer.new("")])
 			@npage += 1
 		end
 		@ipage = 0  # start on the first buffer
@@ -2105,38 +2144,37 @@ class BuffersList
 		if ($hist_file != nil) && (File.exist?($hist_file))
 			read_hists
 		end
+
 	end
 
 	# return next, previous, or current buffer
 	def next_page
 		@ipage = (@ipage+1).modulo(@npage)
-		resize_buffers(@ipage)
-		refresh_buffers(@ipage)
-		@buffers[@ipage][@ibuf[@ipage]]
+		@pages[@ipage].resize_buffers
+		@pages[@ipage].refresh_buffers
+		@pages[@ipage].buffer
 	end
 	def prev_page
 		@ipage = (@ipage-1).modulo(@npage)
-		resize_buffers(@ipage)
-		refresh_buffers(@ipage)
-		@buffers[@ipage][@ibuf[@ipage]]
+		@pages[@ipage].resize_buffers
+		@pages[@ipage].refresh_buffers
+		@pages[@ipage].buffer
 	end
 	def next_buffer
-		@ibuf[@ipage] = (@ibuf[@ipage]+1).modulo(@nbuf[@ipage])
-		@buffers[@ipage][@ibuf[@ipage]]
+		@pages[@ipage].next_buffer
 	end
 	def prev_buffer
-		@ibuf[@ipage] = (@ibuf[@ipage]-1).modulo(@nbuf[@ipage])
-		@buffers[@ipage][@ibuf[@ipage]]
+		@pages[@ipage].prev_buffer
 	end
 	def current
-		@buffers[@ipage][@ibuf[@ipage]]
+		@pages[@ipage].buffer
 	end
 
 
 	# close a buffer
 	def close
 
-		buf = @buffers[@ipage][@ibuf[@ipage]]  # current buffer
+		buf = @pages[@ipage].buffer  # current buffer
 
 		# if modified, ask about saving to file
 		if buf.modified?
@@ -2150,15 +2188,12 @@ class BuffersList
 		end
 
 		# delete current buffer from current page
-		@buffers[@ipage].delete_at(@ibuf[@ipage])
-		@nbuf[@ipage] -= 1
-		@ibuf[@ipage] = 0
+		@pages[@ipage].delete_buffer
 
 		# if no buffers left on page,
 		# then remove the page
-		if @nbuf[@ipage] == 0
-			@buffers.delete_at(@ipage)
-			@nbuf.delete_at(@ipage)
+		if @pages[@ipage].nbuf == 0
+			@pages.delete_at(@ipage)
 			@npage -= 1
 			@ipage = 0
 		end
@@ -2169,18 +2204,18 @@ class BuffersList
 
 		# if no pages left, or if only buffer is nil,
 		# then exit the editor
-		if @npage == 0 || @buffers[0][0] == nil
+		if @npage == 0 || @pages[0].buffer == nil
 			if $hist_file != nil
 				save_hists
 			end
 			exit
 		end
 
-		resize_buffers(@ipage)
-		refresh_buffers(@ipage)
+		@pages[@ipage].resize_buffers
+		@pages[@ipage].refresh_buffers
 
 		# return the (new) current buffer
-		@buffers[@ipage][@ibuf[@ipage]]
+		@pages[@ipage].buffer
 
 	end
 
@@ -2222,45 +2257,27 @@ class BuffersList
 		ans = $screen.ask("open file: ",[""],false,true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
-			return(@buffers[@ipage][@ibuf[@ipage]])
+			return(@pages[@ipage].buffer)
 		end
 
 		# create a new page at the end of the list
-		@buffers[@npage] = [FileBuffer.new(ans)]
+		@pages[@npage] = Page.new([FileBuffer.new(ans)])
 		@npage += 1
 		@ipage = @npage-1
-		@nbuf[@ipage] = 1
-		@ibuf[@ipage] = 0
 
 		# report that the file has been opened,
 		# and return the new file as the current buffer
 		$screen.write_message("Opened file: "+ans)
-		return(@buffers[@ipage][@ibuf[@ipage]])
+		return(@pages[@ipage].buffer)
 
 	end
 
-
-	# resize buffers for current number of buffers on the page
-	def resize_buffers(ipage)
-		j = 0;
-		k = @nbuf[ipage]
-		@buffers[ipage].each{|buf|
-			buf.window.set_window_size(j,k)
-			j += 1
-		}
-		buf = @buffers[ipage][@nbuf[ipage]-1]
-		buf.window.set_last_window_size
-	end
-
-	def refresh_buffers(ipage)
-		@buffers[ipage].each{|buf| buf.dump_to_screen(true)}
-	end
 
 	# put all buffers on the same page,
 	# unlesss they already are => then spread them out
 	def all_on_one_page
 		if @npage == 1
-			while @nbuf[0] > 1
+			while @pages[0].nbuf > 1
 				move_to_page(@npage+1)
 			end
 		else
@@ -2270,7 +2287,7 @@ class BuffersList
 			end
 		end
 		@ipage = 0
-		@ibuf[@ipage] = 0
+		@pages[@ipage].ibuf = 0
 	end
 
 	# move buffer to page n
@@ -2284,17 +2301,15 @@ class BuffersList
 			return
 		end
 
-		buf = @buffers[@ipage][@ibuf[@ipage]]
+		buf = @pages[@ipage].buffer
 
 		# delete current buffer from current page
-		@buffers[@ipage].delete_at(@ibuf[@ipage])
-		@nbuf[@ipage] -= 1
+		@pages[@ipage].delete_buffer
 
 		# if no buffers left on page,
 		# then remove the page
-		if @nbuf[@ipage] == 0
-			@buffers.delete_at(@ipage)
-			@nbuf.delete_at(@ipage)
+		if @pages[@ipage].nbuf == 0
+			@pages.delete_at(@ipage)
 			if n >= @ipage
 				n -= 1
 			end
@@ -2304,22 +2319,16 @@ class BuffersList
 
 		# put on new page
 		if @npage > n
-			@buffers[n][@nbuf[n]] = buf
-			@nbuf[n] += 1
+			@pages[n].add_buffer(buf)
 		else
-			@buffers[@npage] = []
-			@buffers[@npage][0] = buf
-			@nbuf[@npage] = 1
+			@pages[@npage] = Page.new([buf])
 			@npage += 1
 		end
-		if(@ibuf[@ipage] >= @nbuf[@ipage])
-			@ibuf[@ipage] = 0
-		end
 
-		resize_buffers(@ipage)
-		refresh_buffers(@ipage)
+		@pages[@ipage].resize_buffers
+		@pages[@ipage].refresh_buffers
 
-		return(@buffers[@ipage][@ibuf[@ipage]])
+		return(@pages[@ipage].buffer)
 
 	end
 
@@ -2642,7 +2651,9 @@ $togglelist_array = [
 	[?s, ["@syntax_color = true","Syntax color enabled","scol"]],
 	[?b, ["@syntax_color = false","Syntax color disabled","bw"]],
 	[?m, ["$screen.enable_mouse","Mouse support enabled","mo"]],
-	[?x, ["$screen.disable_mouse","Mouse support disabled","xmo"]]
+	[?x, ["$screen.disable_mouse","Mouse support disabled","xmo"]],
+	[?-, ["buffer.window.vstack","Vertical window stacking","-"]],
+	[?|, ["buffer.window.hstack","Horizontal window stacking","|"]]
 ]
 $togglelist = Hash[$togglelist_array]
 $togglelist.default = ["","Unknown toggle",""]
