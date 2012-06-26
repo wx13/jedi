@@ -437,6 +437,13 @@ class Screen
 	end
 
 
+	def draw_vertical_line(i,n)
+		c = i*@cols/n - 1
+		for r in 1..(@rows-1)
+			write_str(r,c,"|")
+		end
+	end
+
 end
 
 
@@ -489,15 +496,30 @@ class Window
 
 	# set the window size, where k is the number of windows
 	# and j is the number of this window
-	def set_window_size(j,k)
-		@pos_row = j*($screen.rows)/k
-		@rows = ($screen.rows)/k - 1
+	def set_window_size(j,k,vh="v")
+		if vh == "v"
+			@pos_row = j*($screen.rows)/k
+			@rows = ($screen.rows)/k - 1
+			@pos_col = 0
+			@cols = $screen.cols
+		else
+			@pos_row = 0
+			@rows = $screen.rows - 1
+			@pos_col = j*($screen.cols)/k
+			@cols = ($screen.cols)/k - 1
+		end
 	end
 
 	# set the size of the last window to fit to the remainder of
 	# the screen
-	def set_last_window_size
-		@rows = $screen.rows - @pos_row - 1
+	def set_last_window_size(vh="v")
+		if vh == "v"
+			@rows = $screen.rows - @pos_row - 1
+			@cols = $screen.cols
+		else
+			@cols = $screen.cols - @pos_col
+			@rows = $screen.rows - 1
+		end
 	end
 
 	# pass-through to screen class
@@ -2109,14 +2131,33 @@ class BuffersList
 		def resize_buffers
 			j = 0;
 			@buffers.each{|buf|
-				buf.window.set_window_size(j,@nbuf)
+				buf.window.set_window_size(j,@nbuf,@stack_orientation)
 				j += 1
 			}
 			buf = @buffers[@nbuf-1]
-			buf.window.set_last_window_size
+			buf.window.set_last_window_size(@stack_orientation)
 		end
 		def refresh_buffers
-			@buffers.each{|buf| buf.dump_to_screen(true)}
+			if @stack_orientation == "v"
+				@buffers.each{|buf| buf.dump_to_screen(true)}
+			else
+				@buffers.each_index{|i|
+					if i > 0
+						$screen.draw_vertical_line(i,@nbuf)
+					end
+					@buffers[i].dump_to_screen(true)
+				}
+			end
+		end
+		def vstack
+			@stack_orientation = "v"
+			resize_buffers
+			refresh_buffers
+		end
+		def hstack
+			@stack_orientation = "h"
+			resize_buffers
+			refresh_buffers
 		end
 	end
 
@@ -2168,6 +2209,13 @@ class BuffersList
 	end
 	def current
 		@pages[@ipage].buffer
+	end
+
+	def vstack
+		@pages[@ipage].vstack
+	end
+	def hstack
+		@pages[@ipage].hstack
 	end
 
 
@@ -2652,8 +2700,8 @@ $togglelist_array = [
 	[?b, ["@syntax_color = false","Syntax color disabled","bw"]],
 	[?m, ["$screen.enable_mouse","Mouse support enabled","mo"]],
 	[?x, ["$screen.disable_mouse","Mouse support disabled","xmo"]],
-	[?-, ["buffer.window.vstack","Vertical window stacking","-"]],
-	[?|, ["buffer.window.hstack","Horizontal window stacking","|"]]
+	[?-, ["$buffers.vstack","Vertical window stacking","-"]],
+	[?|, ["$buffers.hstack","Horizontal window stacking","|"]]
 ]
 $togglelist = Hash[$togglelist_array]
 $togglelist.default = ["","Unknown toggle",""]
