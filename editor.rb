@@ -99,11 +99,11 @@ class Screen
 	# Write a line of text.
 	def write_line(row,colfeed,line)
 
+		write_str(row,0," "*@cols)  # clear row
+
 		if line == nil || line == ""
 			return
 		end
-
-		write_str(row,0," "*@cols)  # clear row
 
 		substrings = line.split($color)  # split at color escape
 
@@ -1768,6 +1768,7 @@ class FileBuffer
 
 
 	def syntax_color(sline)
+		return(sline) if sline == ""
 		aline = sline.dup
 		# general regex coloring
 		@syntax_color_regex.each{|k,v|
