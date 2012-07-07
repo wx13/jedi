@@ -548,7 +548,7 @@ end
 class FileBuffer
 
 	attr_accessor :filename, :text, :editmode, :buffer_history,\
-	              :extramode, :cutscore, :window
+	              :extramode, :cutscore, :window, :sticky_extramode
 
 	def initialize(filename)
 
@@ -583,6 +583,7 @@ class FileBuffer
 		@autoindent = $autoindent
 		@editmode = $editmode
 		@extramode = false
+		@sticky_extramode = false
 		@insertmode = true
 		@linewrap = $linewrap
 		@colmode = $colmode
@@ -2520,14 +2521,6 @@ $ctrl_5 = 29
 $ctrl_6 = 30
 $ctrl_7 = 31
 $ctrl_8 = 127
-$ctrl_comma = 44
-$ctrl_dot = 46
-$ctrl_lessthan = 60
-$ctrl_morethan = 62
-$ctrl_colon = 58
-$ctrl_semicolon = 59
-$ctrl_squote = 39
-$ctrl_dquote = 34
 $backspace = 127
 $backspace2 = 263
 $space = 32
@@ -2661,12 +2654,13 @@ $commandlist = {
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extramode = true",
 	$ctrl_s => "buffer.run_script",
-	$ctrl_lessthan => "buffer.revert_to_saved",
-	$ctrl_morethan => "buffer.unrevert_to_saved",
-	$ctrl_comma => "buffer.undo",
-	$ctrl_dot => "buffer.redo",
-	$ctrl_semicolon => "$buffers.next_buffer",
-	$ctrl_colon => "$buffers.prev_buffer",
+	#$ctrl_lessthan => "buffer.revert_to_saved",
+	#$ctrl_morethan => "buffer.unrevert_to_saved",
+	#$ctrl_comma => "buffer.undo",
+	#$ctrl_dot => "buffer.redo",
+	#$ctrl_semicolon => "$buffers.next_buffer",
+	#$ctrl_colon => "$buffers.prev_buffer",
+	$ctrl_l => "$buffers.next_buffer",
 	Curses::KEY_MOUSE => "buffer.handle_mouse",
 	$shift_up => "buffer.screen_down",
 	$shift_down => "buffer.screen_up",
@@ -2689,7 +2683,13 @@ $extramode_commandlist = {
 	?6 => "$buffers.move_to_page(6)",
 	?7 => "$buffers.move_to_page(7)",
 	?8 => "$buffers.move_to_page(8)",
-	?9 => "$buffers.move_to_page(9)"
+	?9 => "$buffers.move_to_page(9)",
+	?[ => "buffer.undo",
+	?] => "buffer.redo",
+	?{ => "buffer.revert_to_saved",
+	?} => "buffer.unrevert_to_saved",
+	?l => "buffer.justify",
+	$ctrl_6 => "buffer.sticky_extramode ^= true"
 }
 $extramode_commandlist.default = ""
 $editmode_commandlist = {
@@ -2704,7 +2704,6 @@ $editmode_commandlist = {
 	$ctrl_j => "buffer.newline",
 	$ctrl_d => "buffer.delete",
 	$ctrl_r => "buffer.search_and_replace",
-	$ctrl_l => "buffer.justify",
 	$ctrl_i => "buffer.addchar(c)",
 	9 => "buffer.addchar(c)",
 }
@@ -2873,7 +2872,7 @@ $screen.start_screen_loop do
 		did_something = true
 		if buffer.extramode
 			eval($extramode_commandlist[c])
-			buffer.extramode = false
+			buffer.extramode = false if ! buffer.sticky_extramode
 			$screen.write_message("")
 		else
 			command = $commandlist[c]
