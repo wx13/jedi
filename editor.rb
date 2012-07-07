@@ -2528,12 +2528,16 @@ $ctrl_down = 520
 $ctrl_up = 561
 $ctrl_left = 540
 $ctrl_right = 555
-$ctrl_pagedown = 545
-$ctrl_pageup = 550
 $shift_down = 336
 $shift_up = 337
 $shift_left = 393
 $shift_right = 402
+$ctrlshift_down = 520
+$ctrlshift_up = 561
+$ctrlshift_left = 540
+$ctrlshift_right = 555
+$ctrl_pagedown = 545
+$ctrl_pageup = 550
 
 # color escape
 $color = "\300"
@@ -2653,13 +2657,7 @@ $commandlist = {
 	$ctrl_z => "$screen.suspend(buffer)",
 	$ctrl_t => "buffer.toggle",
 	$ctrl_6 => "buffer.extramode = true",
-	$ctrl_s => "buffer.run_script",
-	#$ctrl_lessthan => "buffer.revert_to_saved",
-	#$ctrl_morethan => "buffer.unrevert_to_saved",
-	#$ctrl_comma => "buffer.undo",
-	#$ctrl_dot => "buffer.redo",
-	#$ctrl_semicolon => "$buffers.next_buffer",
-	#$ctrl_colon => "$buffers.prev_buffer",
+	$ctrl_s => "buffer.enter_command",
 	$ctrl_l => "$buffers.next_buffer",
 	Curses::KEY_MOUSE => "buffer.handle_mouse",
 	$shift_up => "buffer.screen_down",
@@ -2667,7 +2665,11 @@ $commandlist = {
 	$shift_right => "buffer.screen_right",
 	$shift_left => "buffer.screen_left",
 	$ctrl_up => "$buffers.screen_down",
-	$ctrl_down => "$buffers.screen_up"
+	$ctrl_down => "$buffers.screen_up",
+	$ctrlshift_left => "buffer.undo",
+	$ctrlshift_right => "buffer.redo",
+	$ctrlshift_up => "buffer.revert_to_saved",
+	$ctrlshift_down => "buffer.unrevert_to_saved"
 }
 $commandlist.default = ""
 $extramode_commandlist = {
@@ -2689,6 +2691,7 @@ $extramode_commandlist = {
 	?{ => "buffer.revert_to_saved",
 	?} => "buffer.unrevert_to_saved",
 	?l => "buffer.justify",
+	?s => "buffer.run_script",
 	$ctrl_6 => "buffer.sticky_extramode ^= true"
 }
 $extramode_commandlist.default = ""
