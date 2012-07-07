@@ -548,7 +548,8 @@ end
 class FileBuffer
 
 	attr_accessor :filename, :text, :editmode, :buffer_history,\
-	              :extramode, :cutscore, :window, :sticky_extramode
+	              :extramode, :cutscore, :window, :sticky_extramode,\
+	              :row, :col
 
 	def initialize(filename)
 
@@ -590,7 +591,7 @@ class FileBuffer
 		@syntax_color = $syntax_color
 
 		# undo-redo history
-		@buffer_history = BufferHistory.new(@text)
+		@buffer_history = BufferHistory.new(@text,@row,@col)
 		# save up info about screen to detect changes
 		@colfeed_old = 0
 		@marked_old = false
@@ -1132,31 +1133,27 @@ class FileBuffer
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev
 			@text = @buffer_history.copy
-			@row = row_changed(@text,@buffer_history.next.text,@row)
+			@row = @buffer_history.row
+			@col = @buffer_history.col
 		end
 	end
 	def redo
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
 			@text = @buffer_history.copy
-			@row = row_changed(@text,@buffer_history.prev.text,@row)
+			@row = @buffer_history.row
+			@col = @buffer_history.col
 		end
 	end
 	def revert_to_saved
 		@text = @buffer_history.revert_to_saved
+		@row = @buffer_history.row
+		@col = @buffer_history.col
 	end
 	def unrevert_to_saved
 		@text = @buffer_history.unrevert_to_saved
-	end
-	def row_changed(text1,text2,r)
-		n = [text1.length,text2.length].min
-		text1.each_index{|i|
-			if i >= n then break end
-			if text1[i] != text2[i]
-				return(i)
-			end
-		}
-		return(r)
+		@row = @buffer_history.row
+		@col = @buffer_history.col
 	end
 
 
@@ -1976,21 +1973,25 @@ class BufferHistory
 
 	attr_accessor :tree
 
-	def initialize(text)
-		@tree = Node.new(text)
+	def initialize(text,row,col)
+		# create a root node, with no neighbors
+		@tree = Node.new(text,row,col)
 		@tree.next = nil
 		@tree.prev = nil
+		# these are for (un)reverting to saved copy
 		@saved = @tree
 		@old = @tree
 	end
 
 	class Node
-		attr_accessor :next, :prev, :text
-		def initialize(text)
+		attr_accessor :next, :prev, :text, :row, :col
+		def initialize(text,row,col)
 			@text = []
 			for k in 0..(text.length-1)
 				@text[k] = text[k]
 			end
+			@row = row
+			@col = col
 		end
 		def delete
 			@text = nil
@@ -2000,11 +2001,11 @@ class BufferHistory
 	end
 
 	# add a new snapshot
-	def add(text)
+	def add(text,row,col)
 
 		# create a new node and set navigation pointers
 		@old = @tree
-		@tree = Node.new(text)
+		@tree = Node.new(text,row,col)
 		@tree.next = @old.next
 		if @old.next != nil
 			@old.next.prev = @tree
@@ -2046,6 +2047,12 @@ class BufferHistory
 	# get the current text state
 	def text
 		@tree.text
+	end
+	def row
+		@tree.row
+	end
+	def col
+		@tree.col
 	end
 
 	# Shallow copy
@@ -2859,7 +2866,7 @@ $screen.start_screen_loop do
 		# take a snapshot of the buffer text,
 		# for undo/redo purposes
 		if buffer.buffer_history.text != buffer.text
-			buffer.buffer_history.add(buffer.text)
+			buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
 		end
 
 		# display the current buffer
