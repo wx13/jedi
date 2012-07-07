@@ -1132,7 +1132,6 @@ class FileBuffer
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev
 			@text = @buffer_history.copy
-			@col = 0
 			@row = row_changed(@text,@buffer_history.next.text,@row)
 		end
 	end
@@ -1140,7 +1139,6 @@ class FileBuffer
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
 			@text = @buffer_history.copy
-			@col = 0
 			@row = row_changed(@text,@buffer_history.prev.text,@row)
 		end
 	end
