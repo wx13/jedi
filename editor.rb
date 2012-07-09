@@ -2,13 +2,6 @@
 #
 #	editor.rb
 #
-#	There are 4 classes:
-#	Screen -- for reading and writing to the screen (Curses)
-#	FileBuffer -- for holding and manipulating the text of a file
-#	BuffersList -- for managing multiple file buffers
-#	BufferHistory -- for undo/redo
-#
-#
 #	Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
 #
 #	Copying and distribution of this file, with or without modification,
@@ -260,7 +253,7 @@ class Screen
 
 
 	#
-	# ask th user a question
+	# ask the user a question
 	# INPUT:
 	#   question  = "string"
 	#   history = ["string1","string2"]
@@ -2634,110 +2627,150 @@ $mouse = false
 #        It is an array, because I want to preserve order.
 # -----------------------------------------------------------------
 
+class KeyMap
 
-$commandlist = {
-	$ctrl_q => "buffer = $buffers.close",
-	$up => "buffer.cursor_up(1)",
-	$down => "buffer.cursor_down(1)",
-	$right => "buffer.cursor_right",
-	$left => "buffer.cursor_left",
-	$pagedown => "buffer.page_down",
-	$pageup => "buffer.page_up",
-	$home => "buffer.goto_line(0)",
-	$end => "buffer.goto_line(-1)",
-	$ctrl_v => "buffer.page_down",
-	$ctrl_y => "buffer.page_up",
-	$ctrl_e => "buffer.cursor_eol",
-	$ctrl_a => "buffer.cursor_sol",
-	$ctrl_n => "buffer = $buffers.next_page",
-	$ctrl_b => "buffer = $buffers.prev_page",
-	$ctrl_x => "buffer.mark",
-	$ctrl_p => "buffer.copy",
-	$ctrl_w => "buffer.search(0)",
-	$ctrl_g => "buffer.goto_line",
-	$ctrl_o => "buffer.save",
-	$ctrl_f => "buffer = $buffers.open",
-	$ctrl_z => "$screen.suspend(buffer)",
-	$ctrl_t => "buffer.toggle",
-	$ctrl_6 => "buffer.extramode = true",
-	$ctrl_s => "buffer.enter_command",
-	$ctrl_l => "$buffers.next_buffer",
-	Curses::KEY_MOUSE => "buffer.handle_mouse",
-	$shift_up => "buffer.screen_down",
-	$shift_down => "buffer.screen_up",
-	$shift_right => "buffer.screen_right",
-	$shift_left => "buffer.screen_left",
-	$ctrl_up => "$buffers.screen_down",
-	$ctrl_down => "$buffers.screen_up",
-	$ctrl_left => "buffer.undo",
-	$ctrl_right => "buffer.redo",
-	$ctrl_shift_left => "buffer.revert_to_saved",
-	$ctrl_shift_right => "buffer.unrevert_to_saved"
-}
-$commandlist.default = ""
-$extramode_commandlist = {
-	?b => "buffer.bookmark",
-	?g => "buffer.goto_bookmark",
-	?c => "buffer.center_screen",
-	?0 => "$buffers.all_on_one_page",
-	?1 => "$buffers.move_to_page(1)",
-	?2 => "$buffers.move_to_page(2)",
-	?3 => "$buffers.move_to_page(3)",
-	?4 => "$buffers.move_to_page(4)",
-	?5 => "$buffers.move_to_page(5)",
-	?6 => "$buffers.move_to_page(6)",
-	?7 => "$buffers.move_to_page(7)",
-	?8 => "$buffers.move_to_page(8)",
-	?9 => "$buffers.move_to_page(9)",
-	?[ => "buffer.undo",
-	?] => "buffer.redo",
-	?{ => "buffer.revert_to_saved",
-	?} => "buffer.unrevert_to_saved",
-	?l => "buffer.justify",
-	?s => "buffer.run_script",
-	$ctrl_6 => "buffer.sticky_extramode ^= true"
-}
-$extramode_commandlist.default = ""
-$editmode_commandlist = {
-	$backspace => "buffer.backspace",
-	$backspace2 => "buffer.backspace",
-	$enter => "buffer.newline",
-	$ctrl_k => "buffer.cut",
-	$ctrl_u => "buffer.paste",
-	$ctrl_m => "buffer.newline",
-	$ctrl_j => "buffer.newline",
-	$ctrl_d => "buffer.delete",
-	$ctrl_r => "buffer.search_and_replace",
-	$ctrl_i => "buffer.addchar(c)",
-	9 => "buffer.addchar(c)",
-}
-$editmode_commandlist.default = ""
-$viewmode_commandlist = {
-	?q => "buffer = $buffers.close",
-	?k => "buffer.cursor_up(1)",
-	?j => "buffer.cursor_down(1)",
-	?l => "buffer.cursor_right",
-	?h => "buffer.cursor_left",
-	$space => "buffer.page_down",
-	?b => "buffer.page_up",
-	?. => "buffer = $buffers.next",
-	?, => "buffer = $buffers.prev",
-	?/ => "buffer.search(0)",
-	?n => "buffer.search(1)",
-	?N => "buffer.search(-1)",
-	?g => "buffer.goto_line",
-	?i => "buffer.toggle_editmode",
-	?[ => "buffer.undo",
-	?] => "buffer.redo",
-	?{ => "buffer.revert_to_saved",
-	?} => "buffer.unrevert_to_saved",
-	?J => "buffer.screen_up",
-	?K => "buffer.screen_down",
-	?H => "buffer.screen_left",
-	?L => "buffer.screen_right",
-	?: => "buffer.enter_command"
-}
-$viewmode_commandlist.default = ""
+	def initialize
+
+		@commandlist = {
+			$ctrl_q => "buffer = $buffers.close",
+			$up => "buffer.cursor_up(1)",
+			$down => "buffer.cursor_down(1)",
+			$right => "buffer.cursor_right",
+			$left => "buffer.cursor_left",
+			$pagedown => "buffer.page_down",
+			$pageup => "buffer.page_up",
+			$home => "buffer.goto_line(0)",
+			$end => "buffer.goto_line(-1)",
+			$ctrl_v => "buffer.page_down",
+			$ctrl_y => "buffer.page_up",
+			$ctrl_e => "buffer.cursor_eol",
+			$ctrl_a => "buffer.cursor_sol",
+			$ctrl_n => "buffer = $buffers.next_page",
+			$ctrl_b => "buffer = $buffers.prev_page",
+			$ctrl_x => "buffer.mark",
+			$ctrl_p => "buffer.copy",
+			$ctrl_w => "buffer.search(0)",
+			$ctrl_g => "buffer.goto_line",
+			$ctrl_o => "buffer.save",
+			$ctrl_f => "buffer = $buffers.open",
+			$ctrl_z => "$screen.suspend(buffer)",
+			$ctrl_t => "buffer.toggle",
+			$ctrl_6 => "buffer.extramode = true",
+			$ctrl_s => "buffer.enter_command",
+			$ctrl_l => "$buffers.next_buffer",
+			Curses::KEY_MOUSE => "buffer.handle_mouse",
+			$shift_up => "buffer.screen_down",
+			$shift_down => "buffer.screen_up",
+			$shift_right => "buffer.screen_right",
+			$shift_left => "buffer.screen_left",
+			$ctrl_up => "$buffers.screen_down",
+			$ctrl_down => "$buffers.screen_up",
+			$ctrl_left => "buffer.undo",
+			$ctrl_right => "buffer.redo",
+			$ctrl_shift_left => "buffer.revert_to_saved",
+			$ctrl_shift_right => "buffer.unrevert_to_saved"
+		}
+		@commandlist.default = ""
+		@extramode_commandlist = {
+			?b => "buffer.bookmark",
+			?g => "buffer.goto_bookmark",
+			?c => "buffer.center_screen",
+			?0 => "$buffers.all_on_one_page",
+			?1 => "$buffers.move_to_page(1)",
+			?2 => "$buffers.move_to_page(2)",
+			?3 => "$buffers.move_to_page(3)",
+			?4 => "$buffers.move_to_page(4)",
+			?5 => "$buffers.move_to_page(5)",
+			?6 => "$buffers.move_to_page(6)",
+			?7 => "$buffers.move_to_page(7)",
+			?8 => "$buffers.move_to_page(8)",
+			?9 => "$buffers.move_to_page(9)",
+			?[ => "buffer.undo",
+			?] => "buffer.redo",
+			?{ => "buffer.revert_to_saved",
+			?} => "buffer.unrevert_to_saved",
+			?l => "buffer.justify",
+			?s => "buffer.run_script",
+			$ctrl_6 => "buffer.sticky_extramode ^= true"
+		}
+		@extramode_commandlist.default = ""
+		@editmode_commandlist = {
+			$backspace => "buffer.backspace",
+			$backspace2 => "buffer.backspace",
+			$enter => "buffer.newline",
+			$ctrl_k => "buffer.cut",
+			$ctrl_u => "buffer.paste",
+			$ctrl_m => "buffer.newline",
+			$ctrl_j => "buffer.newline",
+			$ctrl_d => "buffer.delete",
+			$ctrl_r => "buffer.search_and_replace",
+			$ctrl_i => "buffer.addchar(c)",
+			9 => "buffer.addchar(c)",
+		}
+		@editmode_commandlist.default = ""
+		@viewmode_commandlist = {
+			?q => "buffer = $buffers.close",
+			?k => "buffer.cursor_up(1)",
+			?j => "buffer.cursor_down(1)",
+			?l => "buffer.cursor_right",
+			?h => "buffer.cursor_left",
+			$space => "buffer.page_down",
+			?b => "buffer.page_up",
+			?. => "buffer = $buffers.next",
+			?, => "buffer = $buffers.prev",
+			?/ => "buffer.search(0)",
+			?n => "buffer.search(1)",
+			?N => "buffer.search(-1)",
+			?g => "buffer.goto_line",
+			?i => "buffer.toggle_editmode",
+			?[ => "buffer.undo",
+			?] => "buffer.redo",
+			?{ => "buffer.revert_to_saved",
+			?} => "buffer.unrevert_to_saved",
+			?J => "buffer.screen_up",
+			?K => "buffer.screen_down",
+			?H => "buffer.screen_left",
+			?L => "buffer.screen_right",
+			?: => "buffer.enter_command"
+		}
+		@viewmode_commandlist.default = ""
+
+	end
+
+	def extramode_command(keycode)
+		return(@extramode_commandlist[keycode])
+	end
+
+	def command(keycode, editmode)
+		cmd = @commandlist[keycode]
+		if cmd == ""
+			cmd = @commandlist[Curses.keyname(keycode)]
+		end
+		if cmd == ""
+			if editmode
+				cmd = @editmode_commandlist[keycode]
+				if cmd == ""
+					cmd = @editmode_commandlist[Curses.keyname(keycode)]
+				end
+			else
+				cmd = @viewmode_commandlist[keycode]
+				if cmd == ""
+					cmd = @viewmode_commandlist[Curses.keyname(keycode)]
+				end
+			end
+		end
+		if cmd == ""
+			return nil
+		else
+			return cmd
+		end
+	end
+
+end
+
+
+
+
 $togglelist_array = [
 	[?e, ["@editmode = true","Edit mode","ed"]],
 	[?v, ["@editmode = false","View mode","vu"]],
@@ -2758,6 +2791,8 @@ $togglelist_array = [
 ]
 $togglelist = Hash[$togglelist_array]
 $togglelist.default = ["","Unknown toggle",""]
+
+
 
 
 
@@ -2829,6 +2864,9 @@ $command_hist = [""]
 $scriptfile_hist = [""]
 $script_hist = [""]
 
+# define key mapping
+keymap = KeyMap.new
+
 # start screen
 $screen = Screen.new
 
@@ -2841,7 +2879,6 @@ $copy_buffer = ""
 # for detecting changes to display,
 # so we don't have to redraw as frequently
 $screen_buffer = []
-
 
 # initialize curses screen and run with it
 $screen.start_screen_loop do
@@ -2873,27 +2910,16 @@ $screen.start_screen_loop do
 		if c.is_a?(String) then c = c.unpack('C')[0] end
 
 		# process key press -- run associated command
-		did_something = true
 		if buffer.extramode
-			eval($extramode_commandlist[c])
+			eval(keymap.extramode_command(c))
 			buffer.extramode = false if ! buffer.sticky_extramode
 			$screen.write_message("")
 		else
-			command = $commandlist[c]
-			if command == ""
-				command = $commandlist[Curses.keyname(c)]
-			end
-			eval(command)
-			if command==""
-				if buffer.editmode
-					command = $editmode_commandlist[c]
-					eval(command)
-					if command == ""
-						buffer.addchar(c)
-					end
-				else
-					eval($viewmode_commandlist[c])
-				end
+			command = keymap.command(c,buffer.editmode)
+			if command == nil
+				buffer.addchar(c) if buffer.editmode
+			else
+				eval(command)
 			end
 		end
 
