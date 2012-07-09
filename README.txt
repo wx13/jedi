@@ -356,8 +356,7 @@ bumping a pointer up or down the link list of text buffers.
 Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
 
 Copying and distribution of this file, with or without modification,
-are permitted in any medium without royalty provided the copyright
-notice and this notice are preserved.  This file is offered as-is,
-without any warranty.
+are permitted in any medium without royalty or restriction.  This file
+is offered as-is, without any warranty.
 ------------------------------------------------------------------------
 
