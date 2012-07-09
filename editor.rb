@@ -220,7 +220,7 @@ class Screen
 			c = Curses.getch
 			if c.is_a?(String) then c = c.unpack('C')[0] end
 			case c
-				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
+				when $backspace, $backspace2
 					# chop off a character, and search for a new match
 					token.chop!
 					ih = hist.rindex{|x|x.match(/^#{token}/)}
@@ -236,11 +236,11 @@ class Screen
 				when $ctrl_c, $ctrl_g
 					# 0 return value = cancelled search
 					return 0
-				when $ctrl_m, Curses::Key::ENTER
+				when $enter
 					# non-zero return value is index of the match.
 					# We've been searching backwards, so must invert index.
 					return hist.length - ih
-				when Curses::Key::UP, Curses::Key::DOWN
+				when $up, $down
 					# up/down treated same as enter
 					return hist.length - ih
 				when 10..126
@@ -290,7 +290,7 @@ class Screen
 			if c.is_a?(String) then c = c.unpack('C')[0] end
 			case c
 				when $ctrl_c then return(nil)
-				when Curses::Key::UP
+				when $up
 					ih += 1
 					if ih >= hist.length
 						ih = hist.length-1
@@ -298,7 +298,7 @@ class Screen
 					token = hist[-ih].dup
 					glob = token
 					col = token.length
-				when Curses::Key::DOWN
+				when $down
 					ih -= 1
 					if ih < 0
 						ih = 0
@@ -320,11 +320,11 @@ class Screen
 					end
 					glob = token
 					col = token.length
-				when Curses::Key::LEFT
+				when $left
 					col -= 1
 					if col<0 then col=0 end
 					glob = token
-				when Curses::Key::RIGHT
+				when $right
 					col += 1
 					if col>token.length then col = token.length end
 					glob = token
@@ -350,21 +350,21 @@ class Screen
 					end
 					token0 = token.dup
 					glob = token
-				when $ctrl_m, Curses::Key::ENTER then break
+				when $ctrl_m, $enter, $ctrl_j then break
 				when 10..126
 					# regular character
 					token.insert(col,c.chr)
 					token0 = token.dup
 					col += 1
 					glob = token
-				when Curses::Key::BACKSPACE, $backspace, $backspace2, 8
+				when $backspace, $backspace2
 					if col > 0
 						token[col-1] = ""
 						col -= 1
 					end
 					token0 = token.dup
 					glob = token
-				when ?\t, $ctrl_i, 9
+				when ?\t, $ctrl_i
 					if file
 						# find files that match typed string
 						# Cycle through matches.
@@ -2492,57 +2492,55 @@ end
 
 # control & meta chracters -- the \C-a type thing seems to only
 # sometimes work
-$ctrl_space = 0
-$ctrl_a = 1
-$ctrl_b = 2
-$ctrl_c = 3
-$ctrl_d = 4
-$ctrl_e = 5
-$ctrl_f = 6
-$ctrl_g = 7
-$ctrl_h = 8
-$ctrl_i = 9
-$ctrl_j = 10
-$ctrl_k = 11
-$ctrl_l = 12
-$ctrl_m = 10
-$enter = 10
-$ctrl_n = 14
-$ctrl_o = 15
-$ctrl_p = 16
-$ctrl_q = 17
-$ctrl_r = 18
-$ctrl_s = 19
-$ctrl_t = 20
-$ctrl_u = 21
-$ctrl_v = 22
-$ctrl_w = 23
-$ctrl_x = 24
-$ctrl_y = 25
-$ctrl_z = 26
-$ctrl_3 = 27
-$ctrl_4 = 28
-$ctrl_5 = 29
-$ctrl_6 = 30
-$ctrl_7 = 31
-$ctrl_8 = 127
-$backspace = 127
-$backspace2 = 263
-$space = 32
-$ctrl_down = 519
-$ctrl_up = 560
-$ctrl_left = 539
-$ctrl_right = 554
-$shift_down = 336
-$shift_up = 337
-$shift_left = 393
-$shift_right = 402
-$ctrlshift_down = 520
-$ctrlshift_up = 561
-$ctrlshift_left = 540
-$ctrlshift_right = 555
-$ctrl_pagedown = 545
-$ctrl_pageup = 550
+$ctrl_a = ?\C-a
+$ctrl_b = ?\C-b
+$ctrl_c = ?\C-c
+$ctrl_d = ?\C-d
+$ctrl_e = ?\C-e
+$ctrl_f = ?\C-f
+$ctrl_g = ?\C-g
+$ctrl_h = ?\C-h
+$ctrl_i = ?\C-i
+$ctrl_j = ?\C-j
+$ctrl_k = ?\C-k
+$ctrl_l = ?\C-l
+$ctrl_m = ?\C-m
+$ctrl_n = ?\C-n
+$ctrl_o = ?\C-o
+$ctrl_p = ?\C-p
+$ctrl_q = ?\C-q
+$ctrl_r = ?\C-r
+$ctrl_s = ?\C-s
+$ctrl_t = ?\C-t
+$ctrl_u = ?\C-u
+$ctrl_v = ?\C-v
+$ctrl_w = ?\C-w
+$ctrl_x = ?\C-x
+$ctrl_y = ?\C-y
+$ctrl_z = ?\C-z
+$ctrl_6 = ?\C-^
+$enter = Curses::Key::ENTER
+$backspace = Curses::Key::BACKSPACE
+$space = " "
+$shift_down = Curses::Key::SF
+$shift_up = Curses::Key::SR
+$shift_left = Curses::Key::SLEFT
+$shift_right = Curses::Key::SRIGHT
+$up = Curses::Key::UP
+$down = Curses::Key::DOWN
+$right = Curses::Key::RIGHT
+$left = Curses::Key::LEFT
+$pagedown = Curses::Key::NPAGE
+$pageup = Curses::Key::PPAGE
+$home = Curses::Key::HOME
+$end = Curses::Key::END
+$ctrl_down = 'kDN5'
+$ctrl_up = 'kUP5'
+$ctrl_left = 'kLFT5'
+$ctrl_right = 'kRIT5'
+$ctrl_shift_left = 'kLFT6'
+$ctrl_shift_right = 'kRIT6'
+
 
 # color escape
 $color = "\300"
@@ -2639,14 +2637,14 @@ $mouse = false
 
 $commandlist = {
 	$ctrl_q => "buffer = $buffers.close",
-	Curses::Key::UP => "buffer.cursor_up(1)",
-	Curses::Key::DOWN => "buffer.cursor_down(1)",
-	Curses::Key::RIGHT => "buffer.cursor_right",
-	Curses::Key::LEFT => "buffer.cursor_left",
-	Curses::Key::NPAGE => "buffer.page_down",
-	Curses::Key::PPAGE => "buffer.page_up",
-	Curses::Key::HOME => "buffer.goto_line(0)",
-	Curses::Key::END => "buffer.goto_line(-1)",
+	$up => "buffer.cursor_up(1)",
+	$down => "buffer.cursor_down(1)",
+	$right => "buffer.cursor_right",
+	$left => "buffer.cursor_left",
+	$pagedown => "buffer.page_down",
+	$pageup => "buffer.page_up",
+	$home => "buffer.goto_line(0)",
+	$end => "buffer.goto_line(-1)",
 	$ctrl_v => "buffer.page_down",
 	$ctrl_y => "buffer.page_up",
 	$ctrl_e => "buffer.cursor_eol",
@@ -2671,10 +2669,10 @@ $commandlist = {
 	$shift_left => "buffer.screen_left",
 	$ctrl_up => "$buffers.screen_down",
 	$ctrl_down => "$buffers.screen_up",
-	$ctrlshift_left => "buffer.undo",
-	$ctrlshift_right => "buffer.redo",
-	$ctrlshift_up => "buffer.revert_to_saved",
-	$ctrlshift_down => "buffer.unrevert_to_saved"
+	$ctrl_left => "buffer.undo",
+	$ctrl_right => "buffer.redo",
+	$ctrl_shift_left => "buffer.revert_to_saved",
+	$ctrl_shift_right => "buffer.unrevert_to_saved"
 }
 $commandlist.default = ""
 $extramode_commandlist = {
@@ -2701,10 +2699,8 @@ $extramode_commandlist = {
 }
 $extramode_commandlist.default = ""
 $editmode_commandlist = {
-	Curses::Key::BACKSPACE => "buffer.backspace",
 	$backspace => "buffer.backspace",
 	$backspace2 => "buffer.backspace",
-	8 => "buffer.backspace",
 	$enter => "buffer.newline",
 	$ctrl_k => "buffer.cut",
 	$ctrl_u => "buffer.paste",
@@ -2884,6 +2880,9 @@ $screen.start_screen_loop do
 			$screen.write_message("")
 		else
 			command = $commandlist[c]
+			if command == ""
+				command = $commandlist[Curses.keyname(c)]
+			end
 			eval(command)
 			if command==""
 				if buffer.editmode
