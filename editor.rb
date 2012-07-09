@@ -14,6 +14,9 @@ require 'optparse'
 require 'yaml'
 
 
+
+
+
 #------------------------------------------------------------
 # This class will manage the curses screen output.
 # It should include all the user interface stuff, such as:
@@ -28,9 +31,10 @@ class Screen
 	attr_accessor :rows, :cols, :mouse
 
 	def initialize
+
+		# set up curses
 		Curses.raw
 		Curses.noecho
-		@mouse = $mouse
 		Curses.start_color
 		Curses.stdscr.keypad(true)
 		Curses.init_pair(Curses::COLOR_GREEN, Curses::COLOR_GREEN, Curses::COLOR_BLACK)
@@ -40,9 +44,17 @@ class Screen
 		Curses.init_pair(Curses::COLOR_BLUE, Curses::COLOR_BLUE, Curses::COLOR_BLACK)
 		Curses.init_pair(Curses::COLOR_YELLOW, Curses::COLOR_YELLOW, Curses::COLOR_BLACK)
 		Curses.init_pair(Curses::COLOR_MAGENTA, Curses::COLOR_MAGENTA, Curses::COLOR_BLACK)
+
+		# use the mouse?
+		@mouse = $mouse
 		enable_mouse if @mouse
+
+		# grab a curses instance
 		@screen = Curses.init_screen
+
+		# get and store screen size
 		update_screen_size
+
 	end
 
 	def update_screen_size
@@ -73,6 +85,7 @@ class Screen
 		@mouse = false
 	end
 
+	# Suspend the editor
 	def suspend(buffer)
 		Curses.close_screen
 		Process.kill("SIGSTOP",0)
@@ -89,7 +102,7 @@ class Screen
 		Curses.addstr(text)
 	end
 
-	# Write a line of text.
+	# Write a whole line of text.
 	def write_line(row,scol,width,colfeed,line)
 
 		write_str(row,scol," "*width)  # clear row
