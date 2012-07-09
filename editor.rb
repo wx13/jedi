@@ -2697,6 +2697,7 @@ class KeyMap
 		@editmode_commandlist = {
 			$backspace => "buffer.backspace",
 			$backspace2 => "buffer.backspace",
+			$ctrl_h => "buffer.backspace",
 			$enter => "buffer.newline",
 			$ctrl_k => "buffer.cut",
 			$ctrl_u => "buffer.paste",
