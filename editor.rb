@@ -2770,6 +2770,7 @@ class KeyMap
 	end
 
 	def command(keycode, editmode)
+		return nil if keycode > 1000
 		cmd = @commandlist[keycode]
 		if cmd == ""
 			cmd = @commandlist[Curses.keyname(keycode)]
