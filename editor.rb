@@ -2641,6 +2641,9 @@ $mouse = false
 
 class KeyMap
 
+	attr_accessor :commandlist, :editmode_commandlist, \
+	              :extramode_commandlist, :viewmode_commandlist
+
 	def initialize
 
 		@commandlist = {
@@ -2729,8 +2732,8 @@ class KeyMap
 			?h => "buffer.cursor_left",
 			$space => "buffer.page_down",
 			?b => "buffer.page_up",
-			?. => "buffer = $buffers.next",
-			?, => "buffer = $buffers.prev",
+			?. => "buffer = $buffers.next_buffer",
+			?, => "buffer = $buffers.prev_buffer",
 			?/ => "buffer.search(0)",
 			?n => "buffer.search(1)",
 			?N => "buffer.search(-1)",
@@ -2807,7 +2810,8 @@ $togglelist.default = ["","Unknown toggle",""]
 
 
 
-
+# define key mapping
+$keymap = KeyMap.new
 
 
 
@@ -2877,9 +2881,6 @@ $command_hist = [""]
 $scriptfile_hist = [""]
 $script_hist = [""]
 
-# define key mapping
-keymap = KeyMap.new
-
 # start screen
 $screen = Screen.new
 
@@ -2924,11 +2925,11 @@ $screen.start_screen_loop do
 
 		# process key press -- run associated command
 		if buffer.extramode
-			eval(keymap.extramode_command(c))
+			eval($keymap.extramode_command(c))
 			buffer.extramode = false if ! buffer.sticky_extramode
 			$screen.write_message("")
 		else
-			command = keymap.command(c,buffer.editmode)
+			command = $keymap.command(c,buffer.editmode)
 			if command == nil
 				buffer.addchar(c) if buffer.editmode
 			else
