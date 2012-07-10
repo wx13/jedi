@@ -2230,6 +2230,11 @@ class BuffersList
 
 	end
 
+	def update_screen_size
+		@pages[@ipage].resize_buffers
+		@pages[@ipage].refresh_buffers
+	end
+
 	# return next, previous, or current buffer
 	def next_page
 		@ipage = (@ipage+1).modulo(@npage)
@@ -2915,6 +2920,7 @@ $screen.start_screen_loop do
 
 		# allow for resizes
 		$screen.update_screen_size
+		$buffers.update_screen_size
 		$cols = $screen.cols
 		$rows = $screen.rows
 
