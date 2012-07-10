@@ -1134,12 +1134,21 @@ class FileBuffer
 	#
 	# Undo / redo
 	#
+	def better_cursor_position
+		if @row-@linefeed >= @window.rows
+			@linefeed = @row - @window.rows/2
+		end
+		if @row - @linefeed < 0
+			@linefeed = [@row - @window.rows/2, 0].max
+		end
+	end
 	def undo
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev
 			@text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
+			better_cursor_position
 		end
 	end
 	def redo
@@ -1148,17 +1157,20 @@ class FileBuffer
 			@text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
+			better_cursor_position
 		end
 	end
 	def revert_to_saved
 		@text = @buffer_history.revert_to_saved
 		@row = @buffer_history.row
 		@col = @buffer_history.col
+		better_cursor_position
 	end
 	def unrevert_to_saved
 		@text = @buffer_history.unrevert_to_saved
 		@row = @buffer_history.row
 		@col = @buffer_history.col
+		better_cursor_position
 	end
 
 
