@@ -6,40 +6,14 @@ editor.rb is a text editor writen in ruby/curses.
 
 Design goals:
 
-1. Simplicity
+1. Zero install
 	- single file of ruby code
 	- only use built-in libraries (hence curses instead of ncurses)
-	- easy to modify, customize & extend
-2. Scriptable
+2. Easy to modify, customize & extend
+3. Scriptable
 	- execute single-line ruby commands within the editor
 	- execute ruby script files from within the editor
 	- execute ruby script files at startup
-
-
-Features:
-
-+ typical text editor stuff:
-	- syntax coloring
-	- multiple buffers
-	- search & replace
-	- autoindent, linewrap, justify text
-	- column editing
-	- undo-redo
-+ run arbitrary ruby scripts within the editor
-  or at startup
-
-
-Future work:
-
-+ display & edit diffs
-	- no idea how to do this
-+ record & replay keypresses (macros)
-	- not sure if I'd ever use this (given scripting capabilities)
-+ undo-redo for arbitrary ruby scripts
-	- challenging: how to know what has changed?
-	- currently: make sure to .dup lines before changing
-+ help screen (ctrl-h)
-	- How to do this without having to maintain multiple README / help pages?
 
 
 
@@ -97,8 +71,8 @@ One can do more complex configurations, such as swapping keybindings.
 Suppose you like to use nano's "ctrl-x" for quit, rather than
 "ctrl-q":
 
-	$commandlist[$ctrl_x] = "buffer = buffers.close"
-	$commandlist[$ctrl_q] = "buffer = buffers.mark"
+	$keymap.commandlist[$ctrl_x] = "buffer = $buffers.close"
+	$keymap.commandlist[$ctrl_q] = "buffer.mark"
 
 One can go even further, and modify/create class methods.  For example,
 if you prefer that ctrl-e take you to the last character of the line,
@@ -141,7 +115,7 @@ Modes
 
 This is not a modal editor, but it does have two modes.
 In the "edit" mode you can do pretty much everything.
-In the "vew" mode, you cannot modify the text (not strictly true),
+In the "view" mode, you cannot modify the text (not strictly true),
 and there are some shorcuts for navigation, such as:
 	- h,j,k,l to move the cursor
 	- space, b for page down/up
@@ -162,10 +136,11 @@ could easily write a set of keybindings that are very vim-like.
 Basic editing
 -------------
 
-Basic editing is very simlar to gnu-nano. (Remember, key-bindings are
-very easy to change).
+Basic editing uses control sequences similar to gnu-nano.  Some default
+keybindings (easy to change):
 
 	- Arrow keys & page up/down to move around.
+	- Shift-arrow to scroll the page
 	- Ctrl-{v,y} are also page down/up.
 	- Ctrl-w to search
 	- Ctrl-r search & replace
@@ -174,10 +149,9 @@ very easy to change).
 	- Ctrl-e end of line
 	- Ctrl-a start of line
 	- Ctrl-d delete character
-	- Ctrl-{b,n} previous/next text buffer
+	- Ctrl-l next text buffer
 	- Ctrl-f open file
 	- Ctrl-g go to line number (empty=0, negative = up from bottom)
-	- Ctrl-l justify text (adjustable width)
 	- Ctrl-p copy
 	- Ctrl-k cut
 	- Ctrl-u paste
@@ -193,31 +167,21 @@ very easy to change).
 		- r = row mode
 		- s = syntax coloring on
 		- b = syntax coloring off
+		- - = split screen vertically
+		- | = split screen horizontally
 	- Ctrl-x mark text
+	- Ctrl-^ N to move buffer to screen N (split screen)
+	- Ctrl-^ 0 to put all buffers on same screen (or undo such a move)
+	- Ctrl (left|right) arrow = undo/redo
+	- Ctrl-Shift (left|right) arrow = revert/unrevert to saved
 
 
-Some examples:
-
-To open a file for reading, hit "ctrl-f".  Tab key cycles through matches.
-
-Cut/paste work just like in gnu-nano. Copy is just like cut, but ctrl-p.
-
-To run an arbitrary ruby command, type "ctrl-t v :". Then type the command and
-hit enter.
-
-To indent a block of text
-	1. hit "ctrl-x" at first line (or last) line of text
-	2. navigate to last line (or first)
-	3. type tabs or spaces (backspace to unindent)
-
-Alternatively, enter column mode "ctrl-t c".  Then "ctrl-x" to make a long cursor
-that you can type anything at (other than enter).
 
 
 Entering ruby commands
 ----------------------
 
-Type "ctrl-t v : <ruby commands> <enter>" to enter a ruby command.
+Type "ctrl-s <ruby commands> <enter>" to enter a ruby command.
 All commands entered this way, are run in the context of the current
 file buffer.  Thus "@text" refers to the text of that buffer.  The
 screen can be accessed by the global variable "$screen", and the other
@@ -308,33 +272,29 @@ Description of code and methods
 Keybindings
 -----------
 
-The keybindings section is near the top of the code. It has four
-sections: commandlist, extramode_commandlist, editmode_commandlist, and
-viewmode_commandlist. The first is for universal keybindings. The
-third only works in editmode, and the fourth works only in viewmode.
-The second is for extra keybindings that there isn't room for.
+The keybindings code has four sections: commandlist,
+extramode_commandlist, editmode_commandlist, and viewmode_commandlist.
+The first is for universal keybindings. The third only works in
+editmode, and the fourth works only in viewmode. The second is for
+extra keybindings that there isn't room for.
 
 Classes
 -------
 
 The code contains four classes:
+
 1. Screen
-2. FileBuffer
-3. BuffersList
-4. BufferHistory
+	Low-level screen interactions
+2. Window
+	Per-buffer screen interactions (calls to Screen class)
+3. FileBuffer
+	Contains all info and methods regarding a single file
+4. BuffersList
+	Container class to manage multiple buffers
+5. BufferHistory
+	Store up snapshots for undo/redo
+6. KeyMap
 
-Screen contains methods related to curses screen output, such as:
-initialiing the screen, writing a message to the bottom of the window,
-and writing a line of text.
-
-FileBuffer stores the current state of the file text, plus things like
-position within the buffer, and marks.  It contains methods related to
-working with the file text, such as adding and deleting characters,
-cut/copy/paste, search, etc.
-
-BuffersList manages multiple buffers, and stores up the copy/paste text.
-
-BufferHistory is a linked list of buffer text state, used for undo/redo.
 
 
 Undo-redo

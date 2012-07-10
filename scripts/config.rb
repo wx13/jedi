@@ -24,3 +24,4 @@ $color_whitespace = $color_default
 # start in edit mode (as opposed to view mode)
 $editmode = true
 
+
