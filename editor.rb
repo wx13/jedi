@@ -55,6 +55,62 @@ class Screen
 		# get and store screen size
 		update_screen_size
 
+		# curses keycodes
+		$ctrl_a = ?\C-a
+		$ctrl_b = ?\C-b
+		$ctrl_c = ?\C-c
+		$ctrl_d = ?\C-d
+		$ctrl_e = ?\C-e
+		$ctrl_f = ?\C-f
+		$ctrl_g = ?\C-g
+		$ctrl_h = ?\C-h
+		$ctrl_i = ?\C-i
+		$ctrl_j = ?\C-j
+		$ctrl_k = ?\C-k
+		$ctrl_l = ?\C-l
+		$ctrl_m = ?\C-m
+		$ctrl_n = ?\C-n
+		$ctrl_o = ?\C-o
+		$ctrl_p = ?\C-p
+		$ctrl_q = ?\C-q
+		$ctrl_r = ?\C-r
+		$ctrl_s = ?\C-s
+		$ctrl_t = ?\C-t
+		$ctrl_u = ?\C-u
+		$ctrl_v = ?\C-v
+		$ctrl_w = ?\C-w
+		$ctrl_x = ?\C-x
+		$ctrl_y = ?\C-y
+		$ctrl_z = ?\C-z
+		$ctrl_6 = ?\C-^
+		$enter = Curses::Key::ENTER
+		$backspace = Curses::Key::BACKSPACE
+		$space = " "
+		$shift_down = Curses::Key::SF
+		$shift_up = Curses::Key::SR
+		$shift_left = Curses::Key::SLEFT
+		$shift_right = Curses::Key::SRIGHT
+		$up = Curses::Key::UP
+		$down = Curses::Key::DOWN
+		$right = Curses::Key::RIGHT
+		$left = Curses::Key::LEFT
+		$pagedown = Curses::Key::NPAGE
+		$pageup = Curses::Key::PPAGE
+		$home = Curses::Key::HOME
+		$end = Curses::Key::END
+		$ctrl_down = 'kDN5'
+		$ctrl_up = 'kUP5'
+		$ctrl_left = 'kLFT5'
+		$ctrl_right = 'kRIT5'
+		$ctrl_shift_left = 'kLFT6'
+		$ctrl_shift_right = 'kRIT6'
+
+	end
+
+	def getch
+		c = Curses.getch
+		if c.is_a?(String) then c = c.unpack('C')[0] end
+		return(c)
 	end
 
 	def update_screen_size
@@ -2507,61 +2563,7 @@ end
 
 
 
-# -----------------------------------------------------------------
-# This section defines some global constants.  Don't change these
-# unless you know what you're doing.
-# -----------------------------------------------------------------
 
-# control & meta chracters -- the \C-a type thing seems to only
-# sometimes work
-$ctrl_a = ?\C-a
-$ctrl_b = ?\C-b
-$ctrl_c = ?\C-c
-$ctrl_d = ?\C-d
-$ctrl_e = ?\C-e
-$ctrl_f = ?\C-f
-$ctrl_g = ?\C-g
-$ctrl_h = ?\C-h
-$ctrl_i = ?\C-i
-$ctrl_j = ?\C-j
-$ctrl_k = ?\C-k
-$ctrl_l = ?\C-l
-$ctrl_m = ?\C-m
-$ctrl_n = ?\C-n
-$ctrl_o = ?\C-o
-$ctrl_p = ?\C-p
-$ctrl_q = ?\C-q
-$ctrl_r = ?\C-r
-$ctrl_s = ?\C-s
-$ctrl_t = ?\C-t
-$ctrl_u = ?\C-u
-$ctrl_v = ?\C-v
-$ctrl_w = ?\C-w
-$ctrl_x = ?\C-x
-$ctrl_y = ?\C-y
-$ctrl_z = ?\C-z
-$ctrl_6 = ?\C-^
-$enter = Curses::Key::ENTER
-$backspace = Curses::Key::BACKSPACE
-$space = " "
-$shift_down = Curses::Key::SF
-$shift_up = Curses::Key::SR
-$shift_left = Curses::Key::SLEFT
-$shift_right = Curses::Key::SRIGHT
-$up = Curses::Key::UP
-$down = Curses::Key::DOWN
-$right = Curses::Key::RIGHT
-$left = Curses::Key::LEFT
-$pagedown = Curses::Key::NPAGE
-$pageup = Curses::Key::PPAGE
-$home = Curses::Key::HOME
-$end = Curses::Key::END
-$ctrl_down = 'kDN5'
-$ctrl_up = 'kUP5'
-$ctrl_left = 'kLFT5'
-$ctrl_right = 'kRIT5'
-$ctrl_shift_left = 'kLFT6'
-$ctrl_shift_right = 'kRIT6'
 
 
 # color escape
@@ -2828,9 +2830,6 @@ $togglelist.default = ["","Unknown toggle",""]
 
 
 
-# define key mapping
-$keymap = KeyMap.new
-
 
 
 
@@ -2902,6 +2901,9 @@ $script_hist = [""]
 # start screen
 $screen = Screen.new
 
+# define key mapping
+$keymap = KeyMap.new
+
 # read specified files into buffers of buffer list
 $buffers = BuffersList.new(ARGV)
 
@@ -2911,6 +2913,7 @@ $copy_buffer = ""
 # for detecting changes to display,
 # so we don't have to redraw as frequently
 $screen_buffer = []
+
 
 # initialize curses screen and run with it
 $screen.start_screen_loop do
@@ -2939,8 +2942,7 @@ $screen.start_screen_loop do
 		buffer.dump_to_screen
 
 		# wait for a key press
-		c = Curses.getch
-		if c.is_a?(String) then c = c.unpack('C')[0] end
+		c = $screen.getch
 
 		# process key press -- run associated command
 		if buffer.extramode
