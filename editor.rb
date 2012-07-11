@@ -505,6 +505,36 @@ class Screen
 		end
 	end
 
+	def setpos(r,c)
+		Curses.setpos(r,c)
+	end
+
+	def getmouse
+		m = Curses.getmouse
+		return "" if m == nil
+		cmd = ""
+		case m.bstate
+			when Curses::BUTTON1_CLICKED
+				cmd += '@marked = false;'
+				cmd += "goto_position(#{m.y}-1,#{m.x});"
+				cmd += '@window.write_message("");'
+			when Curses::BUTTON1_PRESSED
+				cmd += '@marked = false;'
+				cmd += "goto_position(#{m.y}-1,#{m.x});"
+				cmd += 'mark'
+			when Curses::BUTTON1_RELEASED
+				cmd += "goto_position(#{m.y}-1,#{m.x});"
+			when Curses::REPORT_MOUSE_POSITION
+				cmd += "goto_position(#{m.y}-1,#{m.x});"
+				cmd += 'mark if !@marked;'
+			when Curses::BUTTON1_DOUBLE_CLICKED
+				cmd += "center_screen(#{m.y}-1);"
+		end
+		return cmd
+	end
+
+
+
 end
 
 
@@ -552,7 +582,7 @@ class Window
 	end
 
 	def setpos(r,c)
-		Curses.setpos(r+@pos_row,c+@pos_col)
+		$screen.setpos(r+@pos_row,c+@pos_col)
 	end
 
 	# set the window size, where k is the number of windows
@@ -762,7 +792,7 @@ class FileBuffer
 		str.chop!
 		@window.write_message(str)
 		# get answer and execute the code
-		c = Curses.getch
+		c = $screen.getch
 		eval($togglelist[c][0])
 		@window.write_message($togglelist[c][1])
 	end
@@ -2003,25 +2033,8 @@ class FileBuffer
 	# mouse handling
 	#
 	def handle_mouse
-		m = Curses.getmouse
-		return if m == nil
-		case m.bstate
-			when Curses::BUTTON1_CLICKED
-				@marked = false
-				goto_position(m.y-1,m.x)
-				@window.write_message("")
-			when Curses::BUTTON1_PRESSED
-				@marked = false
-				goto_position(m.y-1,m.x)
-				mark
-			when Curses::BUTTON1_RELEASED
-				goto_position(m.y-1,m.x)
-			when Curses::REPORT_MOUSE_POSITION
-				goto_position(m.y-1,m.x)
-				mark if !@marked
-			when Curses::BUTTON1_DOUBLE_CLICKED
-				center_screen(m.y-1)
-		end
+		cmd = $screen.getmouse
+		eval(cmd)
 	end
 
 end
