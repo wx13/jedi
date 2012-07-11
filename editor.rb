@@ -1222,10 +1222,10 @@ class FileBuffer
 	#
 	def better_cursor_position
 		if @row-@linefeed >= @window.rows
-			@linefeed = @row - @window.rows/2
+			center_screen
 		end
 		if @row - @linefeed < 0
-			@linefeed = [@row - @window.rows/2, 0].max
+			center_screen
 		end
 	end
 	def undo
@@ -1372,7 +1372,6 @@ class FileBuffer
 	def goto_position(r,c)
 		@row = r+@linefeed
 		@col = sc2bc(@row,c)+@colfeed
-		sanitize
 	end
 	def screen_left(n=1)
 		@colfeed += n
@@ -1457,6 +1456,8 @@ class FileBuffer
 		# get starting point, so we can return
 		row0 = @row
 		col0 = @col
+		@linefeed0 = @linefeed
+		@colfeed0 = @colfeed
 		# get search string from user
 		token = @window.ask("Search:",$search_hist)
 		if token == nil
@@ -1502,6 +1503,8 @@ class FileBuffer
 					@window.write_message("Cancelled")
 					@row = row0
 					@col = col0
+					@linefeed = @linefeed0
+					@colfeed = @colfeed0
 					return
 				else
 					col = idx+replacement.length
@@ -1517,6 +1520,8 @@ class FileBuffer
 		end
 		@row = row0
 		@col = col0
+		@linefeed = @linefeed0
+		@colfeed = @colfeed0
 		dump_to_screen(true)
 		@window.write_message("No more matches")
 	end
@@ -1657,10 +1662,10 @@ class FileBuffer
 	def dump_to_screen(refresh=false)
 		# get cursor position
 		ypos = @row - @linefeed
-		if ypos < 0
+		if ypos <= 0
 			@linefeed += ypos
 			ypos = 0
-		elsif ypos >= @window.rows - 1
+		elsif ypos >= @window.rows
 			@linefeed += ypos + 1 - @window.rows
 			ypos = @window.rows - 1
 		end
