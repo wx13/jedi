@@ -56,41 +56,38 @@ class Screen
 		update_screen_size
 
 		# curses keycodes
-		$ctrl_a = ?\C-a
-		$ctrl_b = ?\C-b
-		$ctrl_c = ?\C-c
-		$ctrl_d = ?\C-d
-		$ctrl_e = ?\C-e
-		$ctrl_f = ?\C-f
-		$ctrl_g = ?\C-g
-		$ctrl_h = ?\C-h
-		$ctrl_i = ?\C-i
-		$ctrl_j = ?\C-j
-		$ctrl_k = ?\C-k
-		$ctrl_l = ?\C-l
-		$ctrl_m = ?\C-m
-		$ctrl_n = ?\C-n
-		$ctrl_o = ?\C-o
-		$ctrl_p = ?\C-p
-		$ctrl_q = ?\C-q
-		$ctrl_r = ?\C-r
-		$ctrl_s = ?\C-s
-		$ctrl_t = ?\C-t
-		$ctrl_u = ?\C-u
-		$ctrl_v = ?\C-v
-		$ctrl_w = ?\C-w
-		$ctrl_x = ?\C-x
-		$ctrl_y = ?\C-y
-		$ctrl_z = ?\C-z
-		$ctrl_6 = ?\C-^
+		$ctrl_a = unpack(?\C-a)
+		$ctrl_b = unpack(?\C-b)
+		$ctrl_c = unpack(?\C-c)
+		$ctrl_d = unpack(?\C-d)
+		$ctrl_e = unpack(?\C-e)
+		$ctrl_f = unpack(?\C-f)
+		$ctrl_g = unpack(?\C-g)
+		$ctrl_h = unpack(?\C-h)
+		$ctrl_i = unpack(?\C-i)
+		$ctrl_j = unpack(?\C-j)
+		$ctrl_k = unpack(?\C-k)
+		$ctrl_l = unpack(?\C-l)
+		$ctrl_m = unpack(?\C-m)
+		$ctrl_n = unpack(?\C-n)
+		$ctrl_o = unpack(?\C-o)
+		$ctrl_p = unpack(?\C-p)
+		$ctrl_q = unpack(?\C-q)
+		$ctrl_r = unpack(?\C-r)
+		$ctrl_s = unpack(?\C-s)
+		$ctrl_t = unpack(?\C-t)
+		$ctrl_u = unpack(?\C-u)
+		$ctrl_v = unpack(?\C-v)
+		$ctrl_w = unpack(?\C-w)
+		$ctrl_x = unpack(?\C-x)
+		$ctrl_y = unpack(?\C-y)
+		$ctrl_z = unpack(?\C-z)
+		$ctrl_6 = unpack(?\C-^)
 		$enter = Curses::Key::ENTER
 		$backspace = Curses::Key::BACKSPACE
 		$backspace2 = ?\C-?
 		$space = " "
-		$shift_down = Curses::Key::SF
-		$shift_up = Curses::Key::SR
-		$shift_left = Curses::Key::SLEFT
-		$shift_right = Curses::Key::SRIGHT
+
 		$up = Curses::Key::UP
 		$down = Curses::Key::DOWN
 		$right = Curses::Key::RIGHT
@@ -99,13 +96,37 @@ class Screen
 		$pageup = Curses::Key::PPAGE
 		$home = Curses::Key::HOME
 		$end = Curses::Key::END
-		$ctrl_down = 'kDN5'
-		$ctrl_up = 'kUP5'
-		$ctrl_left = 'kLFT5'
-		$ctrl_right = 'kRIT5'
-		$ctrl_shift_left = 'kLFT6'
-		$ctrl_shift_right = 'kRIT6'
 
+		# system dependence
+		if RUBY_PLATFORM =~ /mingw/
+			$shift_down = 'KEY_SDOWN'
+			$shift_up = 'KEY_SUP'
+			$shift_left = 'KEY_SLEFT'
+			$shift_right = 'KEY_SRIGHT'
+			$ctrl_left = 'CTL_LEFT'
+			$ctrl_right = 'CTL_RIGHT'
+			$ctrl_up = 'CTL_UP'
+			$ctrl_down = 'CTL_DOWN'
+			$key_mouse = -1
+		else
+			$shift_down = Curses::Key::SF
+			$shift_up = Curses::Key::SR
+			$shift_left = Curses::Key::SLEFT
+			$shift_right = Curses::Key::SRIGHT
+			$ctrl_down = 'kDN5'
+			$ctrl_up = 'kUP5'
+			$ctrl_left = 'kLFT5'
+			$ctrl_right = 'kRIT5'
+			$ctrl_shift_left = 'kLFT6'
+			$ctrl_shift_right = 'kRIT6'
+			$key_mouse = Curses::KEY_MOUSE
+		end
+
+	end
+
+	def unpack(c)
+		if c.is_a?(String) then c = c.unpack('C')[0] end
+		return(c)
 	end
 
 	def getch
@@ -479,7 +500,7 @@ class Screen
 		write_str(@rows,0,question)
 		answer = "cancel"
 		loop do
-			c = Curses.getch
+			c = $screen.getch
 			next if c > 255  # don't accept weird characters
 			if c.chr.downcase == "y"
 				answer = "yes"
@@ -2715,7 +2736,7 @@ class KeyMap
 			$ctrl_6 => "buffer.extramode = true",
 			$ctrl_s => "buffer.enter_command",
 			$ctrl_l => "$buffers.next_buffer",
-			Curses::KEY_MOUSE => "buffer.handle_mouse",
+			$key_mouse => "buffer.handle_mouse",
 			$shift_up => "buffer.screen_down",
 			$shift_down => "buffer.screen_up",
 			$shift_right => "buffer.screen_right",
