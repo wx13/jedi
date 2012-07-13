@@ -49,6 +49,8 @@ class Screen
 		@mouse = $mouse
 		enable_mouse if @mouse
 
+		$unix = true  # are we on a unix system
+
 		# grab a curses instance
 		@screen = Curses.init_screen
 
@@ -108,6 +110,7 @@ class Screen
 			$ctrl_up = 'CTL_UP'
 			$ctrl_down = 'CTL_DOWN'
 			$key_mouse = -1
+			$unix = false
 		else
 			$shift_down = Curses::Key::SF
 			$shift_up = Curses::Key::SR
@@ -165,6 +168,7 @@ class Screen
 
 	# Suspend the editor
 	def suspend(buffer)
+		return if !$unix
 		Curses.close_screen
 		Process.kill("SIGSTOP",0)
 		Curses.refresh
