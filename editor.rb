@@ -85,6 +85,7 @@ class Screen
 		$ctrl_6 = ?\C-^
 		$enter = Curses::Key::ENTER
 		$backspace = Curses::Key::BACKSPACE
+		$backspace2 = ?\C-?
 		$space = " "
 		$shift_down = Curses::Key::SF
 		$shift_up = Curses::Key::SR
