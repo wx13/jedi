@@ -843,7 +843,7 @@ class FileBuffer
 			return
 		else
 			if File.exists? @filename
-				text = IO.read(@filename)
+				text = File.open(@filename,"rb"){|f| f.read}
 			else
 				@text = [""]
 				return
