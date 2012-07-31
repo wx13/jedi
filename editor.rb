@@ -419,7 +419,7 @@ class Screen
 					token0 = token.dup
 					col += 1
 					glob = token
-				when $backspace, $backspace2
+				when $backspace, $backspace2, $ctrl_h
 					if col > 0
 						token[col-1] = ""
 						col -= 1
