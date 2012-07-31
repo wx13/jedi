@@ -87,7 +87,7 @@ class Screen
 		$ctrl_6 = unpack(?\C-^)
 		$enter = Curses::Key::ENTER
 		$backspace = Curses::Key::BACKSPACE
-		$backspace2 = ?\C-?
+		$backspace2 = unpack(?\C-?)
 		$space = " "
 
 		$up = Curses::Key::UP
@@ -109,6 +109,7 @@ class Screen
 			$ctrl_right = 'CTL_RIGHT'
 			$ctrl_up = 'CTL_UP'
 			$ctrl_down = 'CTL_DOWN'
+			$ctrl_6 = 'ALT_6'
 			$key_mouse = -1
 			$unix = false
 		else
@@ -818,13 +819,13 @@ class FileBuffer
 	def toggle
 		# show user the choices
 		str = ""
-		$togglelist_array.each{|a| str += a[1][2] + ","}
+		$keymap.togglelist_array.each{|a| str += a[1][2] + ","}
 		str.chop!
 		@window.write_message(str)
 		# get answer and execute the code
 		c = $screen.getch
-		eval($togglelist[c][0])
-		@window.write_message($togglelist[c][1])
+		eval($keymap.togglelist[c][0])
+		@window.write_message($keymap.togglelist[c][1])
 	end
 
 	# Go back to edit mode.
@@ -2709,7 +2710,8 @@ $mouse = false
 class KeyMap
 
 	attr_accessor :commandlist, :editmode_commandlist, \
-	              :extramode_commandlist, :viewmode_commandlist
+	              :extramode_commandlist, :viewmode_commandlist, \
+	              :togglelist, :togglelist_array
 
 	def initialize
 
@@ -2754,25 +2756,25 @@ class KeyMap
 		}
 		@commandlist.default = ""
 		@extramode_commandlist = {
-			?b => "buffer.bookmark",
-			?g => "buffer.goto_bookmark",
-			?c => "buffer.center_screen",
-			?0 => "$buffers.all_on_one_page",
-			?1 => "$buffers.move_to_page(1)",
-			?2 => "$buffers.move_to_page(2)",
-			?3 => "$buffers.move_to_page(3)",
-			?4 => "$buffers.move_to_page(4)",
-			?5 => "$buffers.move_to_page(5)",
-			?6 => "$buffers.move_to_page(6)",
-			?7 => "$buffers.move_to_page(7)",
-			?8 => "$buffers.move_to_page(8)",
-			?9 => "$buffers.move_to_page(9)",
-			?[ => "buffer.undo",
-			?] => "buffer.redo",
-			?{ => "buffer.revert_to_saved",
-			?} => "buffer.unrevert_to_saved",
-			?l => "buffer.justify",
-			?s => "buffer.run_script",
+			unpack(?b) => "buffer.bookmark",
+			unpack(?g) => "buffer.goto_bookmark",
+			unpack(?c) => "buffer.center_screen",
+			unpack(?0) => "$buffers.all_on_one_page",
+			unpack(?1) => "$buffers.move_to_page(1)",
+			unpack(?2) => "$buffers.move_to_page(2)",
+			unpack(?3) => "$buffers.move_to_page(3)",
+			unpack(?4) => "$buffers.move_to_page(4)",
+			unpack(?5) => "$buffers.move_to_page(5)",
+			unpack(?6) => "$buffers.move_to_page(6)",
+			unpack(?7) => "$buffers.move_to_page(7)",
+			unpack(?8) => "$buffers.move_to_page(8)",
+			unpack(?9) => "$buffers.move_to_page(9)",
+			unpack(?[) => "buffer.undo",
+			unpack(?]) => "buffer.redo",
+			unpack(?{) => "buffer.revert_to_saved",
+			unpack(?}) => "buffer.unrevert_to_saved",
+			unpack(?l) => "buffer.justify",
+			unpack(?s) => "buffer.run_script",
 			$ctrl_6 => "buffer.sticky_extramode ^= true"
 		}
 		@extramode_commandlist.default = ""
@@ -2792,36 +2794,68 @@ class KeyMap
 		}
 		@editmode_commandlist.default = ""
 		@viewmode_commandlist = {
-			?q => "buffer = $buffers.close",
-			?k => "buffer.cursor_up(1)",
-			?j => "buffer.cursor_down(1)",
-			?l => "buffer.cursor_right",
-			?h => "buffer.cursor_left",
+			unpack(?q) => "buffer = $buffers.close",
+			unpack(?k) => "buffer.cursor_up(1)",
+			unpack(?j) => "buffer.cursor_down(1)",
+			unpack(?l) => "buffer.cursor_right",
+			unpack(?h) => "buffer.cursor_left",
 			$space => "buffer.page_down",
-			?b => "buffer.page_up",
-			?. => "buffer = $buffers.next_buffer",
-			?, => "buffer = $buffers.prev_buffer",
-			?/ => "buffer.search(0)",
-			?n => "buffer.search(1)",
-			?N => "buffer.search(-1)",
-			?g => "buffer.goto_line",
-			?i => "buffer.toggle_editmode",
-			?[ => "buffer.undo",
-			?] => "buffer.redo",
-			?{ => "buffer.revert_to_saved",
-			?} => "buffer.unrevert_to_saved",
-			?J => "buffer.screen_up",
-			?K => "buffer.screen_down",
-			?H => "buffer.screen_left",
-			?L => "buffer.screen_right",
-			?: => "buffer.enter_command"
+			unpack(?b) => "buffer.page_up",
+			unpack(?.) => "buffer = $buffers.next_buffer",
+			unpack(?,) => "buffer = $buffers.prev_buffer",
+			unpack(?/) => "buffer.search(0)",
+			unpack(?n) => "buffer.search(1)",
+			unpack(?N) => "buffer.search(-1)",
+			unpack(?g) => "buffer.goto_line",
+			unpack(?i) => "buffer.toggle_editmode",
+			unpack(?[) => "buffer.undo",
+			unpack(?]) => "buffer.redo",
+			unpack(?{) => "buffer.revert_to_saved",
+			unpack(?}) => "buffer.unrevert_to_saved",
+			unpack(?J) => "buffer.screen_up",
+			unpack(?K) => "buffer.screen_down",
+			unpack(?H) => "buffer.screen_left",
+			unpack(?L) => "buffer.screen_right",
+			unpack(?:) => "buffer.enter_command"
 		}
 		@viewmode_commandlist.default = ""
 
+
+		@togglelist_array = [
+			[unpack(?e), ["@editmode = true","Edit mode","ed"]],
+			[unpack(?v), ["@editmode = false","View mode","vu"]],
+			[unpack(?a), ["@autoindent = true","Autoindent enabled","ai"]],
+			[unpack(?n), ["@autoindent = false","Autoindent disabled","na"]],
+			[unpack(?i), ["@insertmode = true","Insert mode","ins"]],
+			[unpack(?o), ["@insertmode = false","Overwrite mode","ovrw"]],
+			[unpack(?w), ["@linewrap = true","Line wrapping enabled","wrap"]],
+			[unpack(?l), ["@linewrap = false","Line wrapping disabled","long"]],
+			[unpack(?c), ["@colmode = true","Column mode","col"]],
+			[unpack(?r), ["@colmode = false","Row mode","row"]],
+			[unpack(?s), ["@syntax_color = true","Syntax color enabled","scol"]],
+			[unpack(?b), ["@syntax_color = false","Syntax color disabled","bw"]],
+			[unpack(?m), ["$screen.enable_mouse","Mouse support enabled","mo"]],
+			[unpack(?x), ["$screen.disable_mouse","Mouse support disabled","xmo"]],
+			[unpack(?-), ["$buffers.vstack","Vertical window stacking","-"]],
+			[unpack(?|), ["$buffers.hstack","Horizontal window stacking","|"]]
+		]
+		@togglelist = Hash[@togglelist_array]
+		@togglelist.default = ["","Unknown toggle",""]
+
+	end
+
+
+	def unpack(c)
+		if c.is_a?(String) then c = c.unpack('C')[0] end
+		return(c)
 	end
 
 	def extramode_command(keycode)
-		return(@extramode_commandlist[keycode])
+		cmd = @extramode_commandlist[keycode]
+		if cmd == ""
+			cmd = @extramode_commandlist[Curses.keyname(keycode)]
+		end
+		return(cmd)
 	end
 
 	def command(keycode, editmode)
@@ -2850,31 +2884,12 @@ class KeyMap
 		end
 	end
 
+
+
+
+
 end
 
-
-
-
-$togglelist_array = [
-	[?e, ["@editmode = true","Edit mode","ed"]],
-	[?v, ["@editmode = false","View mode","vu"]],
-	[?a, ["@autoindent = true","Autoindent enabled","ai"]],
-	[?n, ["@autoindent = false","Autoindent disabled","na"]],
-	[?i, ["@insertmode = true","Insert mode","ins"]],
-	[?o, ["@insertmode = false","Overwrite mode","ovrw"]],
-	[?w, ["@linewrap = true","Line wrapping enabled","wrap"]],
-	[?l, ["@linewrap = false","Line wrapping disabled","long"]],
-	[?c, ["@colmode = true","Column mode","col"]],
-	[?r, ["@colmode = false","Row mode","row"]],
-	[?s, ["@syntax_color = true","Syntax color enabled","scol"]],
-	[?b, ["@syntax_color = false","Syntax color disabled","bw"]],
-	[?m, ["$screen.enable_mouse","Mouse support enabled","mo"]],
-	[?x, ["$screen.disable_mouse","Mouse support disabled","xmo"]],
-	[?-, ["$buffers.vstack","Vertical window stacking","-"]],
-	[?|, ["$buffers.hstack","Horizontal window stacking","|"]]
-]
-$togglelist = Hash[$togglelist_array]
-$togglelist.default = ["","Unknown toggle",""]
 
 
 
@@ -2994,13 +3009,14 @@ $screen.start_screen_loop do
 
 		# process key press -- run associated command
 		if buffer.extramode
+			command = $keymap.extramode_command(c)
 			eval($keymap.extramode_command(c))
 			buffer.extramode = false if ! buffer.sticky_extramode
 			$screen.write_message("")
 		else
 			command = $keymap.command(c,buffer.editmode)
 			if command == nil
-				buffer.addchar(c) if buffer.editmode
+				buffer.addchar(c) if buffer.editmode && c > 0
 			else
 				eval(command)
 			end
