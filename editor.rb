@@ -963,6 +963,19 @@ class FileBuffer
 	end
 	# merge two consecutive rows
 	def mergerows(row1,row2)
+		return if @text[row1] == nil || @text[row2] == nil
+		if @text[row1] == ''
+			@text[row1] = @text[row2]
+			@text.delete_at(row2)
+			return
+		end
+		if @text[row2] == ''
+			@text[row2] = @text[row1]
+			@text.delete_at(row1)
+			return
+		end
+		return if @text[row1].kind_of?(Array)
+		return if @text[row2].kind_of?(Array)
 		if row2 >= @text.length
 			return
 		end
@@ -983,7 +996,7 @@ class FileBuffer
 	end
 	# multiple new rows
 	def insertrows(row,text_array)
-		@text.insert(row,text_array).flatten!
+		@text = @text[0,row] + text_array + @text[row..-1]
 	end
 	# completely change a row's text
 	def setrow(row,text)
@@ -1325,6 +1338,10 @@ class FileBuffer
 		@col = @text[@row].length
 	end
 	def cursor_sol
+		if @text[@row].kind_of?(Array)
+			@col = 0
+			return
+		end
 		ws = @text[@row].match(/^\s+/)
 		if ws == nil
 			ns = 0
@@ -1584,11 +1601,13 @@ class FileBuffer
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
-			$copy_buffer = ""
+			$copy_buffer = []
 			@marked = false
 		else
 			if @row!=(@cutrow+1-cut) || @cutscore <= 0
-				$copy_buffer = ""
+				$copy_buffer = []
+			else
+				$copy_buffer.pop  # remove the newline
 			end
 			@cutrow = @row
 			@cutscore = 25
@@ -1610,22 +1629,59 @@ class FileBuffer
 			@mark_row = temp
 		end
 
-		temp = @text[@mark_row..@row].join("\n") + "\n"
-		sc = @mark_col
-		ec = temp.length - 1 - (@text[@row].length-@col)
-		$copy_buffer += temp[sc..ec]
 
-		if cut==1
-			if @col < @text[@row].length
-				setrow(@mark_row,@text[@mark_row][0,@mark_col]+@text[@row][(@col+1)..-1])
-				delrows(@mark_row+1,@row)
-			elsif (@row+1) >= @text.length
-				setrow(@mark_row,@text[@mark_row][0,@mark_col])
-				delrows(@mark_row+1,@row)
-			else
-				setrow(@mark_row,@text[@mark_row][0,@mark_col]+@text[@row+1])
-				delrows(@mark_row+1,@row+1)
+
+		#
+		#	add to copy buffer
+		#
+		if @mark_row == @row
+
+			# single line cut/copy
+
+			line = @text[@row] # the line of interest
+
+			if line.kind_of?(Array)  # folded text
+				$copy_buffer += [line] + ['']
+				if cut == 1
+					@text[@row] = ''
+					mergerows(@row,@row+1)
+				end
+			else  # regular text
+				@text[@row] = line[0,@mark_col] if cut == 1
+				if @col < line.length
+					@text[@mark_row] += line[@col+1..-1] if cut == 1
+					$copy_buffer += [line[@mark_col..@col]]
+				else
+					# include line ending in cut/copy
+					$copy_buffer += [line[@mark_col..@col]] + ['']
+					mergerows(@row,@row+1) if cut == 1
+				end
 			end
+
+		else
+
+			# multi-line cut/copy
+
+			firstline = @text[@mark_row]
+			if firstline.kind_of?(Array)
+				$copy_buffer += [firstline]
+				@text[@mark_row] = '' if cut == 1
+			else
+				$copy_buffer += [firstline[@mark_col..-1]]
+				@text[@mark_row] = firstline[0,@mark_col] if cut == 1
+			end
+			$copy_buffer += @text[@mark_row+1..@row-1]
+			lastline = @text[@row]
+			if lastline.kind_of?(Array)
+				$copy_buffer += [lastline]
+				@text[@mark_row] += '' if cut == 1
+			else
+				$copy_buffer += [lastline[0..@col]]
+				tail = lastline[@col+1..-1]
+				@text[@mark_row] += tail if cut == 1 && tail != nil
+			end
+			delrows(@mark_row+1,@row) if cut == 1
+
 		end
 
 		# position cursor
@@ -1649,28 +1705,47 @@ class FileBuffer
 		@cutrow = -1
 		@cutscore = 0
 
-		# merge current line with copy buffer
-		copy_buffer = @text[@row][0,@col] + $copy_buffer + @text[@row][@col..-1]
+		if $copy_buffer.length > 1  # multi-line paste
 
-		# turn buffer into an array
-		nlines = $copy_buffer.count("\n")
-		copy_array = copy_buffer.split("\n",-1)
-		if copy_array[0] == nil
-			copy_array[0] = ""
+			# text up to cursor
+			text = @text[0,@row]
+			if @col > 0
+				text += [@text[@row][0,@col]]
+			else
+				text += ['']
+			end
+
+			# inserted text
+			firstline = $copy_buffer[0]
+			if firstline.kind_of?(Array)
+				if text[-1] == ''
+					text[-1] = firstline
+				else
+					text += [firstline]
+				end
+			else
+				text[-1] += firstline
+			end
+			text += $copy_buffer[1..-2] if $copy_buffer.length > 2
+			lastline = $copy_buffer[-1]
+			text += [lastline]
+
+			# text from cursor on
+			if @text[@row].kind_of?(Array)
+				text[-1] =  @text[@row]
+			else
+				text[-1] += @text[@row][@col..-1]
+			end
+			@text = text + @text[(@row+1)..-1]
+
+		else  # single line paste
+			if $copy_buffer[0].kind_of?(String)
+				@text[@row] = @text[@row][0,@col] + $copy_buffer[0] + @text[@row][@col..-1]
+			else
+				@text.insert(@row,$copy_buffer)
+			end
 		end
 
-		# insert first line (replace current line)
-		setrow(@row,copy_array[0])
-
-		# insert the rest (insert after current line)
-		@row += 1
-		insertrows(@row,copy_array[1..-1])
-		@row += nlines - 1
-
-		# reset cursor for multi-line paste
-		if nlines > 0
-			@col = 0
-		end
 	end
 
 	# end of copy/paste stuff
@@ -1755,11 +1830,17 @@ class FileBuffer
 		ir = 0
 		text.each{ |line|
 			ir += 1
-			sline = tabs2spaces(line)
-			if @syntax_color
-				aline = syntax_color(sline)
+			if line.kind_of?(String)
+				sline = tabs2spaces(line)
+				if @syntax_color
+					aline = syntax_color(sline)
+				else
+					aline = sline
+				end
 			else
-				aline = sline
+				aline = $color+$color_hiddentext + ">>>>" + \
+				        line[0][0,(@window.cols/2).floor] + \
+				        "<<<<" + $color+$color_default
 			end
 			screen_buffer.push(aline)
 		}
@@ -1837,7 +1918,8 @@ class FileBuffer
 		if row < @linefeed then return end
 		if row > (@linefeed + @window.rows - 2) then return end
 
-		if @text[row].length < 1 then return end
+		return if @text[row].length < 1
+		return if @text[row].kind_of?(Array)
 
 		# convert pos in text to pos on screen
 		sc = bc2sc(row,scol)
@@ -2015,9 +2097,8 @@ class FileBuffer
 	# functions for converting from column position in buffer
 	# to column position on screen
 	def bc2sc(row,col)
-		if @text[row] == nil
-			return(0)
-		end
+		return(0) if @text[row] == nil
+		return(0) if @text[row].kind_of?(Array)
 		text = @text[row][0,col]
 		if text == nil
 			return(0)
@@ -2033,7 +2114,8 @@ class FileBuffer
 	def sc2bc(row,col)
 		bc = 0
 		sc = 0
-		if @text[row] == nil then return(bc) end
+		return(bc) if @text[row] == nil
+		return(bc) if @text[row].kind_of?(Array)
 		@text[row].each_char{|c|
 			if c == "\t"
 				sc += @tabsize
@@ -2072,6 +2154,33 @@ class FileBuffer
 		cmd = $screen.getmouse
 		eval(cmd)
 	end
+
+
+	# text folding/hiding
+	def hide_lines
+		return if !@marked
+		mark_row,row = ordered_mark_rows
+		oldrow = mark_row
+		mark_text = @text[mark_row..row]
+		@text[mark_row] = [mark_text].flatten
+		@text[(mark_row+1)..row] = [] if mark_row < row
+		@marked = false
+		@row = oldrow
+	end
+	def unhide_lines
+		hidden_text = @text[@row]
+		return if hidden_text.kind_of?(String)
+		@text = @text[0,@row] + hidden_text +@text[(@row+1)..-1]
+	end
+	def unhide_all
+		@text.each_index{|i|
+			if @text[i].kind_of?(Array)
+				@row = i
+				unhide_lines
+			end
+		}
+	end
+
 
 end
 
@@ -2643,6 +2752,7 @@ $color_default = $color_white
 $color_comment = $color_cyan
 $color_string = $color_yellow
 $color_whitespace = $color_red
+$color_hiddentext = $color_green
 
 # define file types for syntax coloring
 $filetypes = {
@@ -2775,6 +2885,9 @@ class KeyMap
 			unpack(?}) => "buffer.unrevert_to_saved",
 			unpack(?l) => "buffer.justify",
 			unpack(?s) => "buffer.run_script",
+			unpack(?h) => "buffer.hide_lines",
+			unpack(?u) => "buffer.unhide_lines",
+			unpack(?U) => "buffer.unhide_all",
 			$ctrl_6 => "buffer.sticky_extramode ^= true"
 		}
 		@extramode_commandlist.default = ""
