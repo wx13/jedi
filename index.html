@@ -1,0 +1,346 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Editor by wx13</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Editor</h1>
+        <p>a text editor</p>
+
+        <p class="view"><a href="https://github.com/wx13/editor">View the Project on GitHub <small>wx13/editor</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/wx13/editor/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/wx13/editor/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/wx13/editor">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p>editor.rb is a text editor writen in ruby/curses.</p>
+
+<p>Design goals:</p>
+
+<ol>
+<li>Zero install
+
+<ul>
+<li>single file of ruby code</li>
+<li>only use built-in libraries (hence curses instead of ncurses)</li>
+</ul>
+</li>
+<li>Easy to modify, customize &amp; extend</li>
+<li>Scriptable
+
+<ul>
+<li>execute single-line ruby commands within the editor</li>
+<li>execute ruby script files from within the editor</li>
+<li>execute ruby script files at startup</li>
+</ul>
+</li>
+</ol><h1>Usage</h1>
+
+<h2>Installing &amp; running</h2>
+
+<p>From easy to hard:</p>
+
+<ol>
+<li><p>Just run "ruby editor.rb".</p></li>
+<li><p>Put editor.rb in your path and give it execute permission.
+Rename it whatever you like.</p></li>
+<li>
+<p>(This is what I do) I create a directory ~/.jedi (jedi = Jason's EDItor)
+containing the files config.rb and history.yaml.  It also contains a directory
+called snippets.  Snippets is where I keep snippets of useful code for
+modifying text.  Then I put the following line in my .bashrc file:</p>
+
+<p>alias jedi='ruby $HOME/bin/editor.rb -s $HOME/.jedi -y $HOME/.jedi/history.yaml'</p>
+</li>
+</ol><p>This tells editor.rb to read all *.rb files from ~/.jedi/ as scripts and to
+save command/search/script history in ~/.jedi/history.yaml.</p>
+
+<h2>Options</h2>
+
+<p>A few parameters and flags, (such as tab size, and autoindent)
+can be set with command line options.  Type "ruby editor.rb -h" to see
+available options.</p>
+
+<h2>Configuration</h2>
+
+<p>The code does not parse a configuration file per se.  Because ruby
+supports metaprogramming, configuration and modification/extension
+are all the same.</p>
+
+<p>The "-s" or "--script" option calls a script or set of scripts to
+be run at startup.  This can be used to set basic parameters, for example:</p>
+
+<p>Create a file called "config.rb" containing:</p>
+
+<pre><code>$tabsize = 8
+$autoindent = true
+$syntax_color = false
+</code></pre>
+
+<p>And start the editor with "-s config.rb" set.</p>
+
+<p>One can do more complex configurations, such as swapping keybindings.
+Suppose you like to use nano's "ctrl-x" for quit, rather than
+"ctrl-q":</p>
+
+<pre><code>$keymap.commandlist[$ctrl_x] = "buffer = $buffers.close"
+$keymap.commandlist[$ctrl_q] = "buffer.mark"
+</code></pre>
+
+<p>One can go even further, and modify/create class methods.  For example,
+if you prefer that ctrl-e take you to the last character of the line,
+rather than just past the last character:</p>
+
+<pre><code>class FileBuffer
+    def cursor_eol
+        @col = @text[@row].length-1
+    end
+end
+</code></pre>
+
+<p>Here are some other useful mods:</p>
+
+<p>Change the syntax coloring:</p>
+
+<pre><code>$color_comment = $color_green
+</code></pre>
+
+<p>Make files that end in ".h" get c-style coloring:</p>
+
+<pre><code>$filetypes[/\.h$/] = "c"
+</code></pre>
+
+<p>Define a new filetype for syntax coloring</p>
+
+<pre><code>$filetypes[/\.abc$/] = "abc"
+$syntax_color_lc["abc"] = ["||"]
+$syntax_color_bc["abc"] = {"|+"=&gt;"+|"}
+$syntax_color_regex["abc"] = {/abc/=&gt;$color_green}
+</code></pre>
+
+<p>As you can see, this can be used for simple configuration, or to create
+mods/extenstions to the editor.</p>
+
+<h2>Modes</h2>
+
+<p>This is not a modal editor, but it does have two modes.
+In the "edit" mode you can do pretty much everything.
+In the "view" mode, you cannot modify the text (not strictly true),
+and there are some shorcuts for navigation, such as:
+    - h,j,k,l to move the cursor
+    - space, b for page down/up
+    - / to search
+    - H,J,K,L to shift screen around
+    - ",","." (unshifted &gt;,&lt;) to change buffers
+    - g to goto a line</p>
+
+<p>To get to view mode, hit "ctrl-t v". To get to edit mode, hit
+"ctrl-t e" or just hit "i".  There are some commans only available
+in view mode, because of the limited number of keys on the keyboard.</p>
+
+<p>Remember that all the keymappings can be easily changed, and one
+could easily write a set of keybindings that are very vim-like.</p>
+
+<h2>Basic editing</h2>
+
+<p>Basic editing uses control sequences similar to gnu-nano.  Some default
+keybindings (easy to change):</p>
+
+<pre><code>- Arrow keys &amp; page up/down to move around.
+- Shift-arrow to scroll the page
+- Ctrl-{v,y} are also page down/up.
+- Ctrl-w to search
+- Ctrl-r search &amp; replace
+- Ctrl-o to save
+- Ctrl-q to close file (quit if only one file open)
+- Ctrl-e end of line
+- Ctrl-a start of line
+- Ctrl-d delete character
+- Ctrl-l next text buffer
+- Ctrl-f open file
+- Ctrl-g go to line number (empty=0, negative = up from bottom)
+- Ctrl-p copy
+- Ctrl-k cut
+- Ctrl-u paste
+- Ctrl-c cancel operation
+- Ctrl-t toggle various things
+    - e = edit mode
+    - v = view mode
+    - a = autoindent
+    - m = manual indent
+    - i = insert mode
+    - o = overwrite mode
+    - c = column mode
+    - r = row mode
+    - s = syntax coloring on
+    - b = syntax coloring off
+    - - = split screen vertically
+    - | = split screen horizontally
+- Ctrl-x mark text
+- Ctrl-^ N to move buffer to screen N (split screen)
+- Ctrl-^ 0 to put all buffers on same screen (or undo such a move)
+- Ctrl (left|right) arrow = undo/redo
+- Ctrl-Shift (left|right) arrow = revert/unrevert to saved
+</code></pre>
+
+<h2>Entering ruby commands</h2>
+
+<p>Type "ctrl-s <ruby>" to enter a ruby command.
+All commands entered this way, are run in the context of the current
+file buffer.  Thus "<a href="https://github.com/text" class="user-mention">@text</a>" refers to the text of that buffer.  The
+screen can be accessed by the global variable "$screen", and the other
+buffers can be accessed by the "$buffers" global variable.</ruby></p>
+
+<p>For example:</p>
+
+<p>To change the tabsize:</p>
+
+<pre><code>@tabsize = 8
+</code></pre>
+
+<p>To specify that the file is a fortran file for syntax coloring:</p>
+
+<pre><code>@filetype = 'f'
+</code></pre>
+
+<p>To change the color of comments from cyan to green</p>
+
+<pre><code>$color_comment = $color_green
+</code></pre>
+
+<p>To change a bulleted ("-") list which starts on the current line and
+is 10 lines long to a numbered list</p>
+
+<pre><code>k=0; @text[@row,10].each{|line|; k+=1; line=line.sub(/^(\s*)-/,"\\1#{k}.")}
+</code></pre>
+
+<p>To turn a double underline to a single underline, go to the underline row:
+                 =========             ---------</p>
+
+<pre><code>@text[@row] = @text[@row].gsub("=","-")
+</code></pre>
+
+<p>To underline a line of text:</p>
+
+<pre><code>@text.insert(@row+1,"-"*@text[@row].length)
+</code></pre>
+
+<p><strong>Important</strong>:
+Notice in each of the above examples, when modifying the text buffer,
+I am careful to do stuff like:</p>
+
+<pre><code>@text[@row] = @text[@row].gsub(...
+</code></pre>
+
+<p>instead of the more compact:</p>
+
+<pre><code>@text[@row].gsub!(...
+</code></pre>
+
+<p>These are not the same command!  The first replaces the array element
+with a new element; the second modifies the existing element.  This
+is important because of undo-redo change detection.  The first is
+undo-able; the second is not.</p>
+
+<h2>Running ruby scripts at startup</h2>
+
+<p>The "-s" or "--script" option specifies script files or directories
+containing script files to be run at startup.  If it is a directory,
+the all the files ending in ".rb" are run.  These can be simple
+configuration files, like:</p>
+
+<pre><code>@tabsize = 4
+@autoindent = false
+$color_comment = $color_green
+</code></pre>
+
+<p>or can be modifications to the editor.  An empty method (called
+perbuffer_userscript) is run at the initialization of each buffer,
+so that the user can add startup methods to buffers.  For example,
+to set the tabsize to be 4 for fortran files only:</p>
+
+<pre><code>class FileBuffer
+    def perbuffer_userscript
+        if @filetype == "f"
+            @tabsize = 4
+        else
+            @tabsize = 8
+        end
+    end
+end
+</code></pre>
+
+<h2>Examples</h2>
+
+<p>Some examples of configuration files and user scripts and mods can be
+found in the "scripts" directory.</p>
+
+<h1>Description of code and methods</h1>
+
+<h2>Keybindings</h2>
+
+<p>The keybindings code has four sections: commandlist,
+extramode_commandlist, editmode_commandlist, and viewmode_commandlist.
+The first is for universal keybindings. The third only works in
+editmode, and the fourth works only in viewmode. The second is for
+extra keybindings that there isn't room for.</p>
+
+<h2>Classes</h2>
+
+<p>The code contains four classes:</p>
+
+<ol>
+<li>Screen
+Low-level screen interactions</li>
+<li>Window
+Per-buffer screen interactions (calls to Screen class)</li>
+<li>FileBuffer
+Contains all info and methods regarding a single file</li>
+<li>BuffersList
+Container class to manage multiple buffers</li>
+<li>BufferHistory
+Store up snapshots for undo/redo</li>
+<li>KeyMap</li>
+</ol><h2>Undo-redo</h2>
+
+<p>The buffer text is stored in an array of strings (lines).  Each time
+the user does something, a snapshot of the text is saved.  This
+snapshot is a shallow copy (it is a new array, but each element is
+pointer to the old string). Before a line is changed, a deep copy is
+made of that line (now the array has one differing element). These
+sequences of snapshots are saved in a linked list (BufferHistory
+class). The linked list format allows the possibility of undo-trees if
+I ever feel they would be useful.  Undo and redo, are as simple as
+bumping a pointer up or down the link list of text buffers.</p>
+
+<hr><p>Copyright (C) 2011-2012, Jason P. DeVita (<a href="mailto:jason@wx13.com">jason@wx13.com</a>)</p>
+
+<p>Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty or restriction.  This file</p>
+
+<h2>is offered as-is, without any warranty.</h2>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/wx13">wx13</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
