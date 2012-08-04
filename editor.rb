@@ -2156,14 +2156,16 @@ class FileBuffer
 	end
 
 
+	#
 	# text folding/hiding
+	#
 	def hide_lines
-		return if !@marked
+		return if !@marked  # need multiple lines for folding
 		mark_row,row = ordered_mark_rows
-		oldrow = mark_row
-		mark_text = @text[mark_row..row]
-		@text[mark_row] = [mark_text].flatten
-		@text[(mark_row+1)..row] = [] if mark_row < row
+		oldrow = mark_row  # so we can reposition the cursor
+		mark_text = @text[mark_row..row]  # grab the chosen lines
+		@text[mark_row] = [mark_text].flatten  # current row = array of marked text
+		@text[(mark_row+1)..row] = [] if mark_row < row  # technically, can hide a single line, but why?
 		@marked = false
 		@row = oldrow
 	end
