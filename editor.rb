@@ -582,6 +582,10 @@ class Window
 		$screen.write_line(row+1+@pos_row,@pos_col,@cols,colfeed,line)
 	end
 
+	def write_str(row,col,str)
+		$screen.write_str(@pos_row+row,@pos_col+col,str)
+	end
+
 	def setpos(r,c)
 		$screen.setpos(r+@pos_row,c+@pos_col)
 	end
