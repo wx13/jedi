@@ -2170,7 +2170,7 @@ class FileBuffer
 	def unhide_lines
 		hidden_text = @text[@row]
 		return if hidden_text.kind_of?(String)
-		@text = @text[0,@row] + hidden_text +@text[(@row+1)..-1]
+		@text = @text[0,@row] + hidden_text + @text[(@row+1)..-1]
 	end
 	def unhide_all
 		@text.each_index{|i|
@@ -2324,7 +2324,7 @@ class BufferHistory
 		@saved = @tree
 	end
 	def modified?
-		@saved.text != @tree.text
+		@saved.text.flatten != @tree.text.flatten
 	end
 	def revert_to_saved
 		@old = @tree
