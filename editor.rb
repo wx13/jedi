@@ -933,6 +933,7 @@ class FileBuffer
 
 	# delete a character
 	def delchar(row,col)
+		return if @text[row].kind_of?(Array)
 		if col == @text[row].length
 			mergerows(row,row+1)
 		else
@@ -942,6 +943,7 @@ class FileBuffer
 	end
 	# insert a character
 	def insertchar(row,col,c)
+		return if @text[row].kind_of?(Array)
 		if @text[row] == nil
 			@text[row] = c
 			return
@@ -986,6 +988,7 @@ class FileBuffer
 	end
 	# split a row into two
 	def splitrow(row,col)
+		return if @text[row].kind_of?(Array)
 		text = @text[row].dup
 		@text[row] = text[(col)..-1]
 		insertrow(row,text[0..(col-1)])
@@ -1005,11 +1008,13 @@ class FileBuffer
 	end
 	# add to the end of a line
 	def append(row,text)
+		return if @text[row].kind_of?(Array)
 		@text[row] = @text[row].dup
 		@text[row] += text
 	end
 	# insert a string
 	def insert(row,col,text)
+		return if @text[row].kind_of?(Array)
 		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
 	end
@@ -1018,6 +1023,7 @@ class FileBuffer
 		if col == 0 then return end
 		sc = bc2sc(@row,col)
 		for r in row1..row2
+			next if @text[r].kind_of?(Array)
 			c = sc2bc(r,sc)
 			if @text[r].length == 0 then next end
 			if c<=0 then next end
@@ -1030,6 +1036,7 @@ class FileBuffer
 	def column_delete(row1,row2,col)
 		sc = bc2sc(@row,col)
 		for r in row1..row2
+			next if @text[r].kind_of?(Array)
 			c = sc2bc(r,sc)
 			if c<0 then next end
 			if c==@text[r].length then next end
@@ -1071,7 +1078,7 @@ class FileBuffer
 				column_delete(mark_row,row,0)
 			end
 		else
-			delchar(@row,@col)
+			delchar(@row,@col) if @text[@row].kind_of?(String)
 		end
 	end
 	# backspace over a character
@@ -1312,9 +1319,16 @@ class FileBuffer
 	# Navigation stuff
 	#
 
+	def linelength(line)
+		if line.kind_of?(Array)
+			return 0
+		else
+			return line.length
+		end
+	end
 	def cursor_right
 		@col += 1
-		if @col > @text[@row].length
+		if @col > linelength(@text[@row])
 			if @row < (@text.length-1)
 				@col = 0
 				@row += 1
@@ -1327,7 +1341,7 @@ class FileBuffer
 		@col -= 1
 		if @col < 0
 			if @row > 0
-				@col = @text[@row-1].length
+				@col = linelength(@text[@row-1])
 				@row -= 1
 			else
 				@col = 0
@@ -1335,7 +1349,7 @@ class FileBuffer
 		end
 	end
 	def cursor_eol
-		@col = @text[@row].length
+		@col = linelength(@text[@row])
 	end
 	def cursor_sol
 		if @text[@row].kind_of?(Array)
@@ -1705,6 +1719,8 @@ class FileBuffer
 		@cutrow = -1
 		@cutscore = 0
 
+		return if @text[@row].kind_of?(Array)
+
 		if $copy_buffer.length > 1  # multi-line paste
 
 			# text up to cursor
@@ -1745,6 +1761,9 @@ class FileBuffer
 				@text.insert(@row,$copy_buffer)
 			end
 		end
+
+		@row += $copy_buffer.length - 1
+		@col += $copy_buffer[-1].length
 
 	end
 
