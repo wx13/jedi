@@ -1857,8 +1857,9 @@ class FileBuffer
 					aline = sline
 				end
 			else
+				bline = tabs2spaces(line[0])
 				aline = $color+$color_hiddentext + ">>>>" + \
-				        line[0][0,(@window.cols/2).floor] + \
+				        bline[0,(@window.cols-8).floor] + \
 				        "<<<<" + $color+$color_default
 			end
 			screen_buffer.push(aline)
