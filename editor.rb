@@ -232,7 +232,7 @@ class Screen
 				col = pos - colfeed + scol
 				str_start = 0
 			end
-			write_str(row,col,substring[str_start,(width-col)])
+			write_str(row,col,substring[str_start,(width-col+scol)])
 			pos += substring.length
 		}
 	end
