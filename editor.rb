@@ -536,6 +536,7 @@ class Screen
 		Curses.setpos(r,c)
 	end
 
+	# handle mouse presses
 	def getmouse
 		m = Curses.getmouse
 		return "" if m == nil
@@ -565,9 +566,12 @@ class Screen
 end
 
 
-
 # end of Screen class
 #----------------------------------------------------------
+
+
+
+
 
 
 
@@ -661,6 +665,9 @@ end
 
 
 
+
+
+
 # ---------------------------------------------------------
 # This is the big main class, which handles a file
 # buffer.  Does everything from screen dumps to
@@ -745,6 +752,7 @@ class FileBuffer
 	end
 
 
+	# run a script file of ruby commands
 	def run_script
 		file = @window.ask("run script file: ",$scriptfile_hist,false,true)
 		if (file==nil) || (file=="")
@@ -1271,6 +1279,12 @@ class FileBuffer
 	#
 	# Undo / redo
 	#
+	# Each one of these does:
+	#   - set history buffer to new/old buffer
+	#   - text buffer text to the historical one
+	#   - set cursor position to historical one
+	#   - sanitize the cursor position
+	#
 	def better_cursor_position
 		if @row-@linefeed >= @window.rows
 			center_screen
@@ -1281,7 +1295,7 @@ class FileBuffer
 	end
 	def undo
 		if @buffer_history.prev != nil
-			@buffer_history.tree = @buffer_history.prev
+			@buffer_history.tree = @buffer_history.prev  # set pointer back
 			@text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
@@ -1319,6 +1333,7 @@ class FileBuffer
 	# Navigation stuff
 	#
 
+	# handles folded text arrays
 	def linelength(line)
 		if line.kind_of?(Array)
 			return 0
