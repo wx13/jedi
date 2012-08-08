@@ -140,8 +140,15 @@ class Screen
 	end
 
 	def update_screen_size
+		cols_old = @cols
+		rows_old = @rows
 		@cols = @screen.maxx
 		@rows = @screen.maxy - 1
+		if cols_old!=@cols || rows_old!=@rows
+			return true
+		else
+			return false
+		end
 	end
 
 	# This starts the curses session.
@@ -1797,10 +1804,7 @@ class FileBuffer
 	# display text
 	# -----------------------------------------------
 
-
-	# write everything, including status lines
-	def dump_to_screen(refresh=false)
-		# get cursor position
+	def get_cursor_position
 		ypos = @row - @linefeed
 		if ypos <= 0
 			@linefeed += ypos
@@ -1819,6 +1823,10 @@ class FileBuffer
 			@colfeed += curscol
 			curscol = 0
 		end
+		return cursrow,curscol
+	end
+
+	def update_top_line(cursrow,curscol)
 		# report on cursor position
 		r = (@linefeed+cursrow-1)
 		c = (@colfeed+curscol)
@@ -1841,6 +1849,14 @@ class FileBuffer
 			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
 		end
 		@window.write_top_line(lstr,status,position)
+	end
+
+
+
+	# write everything, including status lines
+	def dump_to_screen(refresh=false)
+		cursrow,curscol = get_cursor_position
+		update_top_line(cursrow,curscol)
 		# write the text to the screen
 		dump_text(refresh)
 		if @extramode
@@ -1859,11 +1875,45 @@ class FileBuffer
 		# get only the rows of interest
 		text = @text[@linefeed,@window.rows]
 
-		# store up lines, so we can see if they changed
-		screen_buffer = []
-		ir = 0
-		text.each{ |line|
-			ir += 1
+		# by default, don't update any rows
+		rows_to_update = []
+
+		# update any rows that have changed
+		text.each_index{|i|
+			if text[i] != $screen_buffer[i]
+				rows_to_update << i
+			end
+		}
+
+		# update any marked rows
+		if @marked
+			mark_row = @mark_row
+			row = @row
+			mark_row,row = @row,@mark_row if @mark_row > @row
+			srow = [mark_row-@linefeed,0].max
+			erow = [row-@linefeed,@window.rows-1].min
+			rows_to_update += Array(srow..erow)
+		end
+		if @marked_old
+			mark_row = @mark_row
+			row_old = @row_old
+			mark_row,row_old = @row_old,@mark_row if @mark_row > @row_old
+			srow = [mark_row-@linefeed,0].max
+			erow = [row_old-@linefeed,@window.rows-1].min
+			rows_to_update += Array(srow..erow)
+		end
+
+		# if colfeed changed, must update whole screen
+		if @colfeed != @colfeed_old || refresh
+			rows_to_update = Array(0..(text.length-1))
+		end
+
+		rows_to_update.uniq!
+
+		# write out text
+		for r in rows_to_update
+			line = text[r]
+			next if line == nil
 			if line.kind_of?(String)
 				sline = tabs2spaces(line)
 				if @syntax_color
@@ -1877,31 +1927,17 @@ class FileBuffer
 				        bline[0,(@window.cols-8).floor] + \
 				        "<<<<" + $color+$color_default
 			end
-			screen_buffer.push(aline)
-		}
+			@window.write_line(r,@colfeed,aline)
+		end
+
+
 		# vi-style blank lines
-		ir+=1
-		while ir <= (@window.rows)
-			screen_buffer.push("~"+" "*(@window.cols-1))
-			ir += 1
+		r = text.length
+		while r < (@window.rows)
+			@window.write_line(r,0,'~')
+			r += 1
 		end
 
-		# write out the text if anything has changed
-		if (@colfeed!=@colfeed_old) || (@marked==true) \
-		|| (@marked_old==true) || (refresh==true) \
-		|| (@linefeed!=@linefeed_old) \
-		|| (screen_buffer != $screen_buffer)
-			ir = 0
-			screen_buffer.each{|line|
-				@window.write_line(ir,@colfeed,line)
-				ir += 1
-			}
-		end
-
-		$screen_buffer = screen_buffer.dup
-		@colfeed_old = @colfeed
-		@linefeed_old = @linefeed
-		@marked_old = @marked
 		# now go back and do marked text highlighting
 		if @marked
 			if @row == @mark_row
@@ -1944,7 +1980,16 @@ class FileBuffer
 				end
 			end
 		end
+
+		$screen_buffer = text.dup
+		@colfeed_old = @colfeed
+		@linefeed_old = @linefeed
+		@marked_old = @marked
+		@row_old = @row
+
 	end
+
+
 
 	# highlight a particular row, from scol to ecol
 	# scol & ecol are columns in the text buffer
@@ -2255,9 +2300,7 @@ class BufferHistory
 		attr_accessor :next, :prev, :text, :row, :col
 		def initialize(text,row,col)
 			@text = []
-			for k in 0..(text.length-1)
-				@text[k] = text[k]
-			end
+			@text = text.dup
 			@row = row
 			@col = col
 		end
@@ -2328,9 +2371,7 @@ class BufferHistory
 	# Shallow copy
 	def copy
 		atext = []
-		for k in 0..(@tree.text.length-1)
-			atext[k] = @tree.text[k]
-		end
+		atext = @tree.text.dup
 		return(atext)
 	end
 	def prev
@@ -3146,12 +3187,15 @@ $screen_buffer = []
 # initialize curses screen and run with it
 $screen.start_screen_loop do
 
+	$buffers.current.dump_to_screen(true)
+
 	# this is the main action loop
 	loop do
 
 		# allow for resizes
-		$screen.update_screen_size
-		$buffers.update_screen_size
+		if $screen.update_screen_size
+			$buffers.update_screen_size
+		end
 		$cols = $screen.cols
 		$rows = $screen.rows
 
