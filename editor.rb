@@ -2761,85 +2761,6 @@ end
 
 
 
-# color escape
-$color = "\300"
-$color_white = "\301"
-$color_red = "\302"
-$color_green = "\303"
-$color_blue = "\304"
-$color_cyan = "\305"
-$color_magenta = "\306"
-$color_yellow = "\307"
-$color_black = "\308"
-# highlighting
-$color_normal = "\310"
-$color_reverse = "\311"
-
-
-
-
-
-
-# -------------------------------------------------------
-# default syntax color stuff
-# -------------------------------------------------------
-
-# default text colors
-$color_default = $color_white
-$color_comment = $color_cyan
-$color_string = $color_yellow
-$color_whitespace = $color_red
-$color_hiddentext = $color_green
-
-# define file types for syntax coloring
-$filetypes = {
-	/\.sh$/ => "shell",
-	/\.csh$/ => "shell",
-	/\.rb$/ => "shell",
-	/\.py$/ => "shell",
-	/\.[cC]$/ => "c",
-	/\.cpp$/ => "c",
-	"COMMIT_EDITMSG" => "shell",
-	/\.m$/ => "m",
-	/\.[fF]$/ => "f"
-}
-
-# --- default syntax coloring rules ---
-# line comments
-$syntax_color_lc = {
-	"shell" => ["#"],
-	"ruby" => ["#"],
-	"c" => ["//"],
-	"f" => ["!",/^c/],
-	"m" => ["#","%"],
-	"idl" => [";"]
-}
-$syntax_color_lc.default = []
-# block comments
-$syntax_color_bc = {
-	"c" => {"/*"=>"*/"},
-}
-$syntax_color_bc.default = {}
-# general regex
-$syntax_color_regex = {
-	"f" => {/^[^cC][^!]{71,}.*$/=>$color_magenta}
-}
-$syntax_color_regex.default = {}
-
-
-# default config
-$tabsize = 4
-$autoindent = true
-$linewrap = false
-$colmode = false
-$syntax_color = true
-$editmode = true
-$mouse = false
-
-
-
-
-
 
 
 # -----------------------------------------------------------------
@@ -3045,12 +2966,104 @@ end
 
 
 
-
-
 # -------------------------------------------------------
 # End of methods and classes definitions.
 # Start of directly executed code.
 # -------------------------------------------------------
+
+
+
+
+
+
+# -------------------------------------------------------
+# internal definitions
+# Don't change unless you know what you're doing
+# -------------------------------------------------------
+
+# color escape
+$color = "\300"
+$color_white = "\301"
+$color_red = "\302"
+$color_green = "\303"
+$color_blue = "\304"
+$color_cyan = "\305"
+$color_magenta = "\306"
+$color_yellow = "\307"
+$color_black = "\308"
+# highlighting
+$color_normal = "\310"
+$color_reverse = "\311"
+
+# -------------------------------------------------------
+
+
+
+
+
+
+
+# -------------------------------------------------------
+# default configuration
+# -------------------------------------------------------
+
+# default text colors
+$color_default = $color_white
+$color_comment = $color_cyan
+$color_string = $color_yellow
+$color_whitespace = $color_red
+$color_hiddentext = $color_green
+
+# define file types for syntax coloring
+$filetypes = {
+	/\.sh$/ => "shell",
+	/\.csh$/ => "shell",
+	/\.rb$/ => "shell",
+	/\.py$/ => "shell",
+	/\.[cC]$/ => "c",
+	/\.cpp$/ => "c",
+	"COMMIT_EDITMSG" => "shell",
+	/\.m$/ => "m",
+	/\.[fF]$/ => "f"
+}
+
+# --- default syntax coloring rules ---
+# line comments
+$syntax_color_lc = {
+	"shell" => ["#"],
+	"ruby" => ["#"],
+	"c" => ["//"],
+	"f" => ["!",/^c/],
+	"m" => ["#","%"],
+	"idl" => [";"]
+}
+$syntax_color_lc.default = []
+# block comments
+$syntax_color_bc = {
+	"c" => {"/*"=>"*/"},
+}
+$syntax_color_bc.default = {}
+# general regex
+$syntax_color_regex = {
+	"f" => {/^[^cC][^!]{71,}.*$/=>$color_magenta}
+}
+$syntax_color_regex.default = {}
+
+
+# other default config
+$tabsize = 4
+$autoindent = true
+$linewrap = false
+$colmode = false
+$syntax_color = true
+$editmode = true
+$mouse = false
+
+# -------------------------------------------------------
+
+
+
+
 
 
 
