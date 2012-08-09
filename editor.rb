@@ -2293,6 +2293,7 @@ class BufferHistory
 		x = x0
 		while n > 500
 			n -= 1
+			break if x == @saved
 			x = x.next
 			x.prev.delete
 		end
@@ -2307,6 +2308,7 @@ class BufferHistory
 		x = x0
 		while n > 500
 			n -= 1
+			break if x == @saved
 			x = x.prev
 			x.next.delete
 		end
