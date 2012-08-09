@@ -736,6 +736,10 @@ class FileBuffer
 		@bookmarks = {}
 		@bookmarks_hist = [""]
 
+		# ide stuff
+		@fifofilename = ""
+		@fifofile = nil
+
 		# grab a window to write to
 		@window = Window.new
 
@@ -747,6 +751,7 @@ class FileBuffer
 
 	def perbuffer_userscript
 	end
+
 
 
 	# Enter arbitrary ruby command.
@@ -2279,6 +2284,65 @@ class FileBuffer
 	end
 
 
+
+
+
+
+
+	#
+	# IDE stuff
+	#
+	def set_ide
+		ans = @window.ask("fifo file:")
+		return if ans == nil || ans == ""
+		@fifofilename = ans
+		@fifofile = File.open(@fifofilename,"w")
+	end
+
+	def end_ide
+		@fifofile.close unless @fifofile == nil || @fifofile.closed?
+	end
+
+	def ide_all
+		ide(true)
+	end
+
+	def ide_linebyline
+		ide(false)
+	end
+
+	def ide(all)
+		if @fifofile == nil
+			set_ide
+			return if @fifofile == nil
+		end
+		if @marked
+			srow,erow = ordered_mark_rows
+		else
+			srow = erow = @row
+		end
+		text = @text[srow..erow]
+		if all
+			@fifofile.puts text.join(',')
+			@fifofile.puts ''
+			@fifofile.flush
+		else
+			text.each{|line|
+				@fifofile.puts line
+				@fifofile.puts ''
+				@fifofile.flush
+			}
+		end
+		@marked = false
+		@row = erow + 1
+	end
+
+
+
+
+
+
+
 end
 
 # end of big buffer class
@@ -2905,6 +2969,19 @@ class KeyMap
 			unpack(?u) => "buffer.unhide_lines",
 			unpack(?U) => "buffer.unhide_all",
 			unpack(?r) => "buffer.reload",
+			unpack(?E) => "buffer.ide_linebyline",
+			unpack(?e) => "buffer.ide_all",
+			$ctrl_e => "buffer.set_ide",
+			$ctrl_w => "buffer.end_ide",
+			$up => "buffer.cursor_up(1)",
+			$down => "buffer.cursor_down(1)",
+			$right => "buffer.cursor_right",
+			$left => "buffer.cursor_left",
+			$pagedown => "buffer.page_down",
+			$pageup => "buffer.page_up",
+			$home => "buffer.goto_line(0)",
+			$end => "buffer.goto_line(-1)",
+			$ctrl_x => "buffer.mark",
 			$ctrl_6 => "buffer.sticky_extramode ^= true"
 		}
 		@extramode_commandlist.default = ""
