@@ -917,6 +917,21 @@ class FileBuffer
 		@window.write_message("saved to: "+@filename)
 	end
 
+	# re-open current buffer from file
+	def reload
+		if modified?
+			ans = @window.ask_yesno("Buffer has been modified. Continue anyway?")
+			return if ans != 'yes'
+		end
+		old_text = @text
+		read_file
+		if @text != old_text
+			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
+			if ans != 'yes'
+				@text = old_text
+			end
+		end
+	end
 
 	# make sure file position is valid
 	def sanitize
@@ -2889,6 +2904,7 @@ class KeyMap
 			unpack(?h) => "buffer.hide_lines",
 			unpack(?u) => "buffer.unhide_lines",
 			unpack(?U) => "buffer.unhide_all",
+			unpack(?r) => "buffer.reload",
 			$ctrl_6 => "buffer.sticky_extramode ^= true"
 		}
 		@extramode_commandlist.default = ""
