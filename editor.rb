@@ -715,6 +715,7 @@ class FileBuffer
 		@cutscore = 0  # don't let cuts be consecutive after lots of stuff has happened
 		@mark_col = 0
 		@mark_row = 0
+		@mark_list = []
 
 		# flags
 		@autoindent = $autoindent
@@ -723,7 +724,7 @@ class FileBuffer
 		@sticky_extramode = false
 		@insertmode = true
 		@linewrap = $linewrap
-		@colmode = $colmode
+		@cursormode = $cursormode
 		@syntax_color = $syntax_color
 
 		# undo-redo history
@@ -1056,23 +1057,20 @@ class FileBuffer
 	# backspace a column of text
 	def column_backspace(row1,row2,col)
 		if col == 0 then return end
-		sc = bc2sc(@row,col)
 		for r in row1..row2
 			next if @text[r].kind_of?(Array)
-			c = sc2bc(r,sc)
+			c = col
 			if @text[r].length == 0 then next end
 			if c<=0 then next end
 			@text[r] = @text[r].dup
 			@text[r][c-1] = ""
 		end
-		cursor_left
 	end
 	# delete a column of text
 	def column_delete(row1,row2,col)
-		sc = bc2sc(@row,col)
 		for r in row1..row2
 			next if @text[r].kind_of?(Array)
-			c = sc2bc(r,sc)
+			c = col
 			if c<0 then next end
 			if c==@text[r].length then next end
 			@text[r] = @text[r].dup
@@ -1107,10 +1105,14 @@ class FileBuffer
 	def delete
 		if @marked
 			mark_row,row = ordered_mark_rows
-			if @colmode
+			if @cursormode == 'col'
 				column_delete(mark_row,row,@col)
-			else
+			elsif @cursormode == 'row'
 				column_delete(mark_row,row,0)
+			else
+				@mark_list.each{|r,c|
+					column_delete(r,r,c)
+				}
 			end
 		else
 			delchar(@row,@col) if @text[@row].kind_of?(String)
@@ -1120,10 +1122,17 @@ class FileBuffer
 	def backspace
 		if @marked
 			mark_row,row = ordered_mark_rows
-			if @colmode
+			if @cursormode == 'col'
 				column_backspace(mark_row,row,@col)
-			else
+				cursor_left
+			elsif @cursormode == 'row'
 				column_backspace(mark_row,row,1)
+				cursor_left
+			else
+				@mark_list.each{|r,c|
+					column_backspace(r,r,c)
+				}
+				@mark_list.map!{|r,c|[r,[c-1,0].max]}
 			end
 		else
 			if (@col+@row)==0
@@ -1138,15 +1147,6 @@ class FileBuffer
 			delchar(@row,@col)
 		end
 	end
-	# indent a line or block of text
-	def indent
-		if @marked
-			mark_row,row = ordered_mark_rows
-			block_indent(mark_row,row)
-		else
-			addchar(?\t)
-		end
-	end
 	# insert a char and move to the right
 	def addchar(c)
 		return if c > 255
@@ -1154,21 +1154,33 @@ class FileBuffer
 			insertchar(@row,@col,c.chr)
 		else
 			mark_row,row = ordered_mark_rows
-			for r in mark_row..row
+			if @cursormode == 'multi'
+				iter = @mark_list
+			else
+				iter = Array(mark_row..row)
+			end
+			for r in iter
+				if @cursormode == 'multi'
+					cc = r[1]
+					r = r[0]
+				end
 				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c==$ctrl_i)||(c==$space))
 					next
 				end
-				if @colmode
+				if @cursormode == 'col'
 					sc = bc2sc(@row,@col)
 					cc = sc2bc(r,sc)
 					if(cc>@text[r].length) then next end
 					insertchar(r,cc,c.chr)
-				else
+				elsif @cursormode == 'row'
 					insertchar(r,0,c.chr)
+				else
+					insertchar(r,cc,c.chr)
 				end
 			end
+			@mark_list.map!{|r,c|[r,[c+1,@text[r].length].min]}
 		end
-		cursor_right
+		cursor_right if @cursormode != 'multi' || !@marked
 		if @linewrap
 			justify(true)
 		end
@@ -1641,8 +1653,14 @@ class FileBuffer
 
 
 	def mark
+		if @cursormode == 'multi'
+			@marked = true
+			@mark_list << [@row,@col]
+			return
+		end
 		if @marked
 			@marked = false
+			@mark_list = []
 			@window.write_message("Unmarked")
 			return
 		end
@@ -1654,6 +1672,7 @@ class FileBuffer
 
 
 	def copy(cut=0)
+		return if @cursormode == 'multi'
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
@@ -1968,7 +1987,7 @@ class FileBuffer
 					col = @col
 					mark_col = @mark_col
 				end
-				if @colmode == false
+				if @cursormode == 'row'
 					highlight(@row,mark_col,col)
 				end
 			else
@@ -1983,13 +2002,13 @@ class FileBuffer
 					col = @col
 					mark_col = @mark_col
 				end
-				if @colmode
+				if @cursormode == 'col'
 					sc = bc2sc(@row,@col)
 					for r in mark_row..row
 						c = sc2bc(r,sc)
 						highlight(r,c,c)
 					end
-				else
+				elsif @cursormode == 'row'
 					sl = @text[mark_row].length
 					highlight(mark_row,mark_col,sl)
 					for r in (mark_row+1)..(row-1)
@@ -1997,6 +2016,10 @@ class FileBuffer
 						highlight(r,0,sl)
 					end
 					highlight(row,0,col)
+				else
+					@mark_list.each{|r,c|
+						highlight(r,c,c)
+					}
 				end
 			end
 		end
@@ -2261,6 +2284,7 @@ class FileBuffer
 	#
 	def hide_lines
 		return if !@marked  # need multiple lines for folding
+		return if @cursormode == 'multi'
 		mark_row,row = ordered_mark_rows
 		oldrow = mark_row  # so we can reposition the cursor
 		mark_text = @text[mark_row..row]  # grab the chosen lines
@@ -2317,11 +2341,19 @@ class FileBuffer
 			return if @fifofile == nil
 		end
 		if @marked
-			srow,erow = ordered_mark_rows
+			if @cursormode == 'multi'
+				text = []
+				@mark_list.each{|r,c|
+					text << @text[r]
+				}
+			else
+				srow,erow = ordered_mark_rows
+				text = @text[srow..erow]
+			end
 		else
 			srow = erow = @row
+			text = @text[srow..erow]
 		end
-		text = @text[srow..erow]
 		if all
 			@fifofile.puts text.join(',')
 			@fifofile.puts ''
@@ -3037,8 +3069,9 @@ class KeyMap
 			[unpack(?o), ["@insertmode = false","Overwrite mode","ovrw"]],
 			[unpack(?w), ["@linewrap = true","Line wrapping enabled","wrap"]],
 			[unpack(?l), ["@linewrap = false","Line wrapping disabled","long"]],
-			[unpack(?c), ["@colmode = true","Column mode","col"]],
-			[unpack(?r), ["@colmode = false","Row mode","row"]],
+			[unpack(?c), ["@cursormode = 'col'","Column mode","col"]],
+			[unpack(?r), ["@cursormode = 'row'","Row mode","row"]],
+			[unpack(?f), ["@cursormode = 'multi'","Multicusor mode","mc"]],
 			[unpack(?s), ["@syntax_color = true","Syntax color enabled","scol"]],
 			[unpack(?b), ["@syntax_color = false","Syntax color disabled","bw"]],
 			[unpack(?m), ["$screen.enable_mouse","Mouse support enabled","mo"]],
@@ -3190,7 +3223,7 @@ $syntax_color_regex.default = {}
 $tabsize = 4
 $autoindent = true
 $linewrap = false
-$colmode = false
+$cursormode = 'row'
 $syntax_color = true
 $editmode = true
 $mouse = false
