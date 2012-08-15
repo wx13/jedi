@@ -1596,7 +1596,7 @@ class FileBuffer
 		sc = @col
 		loop do
 			nlines = @text.length
-			idx = @text[row].index(token,col)
+			idx = @text[row].index(token,col) if @text[row].kind_of?(String)
 			while(idx!=nil)
 				str = @text[row][idx..-1].scan(token)[0]
 				@row = row
