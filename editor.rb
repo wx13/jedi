@@ -1534,17 +1534,19 @@ class FileBuffer
 		if p >= 0
 			# find first match from this line down
 			# start with current line
-			idx = @text[row].index(token,@col+1)
+			idx = nil
+			idx = @text[row].index(token,@col+1) if @text[row].kind_of?(String)
 			while(idx==nil)
 				row = (row+1).modulo(nlines)  # next line
-				idx = @text[row].index(token)
+				idx = nil
+				idx = @text[row].index(token) if @text[row].kind_of?(String)
 				if (row == @row) && (idx==nil)  # stop if we wrap back around
 					@window.write_message("No matches")
 					return
 				end
 			end
 		else
-			if @col > 0
+			if @col > 0 && @text[row].kind_of?(String)
 				idx = @text[row].rindex(token,@col-1)
 			else
 				idx = nil
@@ -1552,7 +1554,8 @@ class FileBuffer
 			while(idx==nil)
 				row = (row-1)
 				if row < 0 then row = nlines-1 end
-				idx = @text[row].rindex(token)
+				idx = nil
+				idx = @text[row].rindex(token) if @text[row].kind_of?(String)
 				if (row == @row) && (idx==nil)
 					@window.write_message("No matches")
 					return
