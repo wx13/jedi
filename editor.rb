@@ -331,7 +331,7 @@ class Screen
 				when $ctrl_c, $ctrl_g
 					# 0 return value = cancelled search
 					return 0
-				when $enter
+				when $enter,$ctrl_m,$ctrl_j
 					# non-zero return value is index of the match.
 					# We've been searching backwards, so must invert index.
 					return hist.length - ih
@@ -362,46 +362,72 @@ class Screen
 	#   last_answer = true/false (start with last hist item as current answe?)
 	#   file = true/false (should we do tab-completion on files?)
 	#
-	def ask(question,hist=[""],last_answer=false,file=false)
+	def ask(question,hist=[],last_answer=false,file=false)
 
+		# get ready to write to bottom of screen
 		update_screen_size
 		@screen.attron Curses::A_REVERSE
-		ih = 0  # history index
-		token = ""  # potential answer
-		if last_answer
-			token = hist[-1].dup  # show last item in history
+
+		# if last_answer is set, then set the current token to the last answer.
+		# Otherwise, set token to empty string
+		if last_answer && hist.length > 0
+			token = hist[-1].dup
+		else
+			token = ''
 		end
-		token0 = token.dup  # remember typed string, even if we move away
-		col = token.length  # put cursor at end of string
+
+		# history index
+		ih = 0
+
+		# remember typed string, even if we move away
+		token0 = token.dup
+
+		# put cursor at end of string
+		# Write questin and suggested answer
+		col = token.length
 		write_str(@rows,0," "*@cols)  # blank the line
 		write_str(@rows,0,question+" "+token)
 		shift = 0  # shift: in case we go past edge of screen
 		idx = 0  # for tabbing through files
-		glob = token  # for file globbing
+
+		# for file globbing
+		glob = token
 
 		# interact with user
 		loop do
-			c = Curses.getch
-			if c.is_a?(String) then c = c.unpack('C')[0] end
+
+			c = getch
 			case c
+
+				# abort
 				when $ctrl_c then return(nil)
+
+				# cursor up scrolls through history
 				when $up
-					ih += 1
-					if ih >= hist.length
-						ih = hist.length-1
+					if hist.length == 0
+						token = ''
+					else
+						ih += 1
+						if ih > hist.length
+							ih = hist.length
+						end
+						token = hist[-ih].dup
 					end
-					token = hist[-ih].dup
 					glob = token
 					col = token.length
 				when $down
-					ih -= 1
-					if ih < 0
-						ih = 0
-					end
-					if ih == 0
-						token = token0
+					if hist.length == 0
+						token = ''
 					else
-						token = hist[-ih].dup
+						ih -= 1
+						if ih < 0
+							ih = 0
+						end
+						if ih == 0
+							token = token0
+						else
+							token = hist[-ih].dup
+						end
 					end
 					glob = token
 					col = token.length
@@ -767,7 +793,7 @@ class FileBuffer
 
 	# run a script file of ruby commands
 	def run_script
-		file = @window.ask("run script file: ",$scriptfile_hist,false,true)
+		file = @window.ask("run script file: ",$script_hist,false,true)
 		if (file==nil) || (file=="")
 			@window.write_message("cancelled")
 			return
@@ -2285,16 +2311,55 @@ class FileBuffer
 	#
 	# text folding/hiding
 	#
+	def hide_lines_at(srow,erow)
+		text = @text[srow..erow]  # grab the chosen lines
+		@text[srow] = [text].flatten  # current row = array of marked text
+		@text[(srow+1)..erow] = [] if srow < erow  # technically, can hide a single line, but why?
+		return text.length
+	end
 	def hide_lines
 		return if !@marked  # need multiple lines for folding
 		return if @cursormode == 'multi'
 		mark_row,row = ordered_mark_rows
 		oldrow = mark_row  # so we can reposition the cursor
-		mark_text = @text[mark_row..row]  # grab the chosen lines
-		@text[mark_row] = [mark_text].flatten  # current row = array of marked text
-		@text[(mark_row+1)..row] = [] if mark_row < row  # technically, can hide a single line, but why?
+		hide_lines_at(mark_row,row)
 		@marked = false
 		@row = oldrow
+	end
+	def hide_by_pattern
+		pstart = @window.ask("start pattern:",$startfolding_hist)
+		pend = @window.ask("end pattern:",$endfolding_hist)
+		return if pstart == nil || pend == nil
+		if pstart[0,1] == '/'
+			pstart = eval(pstart)
+		else
+			pstart = Regex.new(pstart)
+		end
+		if pend[0,1] == '/'
+			pend = eval(pend)
+		else
+			pend = Regex.new(pend)
+		end
+		i = -1
+		n = @text.length
+		while i < n
+			i += 1
+			line = @text[i]
+			next if line.kind_of?(Array)
+			if line =~ pstart
+				j = i
+				while j < n
+					j += 1
+					line = @text[j]
+					next if line.kind_of?(Array)
+					if line =~ pend
+						x = hide_lines_at(i,j)
+						i = j - x
+						break
+					end
+				end
+			end
+		end
 	end
 	def unhide_lines
 		hidden_text = @text[@row]
@@ -2302,12 +2367,7 @@ class FileBuffer
 		@text = @text[0,@row] + hidden_text + @text[(@row+1)..-1]
 	end
 	def unhide_all
-		@text.each_index{|i|
-			if @text[i].kind_of?(Array)
-				@row = i
-				unhide_lines
-			end
-		}
+		@text.flatten!
 	end
 
 
@@ -2727,15 +2787,19 @@ class BuffersList
 		if ($hist_file != nil) && (File.exist?($hist_file))
 			read_hists
 		end
-		hists = {"search_hist" => $search_hist.reverse[0,1000].reverse,\
-	             "replace_hist" => $replace_hist.reverse[0,1000].reverse,\
-	             "command_hist" => $command_hist.reverse[0,1000].reverse,\
-	             "script_hist" => $scriptfile_hist.reverse[0,1000].reverse\
+		hists = {"search_hist" => $search_hist.last(1000),\
+	             "replace_hist" => $replace_hist.last(1000),\
+	             "command_hist" => $command_hist.last(1000),\
+	             "script_hist" => $script_hist.last(1000),\
+	             "startfolding_hist" => $startfolding_hist.last(1000),\
+	             "endfolding_hist" => $endfolding_hist.last(1000)\
 	            }
 		File.open($hist_file,"w"){|file|
 			YAML.dump(hists,file)
 		}
 	end
+
+
 
 	# read histories from histories file
 	def read_hists
@@ -2746,10 +2810,13 @@ class BuffersList
 		if !hists
 			return
 		end
-		$search_hist.reverse!.concat(hists["search_hist"].reverse!).uniq!.reverse!
-		$replace_hist.reverse!.concat(hists["replace_hist"].reverse!).uniq!.reverse!
-		$command_hist.reverse!.concat(hists["command_hist"].reverse!).uniq!.reverse!
-		$script_hist.reverse!.concat(hists["script_hist"].reverse!).uniq!.reverse!
+		hists.default = []
+		$search_hist = $search_hist.reverse.concat(hists["search_hist"].reverse).uniq.reverse
+		$replace_hist = $replace_hist.reverse.concat(hists["replace_hist"].reverse).uniq.reverse
+		$command_hist = $command_hist.reverse.concat(hists["command_hist"].reverse).uniq.reverse
+		$script_hist = $script_hist.reverse.concat(hists["script_hist"].reverse).uniq.reverse
+		$startfolding_hist = $startfolding_hist.reverse.concat(hists["startfolding_hist"].reverse).uniq.reverse
+		$endfolding_hist = $endfolding_hist.reverse.concat(hists["endfolding_hist"].reverse).uniq.reverse
 	end
 
 
@@ -3003,6 +3070,7 @@ class KeyMap
 			unpack(?h) => "buffer.hide_lines",
 			unpack(?u) => "buffer.unhide_lines",
 			unpack(?U) => "buffer.unhide_all",
+			unpack(?H) => "buffer.hide_by_pattern",
 			unpack(?r) => "buffer.reload",
 			unpack(?E) => "buffer.ide_linebyline",
 			unpack(?e) => "buffer.ide_all",
@@ -3288,13 +3356,13 @@ optparse.parse!
 
 
 # intitialize histories
-$search_hist = [""]
-$replace_hist = [""]
-$indent_hist = [""]
-$lineno_hist = [""]
-$command_hist = [""]
-$scriptfile_hist = [""]
-$script_hist = [""]
+$search_hist = []
+$replace_hist = []
+$lineno_hist = []
+$command_hist = []
+$script_hist = []
+$startfolding_hist = []
+$endfolding_hist = []
 
 # start screen
 $screen = Screen.new
