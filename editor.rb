@@ -318,7 +318,7 @@ class Screen
 				when $backspace, $backspace2
 					# chop off a character, and search for a new match
 					token.chop!
-					ih = hist.rindex{|x|x.match(/^#{token}/)}
+					ih = hist.rindex{|x|x.match(/#{token}/)}
 					if ih != nil
 						mline = hist[ih]
 					end
@@ -327,7 +327,7 @@ class Screen
 					if ih == 0
 						next
 					end
-					ih = hist[0..(ih-1)].rindex{|x|x.match(/^#{token}/)}
+					ih = hist[0..(ih-1)].rindex{|x|x.match(/#{token}/)}
 				when $ctrl_c, $ctrl_g
 					# 0 return value = cancelled search
 					return 0
@@ -341,7 +341,7 @@ class Screen
 				when 10..126
 					# regular character
 					token += c.chr
-					ih = hist[0..ih].rindex{|x|x.match(/^#{token}/)}
+					ih = hist[0..ih].rindex{|x|x.match(/#{token}/)}
 			end
 			# ajust string for next loop
 			if ih != nil
