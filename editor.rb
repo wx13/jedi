@@ -595,7 +595,6 @@ class Screen
 	end
 
 
-
 end
 
 
@@ -680,6 +679,56 @@ class Window
 			@rows = $screen.rows - 1
 		end
 	end
+
+
+
+	def menu(items,header)
+
+		nr = [rows-6,items.length].min
+
+		write_str(3,4,'-'*(cols-8))
+		for r in 4..(4+nr)
+			write_str(r,3,'|'+' '*(cols-8)+'|')
+		end
+		write_str(5+nr,4,'-'*(cols-8))
+
+		selected = 0
+		selected_item = ''
+		write_message(header)
+		while true
+			shift = [selected-nr,0].max
+			r = 3
+			j = -1
+			items.each{|k,v|
+				j += 1
+				next if j < shift
+				r += 1
+				break if r > (4+nr)
+				text_reverse(true) if j == selected
+				selected_item = v if j == selected
+				write_str(r,5,' '*(cols-9))
+				write_str(r,5,Curses.keyname(k))
+				write_str(r,18,v)
+				text_reverse(false) if j == selected
+			}
+			c = getch
+			case c
+				when $up
+					selected = [selected-1,0].max
+				when $down
+					selected = [selected+1,items.length-1].min
+				when $enter,$ctrl_m,$ctrl_j
+					break
+				when $ctrl_c
+					return('')
+			end
+		end
+
+		return(selected_item)
+
+	end
+
+
 
 	# pass-through to screen class
 	def method_missing(method,*args,&block)
@@ -864,15 +913,17 @@ class FileBuffer
 
 	# Toggle one of many states.
 	def toggle
-		# show user the choices
-		str = ""
-		$keymap.togglelist_array.each{|a| str += a[1][2] + ","}
-		str.chop!
-		@window.write_message(str)
+		@window.write_message('Toggle')
 		# get answer and execute the code
 		c = $screen.getch
-		eval($keymap.togglelist[c][0])
-		@window.write_message($keymap.togglelist[c][1])
+		if c == $ctrl_i
+			cmd = @window.menu($keymap.togglelist,"Toggle")
+			dump_to_screen(true)
+		else
+			cmd = $keymap.togglelist[c]
+		end
+		eval(cmd)
+		@window.write_message(cmd)
 	end
 
 	# Go back to edit mode.
@@ -2434,7 +2485,12 @@ class FileBuffer
 
 
 
-
+	def menu(list,text)
+		cmd = @window.menu(list,text)
+		dump_to_screen(true)
+		cmd = '' if cmd == nil
+		return(cmd)
+	end
 
 
 
@@ -3003,7 +3059,7 @@ class KeyMap
 
 	attr_accessor :commandlist, :editmode_commandlist, \
 	              :extramode_commandlist, :viewmode_commandlist, \
-	              :togglelist, :togglelist_array
+	              :togglelist
 
 	def initialize
 
@@ -3085,7 +3141,8 @@ class KeyMap
 			$home => "buffer.goto_line(0)",
 			$end => "buffer.goto_line(-1)",
 			$ctrl_x => "buffer.mark",
-			$ctrl_6 => "buffer.sticky_extramode ^= true"
+			$ctrl_6 => "buffer.sticky_extramode ^= true",
+			$ctrl_i => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
@@ -3131,27 +3188,26 @@ class KeyMap
 		@viewmode_commandlist.default = ""
 
 
-		@togglelist_array = [
-			[unpack(?e), ["@editmode = true","Edit mode","ed"]],
-			[unpack(?v), ["@editmode = false","View mode","vu"]],
-			[unpack(?a), ["@autoindent = true","Autoindent enabled","ai"]],
-			[unpack(?n), ["@autoindent = false","Autoindent disabled","na"]],
-			[unpack(?i), ["@insertmode = true","Insert mode","ins"]],
-			[unpack(?o), ["@insertmode = false","Overwrite mode","ovrw"]],
-			[unpack(?w), ["@linewrap = true","Line wrapping enabled","wrap"]],
-			[unpack(?l), ["@linewrap = false","Line wrapping disabled","long"]],
-			[unpack(?c), ["@cursormode = 'col'","Column mode","col"]],
-			[unpack(?r), ["@cursormode = 'row'","Row mode","row"]],
-			[unpack(?f), ["@cursormode = 'multi'","Multicusor mode","mc"]],
-			[unpack(?s), ["@syntax_color = true","Syntax color enabled","scol"]],
-			[unpack(?b), ["@syntax_color = false","Syntax color disabled","bw"]],
-			[unpack(?m), ["$screen.enable_mouse","Mouse support enabled","mo"]],
-			[unpack(?x), ["$screen.disable_mouse","Mouse support disabled","xmo"]],
-			[unpack(?-), ["$buffers.vstack","Vertical window stacking","-"]],
-			[unpack(?|), ["$buffers.hstack","Horizontal window stacking","|"]]
-		]
-		@togglelist = Hash[@togglelist_array]
-		@togglelist.default = ["","Unknown toggle",""]
+		@togglelist = {
+			unpack(?e) => "@editmode = true",
+			unpack(?v) => "@editmode = false",
+			unpack(?a) => "@autoindent = true",
+			unpack(?n) => "@autoindent = false",
+			unpack(?i) => "@insertmode = true",
+			unpack(?o) => "@insertmode = false",
+			unpack(?w) => "@linewrap = true",
+			unpack(?l) => "@linewrap = false",
+			unpack(?c) => "@cursormode = 'col'",
+			unpack(?r) => "@cursormode = 'row'",
+			unpack(?f) => "@cursormode = 'multi'",
+			unpack(?s) => "@syntax_color = true",
+			unpack(?b) => "@syntax_color = false",
+			unpack(?m) => "$screen.enable_mouse",
+			unpack(?x) => "$screen.disable_mouse",
+			unpack(?-) => "$buffers.vstack",
+			unpack(?|) => "$buffers.hstack"
+		}
+		@togglelist.default = ""
 
 	end
 
@@ -3195,11 +3251,8 @@ class KeyMap
 		end
 	end
 
-
-
-
-
 end
+
 
 
 
