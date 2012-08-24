@@ -1412,7 +1412,8 @@ class FileBuffer
 	def undo
 		if @buffer_history.prev != nil
 			@buffer_history.tree = @buffer_history.prev  # set pointer back
-			@text = @buffer_history.copy
+			@text.delete_if{|x|true}
+			@text.concat(@buffer_history.copy)
 			@row = @buffer_history.row
 			@col = @buffer_history.col
 			better_cursor_position
@@ -1421,20 +1422,23 @@ class FileBuffer
 	def redo
 		if @buffer_history.next != nil
 			@buffer_history.tree = @buffer_history.next
-			@text = @buffer_history.copy
+			@text.delete_if{|x|true}
+			@text.concat(@buffer_history.copy)
 			@row = @buffer_history.row
 			@col = @buffer_history.col
 			better_cursor_position
 		end
 	end
 	def revert_to_saved
-		@text = @buffer_history.revert_to_saved
+		@text.delete_if{|x|true}
+		@text.concat(@buffer_history.revert_to_saved)
 		@row = @buffer_history.row
 		@col = @buffer_history.col
 		better_cursor_position
 	end
 	def unrevert_to_saved
-		@text = @buffer_history.unrevert_to_saved
+		@text.delete_if{|x|true}
+		@text.concat(@buffer_history.unrevert_to_saved)
 		@row = @buffer_history.row
 		@col = @buffer_history.col
 		better_cursor_position
@@ -2415,7 +2419,11 @@ class FileBuffer
 	def unhide_lines
 		hidden_text = @text[@row]
 		return if hidden_text.kind_of?(String)
-		@text = @text[0,@row] + hidden_text + @text[(@row+1)..-1]
+		text = @text.dup
+		@text.delete_if{|x|true}
+		@text.concat(text[0,@row])
+		@text.concat(hidden_text)
+		@text.concat(text[(@row+1)..-1])
 	end
 	def unhide_all
 		@text.flatten!
@@ -2899,6 +2907,17 @@ class BuffersList
 	end
 
 
+	def duplicate
+		@pages[@npage] = Page.new([@pages[@ipage].buffer.dup])
+		@pages[@npage].buffer.window = @pages[@npage].buffer.window.dup
+		@npage += 1
+		@pages[@ipage].buffer.extramode = false
+		@ipage = @npage - 1
+		@pages[@ipage].buffer.extramode = false
+		return(@pages[@ipage].buffer)
+	end
+
+
 	# put all buffers on the same page,
 	# unlesss they already are => then spread them out
 	def all_on_one_page
@@ -3130,6 +3149,7 @@ class KeyMap
 			unpack(?r) => "buffer.reload",
 			unpack(?E) => "buffer.ide_linebyline",
 			unpack(?e) => "buffer.ide_all",
+			unpack(?f) => "buffer = $buffers.duplicate",
 			$ctrl_e => "buffer.set_ide",
 			$ctrl_w => "buffer.end_ide",
 			$up => "buffer.cursor_up(1)",
