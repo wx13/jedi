@@ -9,7 +9,6 @@
 #	is offered as-is, without any warranty.
 #
 
-require 'curses'
 require 'optparse'
 require 'yaml'
 
@@ -28,103 +27,67 @@ require 'yaml'
 
 class Screen
 
-	attr_accessor :rows, :cols, :mouse
+	attr_accessor :rows, :cols
 
 	def initialize
-
-		# set up curses
-		Curses.raw
-		Curses.noecho
-		Curses.start_color
-		Curses.stdscr.keypad(true)
-		Curses.init_pair(Curses::COLOR_GREEN, Curses::COLOR_GREEN, Curses::COLOR_BLACK)
-		Curses.init_pair(Curses::COLOR_RED, Curses::COLOR_RED, Curses::COLOR_BLACK)
-		Curses.init_pair(Curses::COLOR_WHITE, Curses::COLOR_WHITE, Curses::COLOR_BLACK)
-		Curses.init_pair(Curses::COLOR_CYAN, Curses::COLOR_CYAN, Curses::COLOR_BLACK)
-		Curses.init_pair(Curses::COLOR_BLUE, Curses::COLOR_BLUE, Curses::COLOR_BLACK)
-		Curses.init_pair(Curses::COLOR_YELLOW, Curses::COLOR_YELLOW, Curses::COLOR_BLACK)
-		Curses.init_pair(Curses::COLOR_MAGENTA, Curses::COLOR_MAGENTA, Curses::COLOR_BLACK)
-
-		# use the mouse?
-		@mouse = $mouse
-		enable_mouse if @mouse
-
-		$unix = true  # are we on a unix system
-
-		# grab a curses instance
-		@screen = Curses.init_screen
 
 		# get and store screen size
 		update_screen_size
 
 		# curses keycodes
-		$ctrl_a = unpack(?\C-a)
-		$ctrl_b = unpack(?\C-b)
-		$ctrl_c = unpack(?\C-c)
-		$ctrl_d = unpack(?\C-d)
-		$ctrl_e = unpack(?\C-e)
-		$ctrl_f = unpack(?\C-f)
-		$ctrl_g = unpack(?\C-g)
-		$ctrl_h = unpack(?\C-h)
-		$ctrl_i = unpack(?\C-i)
-		$ctrl_j = unpack(?\C-j)
-		$ctrl_k = unpack(?\C-k)
-		$ctrl_l = unpack(?\C-l)
-		$ctrl_m = unpack(?\C-m)
-		$ctrl_n = unpack(?\C-n)
-		$ctrl_o = unpack(?\C-o)
-		$ctrl_p = unpack(?\C-p)
-		$ctrl_q = unpack(?\C-q)
-		$ctrl_r = unpack(?\C-r)
-		$ctrl_s = unpack(?\C-s)
-		$ctrl_t = unpack(?\C-t)
-		$ctrl_u = unpack(?\C-u)
-		$ctrl_v = unpack(?\C-v)
-		$ctrl_w = unpack(?\C-w)
-		$ctrl_x = unpack(?\C-x)
-		$ctrl_y = unpack(?\C-y)
-		$ctrl_z = unpack(?\C-z)
-		$ctrl_6 = unpack(?\C-^)
-		$enter = Curses::Key::ENTER
-		$backspace = Curses::Key::BACKSPACE
-		$backspace2 = unpack(?\C-?)
+		$ctrl_a = "\001"
+		$ctrl_b = "\002"
+		$ctrl_c = "\003"
+		$ctrl_d = "\004"
+		$ctrl_e = "\005"
+		$ctrl_f = "\006"
+		$ctrl_g = "\a"
+		$ctrl_h = "\b"
+		$ctrl_i = "\t"
+		$ctrl_j = "\n"
+		$ctrl_k = "\v"
+		$ctrl_l = "\f"
+		$ctrl_m = "\r"
+		$ctrl_n = "\016"
+		$ctrl_o = "\017"
+		$ctrl_p = "\020"
+		$ctrl_q = "\021"
+		$ctrl_r = "\022"
+		$ctrl_s = "\023"
+		$ctrl_t = "\024"
+		$ctrl_u = "\025"
+		$ctrl_v = "\026"
+		$ctrl_w = "\027"
+		$ctrl_x = "\030"
+		$ctrl_y = "\031"
+		$ctrl_z = "\032"
+		$ctrl_6 = "\036"
+		$enter = "\r"
+		$backspace = "\177"
+		$backspace2 = "\037"
 		$space = " "
 
-		$up = Curses::Key::UP
-		$down = Curses::Key::DOWN
-		$right = Curses::Key::RIGHT
-		$left = Curses::Key::LEFT
-		$pagedown = Curses::Key::NPAGE
-		$pageup = Curses::Key::PPAGE
-		$home = Curses::Key::HOME
-		$end = Curses::Key::END
+		$up = "\e[A"
+		$down = "\e[B"
+		$right = "\e[C"
+		$left = "\e[D"
+		$pagedown = "\e[6~"
+		$pageup = "\e[5~"
+		$home = "\e[H"
+		$end = "\e[F"
 
-		# system dependence
-		if RUBY_PLATFORM =~ /mingw/
-			$shift_down = 'KEY_SDOWN'
-			$shift_up = 'KEY_SUP'
-			$shift_left = 'KEY_SLEFT'
-			$shift_right = 'KEY_SRIGHT'
-			$ctrl_left = 'CTL_LEFT'
-			$ctrl_right = 'CTL_RIGHT'
-			$ctrl_up = 'CTL_UP'
-			$ctrl_down = 'CTL_DOWN'
-			$ctrl_6 = 'ALT_6'
-			$key_mouse = -1
-			$unix = false
-		else
-			$shift_down = Curses::Key::SF
-			$shift_up = Curses::Key::SR
-			$shift_left = Curses::Key::SLEFT
-			$shift_right = Curses::Key::SRIGHT
-			$ctrl_down = 'kDN5'
-			$ctrl_up = 'kUP5'
-			$ctrl_left = 'kLFT5'
-			$ctrl_right = 'kRIT5'
-			$ctrl_shift_left = 'kLFT6'
-			$ctrl_shift_right = 'kRIT6'
-			$key_mouse = Curses::KEY_MOUSE
-		end
+		$shift_left = "\e[1;2D"
+		$shift_right = "\e[1;2C"
+		$shift_up = "\e[1;2A"
+		$shift_down = "\e[1;2B"
+		$ctrl_left = "\e[1;5D"
+		$ctrl_right = "\e[1;5C"
+		$ctrl_up = "\e[1;5A"
+		$ctrl_down = "\e[1;5B"
+		$ctrlshift_left = "\e[1;6D"
+		$ctrlshift_right = "\e[1;6C"
+		$ctrlshift_up = "\e[1;6A"
+		$ctrlshift_down = "\e[1;6B"
 
 	end
 
@@ -134,16 +97,25 @@ class Screen
 	end
 
 	def getch
-		c = Curses.getch
-		if c.is_a?(String) then c = c.unpack('C')[0] end
+		c = STDIN.getc.chr
+		if c=="\e"
+			2.times{c += STDIN.getc.chr}
+		end
+		if c == "\e[5" || c == "\e[6"
+			c += STDIN.getc.chr
+		end
+		if c == "\e[1"
+			3.times{c += STDIN.getc.chr}
+		end
 		return(c)
 	end
 
 	def update_screen_size
 		cols_old = @cols
 		rows_old = @rows
-		@cols = @screen.maxx
-		@rows = @screen.maxy - 1
+		@rows,@cols = `stty size`.split
+		@rows = @rows.to_i
+		@cols = @cols.to_i
 		if cols_old!=@cols || rows_old!=@rows
 			return true
 		else
@@ -154,33 +126,32 @@ class Screen
 	# This starts the curses session.
 	# When this exits, screen closes.
 	def start_screen_loop
+		system('stty raw -echo')
+		print "\e[2J"
 		begin
 			yield
 		ensure
-			Curses.close_screen
+			print "\e[2J"
+			system('stty -raw echo')
 		end
-	end
-
-	def enable_mouse
-		Curses.mousemask(Curses::BUTTON1_PRESSED \
-		                |Curses::BUTTON1_RELEASED \
-		                |Curses::BUTTON1_CLICKED \
-		                |Curses::BUTTON1_DOUBLE_CLICKED \
-		                |Curses::REPORT_MOUSE_POSITION)
-		@mouse = true
-	end
-	def disable_mouse
-		Curses.mousemask(0)
-		@mouse = false
 	end
 
 	# Suspend the editor
 	def suspend(buffer)
-		return if !$unix
-		Curses.close_screen
+		system('stty -raw echo')
 		Process.kill("SIGSTOP",0)
-		Curses.refresh
+		system('stty raw -echo')
 		buffer.dump_to_screen(true)
+	end
+
+	# position cursor
+	def setpos(r,c)
+		print "\e[#{r+1};#{c+1}H"
+	end
+
+	# write a string
+	def addstr(text)
+		print text
 	end
 
 	# Write a string at a position.
@@ -188,8 +159,8 @@ class Screen
 		if text == nil
 			return
 		end
-		Curses.setpos(line,column)
-		Curses.addstr(text)
+		setpos(line,column)
+		addstr(text)
 	end
 
 	# Write a whole line of text.
@@ -201,57 +172,46 @@ class Screen
 			return
 		end
 
-		substrings = line.split($color)  # split at color escape
-
-		# Write from colfeed to first color escape.
-		# If colfeed is larger than the first substring,
-		# this will naturally write nothing.
-		write_str(row,scol,substrings[0][colfeed,width])
-		pos = substrings[0].length
-		substrings = substrings[1..-1]
-		return if substrings == nil
-
-		# loop over remaining parts of the line
-		substrings.each{|substring|
-			colorcode = substring[0].chr
-			substring = substring[1..-1]
-			next if substring == nil
-			case colorcode
-				when $color_white then set_color(Curses::COLOR_WHITE)
-				when $color_red then set_color(Curses::COLOR_RED)
-				when $color_green then set_color(Curses::COLOR_GREEN)
-				when $color_yellow then set_color(Curses::COLOR_YELLOW)
-				when $color_blue then set_color(Curses::COLOR_BLUE)
-				when $color_magenta then set_color(Curses::COLOR_MAGENTA)
-				when $color_cyan then set_color(Curses::COLOR_CYAN)
-				when $color_reverse then @screen.attron(Curses::A_REVERSE)
-				when $color_normal then @screen.attroff(Curses::A_REVERSE)
+		code = ""
+		while colfeed > 0
+			j = line.index("\e")
+			break if j==nil
+			if j > colfeed
+				line = line[colfeed..-1]
+				break
 			end
-			# pos is position in the line.
-			if pos < colfeed
-				# We must chop off first part of the substring,
-				# because we are writing off the left edge of the screen.
-				str_start = colfeed - pos
-				col = scol
-			else
-				# We write the entire string, but starting some number of
-				# spaces in from the edge.
-				col = pos - colfeed + scol
-				str_start = 0
-			end
-			write_str(row,col,substring[str_start,(width-col+scol)])
-			pos += substring.length
-		}
+			line = line[j..-1]
+			colfeed -= j
+			j = line.index("m")
+			code = line[0..j]
+			line = line[j+1..-1]
+		end
+		write_str(row,scol,code+line)
+
 	end
 
-	def set_color(color)
-		@screen.color_set(color)
+	# INPUT: row,col ==> where on screen to write
+	#        line ==> full row of text
+	#        i0,i1 ==> start and end indices into line
+	# We need the whole line, so that we can set the color
+	def write_part_of_line(row,col,line,i0,i1=-1)
+		return if line == nil || line.length == 0
+		k = line[0,i0].rindex(/\e\[.*m/)
+		if k == nil
+			code = ''
+		else
+			code = line[k..(i0-1)]
+			k = code.index('m')
+			code = code[0..k]
+		end
+		write_str(row,col,code+line[i0..i1]+"\e[0m")
 	end
+
 
 	# write the info line at top of screen
 	def write_top_line(lstr,cstr,rstr,row,col,width)
 
-		update_screen_size
+		#update_screen_size
 		rstr = cstr + "  " + rstr
 		ll = lstr.length
 		lr = rstr.length
@@ -267,30 +227,17 @@ class Screen
 		nspaces = width - ll - lr
 		return if nspaces < 0  # line is too long to write
 		all = lstr + (" "*nspaces) + rstr
-		@screen.attron Curses::A_REVERSE
-		write_str(row,col,all)
-		@screen.attroff Curses::A_REVERSE
+		write_str(row,col,"\e[7m"+all+"\e[0m")
 
 	end
 
-	# toggle reverse text
-	def text_reverse(val)
-		if val
-			@screen.attron Curses::A_REVERSE
-		else
-			@screen.attroff Curses::A_REVERSE
-		end
-	end
 
 	# write a message at the bottom
 	def write_message(message)
-		update_screen_size
+		#update_screen_size
 		xpos = (@cols - message.length)/2
-		@screen.attroff Curses::A_REVERSE
 		write_str(@rows,0," "*@cols)
-		@screen.attron Curses::A_REVERSE
-		write_str(@rows,xpos,message)
-		@screen.attroff Curses::A_REVERSE
+		write_str(@rows,xpos,"\e[7m"+message+"\e[0m")
 	end
 
 
@@ -312,8 +259,7 @@ class Screen
 			write_str(@rows,0,"(reverse-i-search) #{token}: #{mline}")
 
 			# get user input
-			c = Curses.getch
-			if c.is_a?(String) then c = c.unpack('C')[0] end
+			c = getch
 			case c
 				when $backspace, $backspace2
 					# chop off a character, and search for a new match
@@ -363,10 +309,6 @@ class Screen
 	#   file = true/false (should we do tab-completion on files?)
 	#
 	def ask(question,hist=[],last_answer=false,file=false)
-
-		# get ready to write to bottom of screen
-		update_screen_size
-		@screen.attron Curses::A_REVERSE
 
 		# if last_answer is set, then set the current token to the last answer.
 		# Otherwise, set token to empty string
@@ -472,12 +414,6 @@ class Screen
 					token0 = token.dup
 					glob = token
 				when $ctrl_m, $enter, $ctrl_j then break
-				when 10..126
-					# regular character
-					token.insert(col,c.chr)
-					token0 = token.dup
-					col += 1
-					glob = token
 				when $backspace, $backspace2, $ctrl_h
 					if col > 0
 						token[col-1] = ""
@@ -504,6 +440,12 @@ class Screen
 						col += 1
 						glob = token
 					end
+				else
+					# regular character
+					token.insert(col,c)
+					token0 = token.dup
+					col += 1
+					glob = token
 			end
 
 			# display the answer so far
@@ -514,10 +456,9 @@ class Screen
 				shift = 0
 			end
 			write_str(@rows,0,question+" "+token[shift..-1])
-			Curses.setpos(@rows,(col-shift)+question.length+1)
+			$screen.setpos(@rows,(col-shift)+question.length+1)
 
 		end
-		@screen.attroff Curses::A_REVERSE
 		if token == ""
 			token = hist[-1].dup
 		end
@@ -532,19 +473,16 @@ class Screen
 
 	# ask a yes or no question
 	def ask_yesno(question)
-		update_screen_size
-		@screen.attron Curses::A_REVERSE
 		write_str(@rows,0," "*@cols)
 		write_str(@rows,0,question)
 		answer = "cancel"
 		loop do
 			c = $screen.getch
-			next if c > 255  # don't accept weird characters
-			if c.chr.downcase == "y"
+			if c.downcase == "y"
 				answer = "yes"
 				break
 			end
-			if c.chr.downcase == "n"
+			if c.downcase == "n"
 				answer = "no"
 				break
 			end
@@ -553,7 +491,6 @@ class Screen
 				break
 			end
 		end
-		@screen.attroff Curses::A_REVERSE
 		return answer
 	end
 
@@ -563,35 +500,6 @@ class Screen
 		for r in 1..(@rows-1)
 			write_str(r,c,"|")
 		end
-	end
-
-	def setpos(r,c)
-		Curses.setpos(r,c)
-	end
-
-	# handle mouse presses
-	def getmouse
-		m = Curses.getmouse
-		return "" if m == nil
-		cmd = ""
-		case m.bstate
-			when Curses::BUTTON1_CLICKED
-				cmd += '@marked = false;'
-				cmd += "goto_position(#{m.y}-1,#{m.x});"
-				cmd += '@window.write_message("");'
-			when Curses::BUTTON1_PRESSED
-				cmd += '@marked = false;'
-				cmd += "goto_position(#{m.y}-1,#{m.x});"
-				cmd += 'mark'
-			when Curses::BUTTON1_RELEASED
-				cmd += "goto_position(#{m.y}-1,#{m.x});"
-			when Curses::REPORT_MOUSE_POSITION
-				cmd += "goto_position(#{m.y}-1,#{m.x});"
-				cmd += 'mark if !@marked;'
-			when Curses::BUTTON1_DOUBLE_CLICKED
-				cmd += "center_screen(#{m.y}-1);"
-		end
-		return cmd
 	end
 
 
@@ -704,12 +612,17 @@ class Window
 				next if j < shift
 				r += 1
 				break if r > (4+nr)
-				text_reverse(true) if j == selected
+				if j==selected
+					pre = "\e[7m"
+					post = "\e[m"
+				else
+					pre = ""
+					post = ""
+				end
 				selected_item = v if j == selected
-				write_str(r,5,' '*(cols-9))
-				write_str(r,5,Curses.keyname(k))
-				write_str(r,18,v)
-				text_reverse(false) if j == selected
+				write_str(r,5,pre+' '*(cols-9))
+				write_str(r,5,k)
+				write_str(r,18,v+post)
 			}
 			c = getch
 			case c
@@ -924,6 +837,7 @@ class FileBuffer
 		end
 		eval(cmd)
 		@window.write_message(cmd)
+		dump_to_screen(true)
 	end
 
 	# Go back to edit mode.
@@ -1057,6 +971,8 @@ class FileBuffer
 	# insert a character
 	def insertchar(row,col,c)
 		return if @text[row].kind_of?(Array)
+		n = c.unpack('C')[0]
+		return unless n < 127 && n > 8
 		if @text[row] == nil
 			@text[row] = c
 			return
@@ -1226,9 +1142,9 @@ class FileBuffer
 	end
 	# insert a char and move to the right
 	def addchar(c)
-		return if c > 255
+		return if ! c.is_a?(String)
 		if @marked == false
-			insertchar(@row,@col,c.chr)
+			insertchar(@row,@col,c)
 		else
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'multi'
@@ -1245,14 +1161,14 @@ class FileBuffer
 					next
 				end
 				if @cursormode == 'col'
-					sc = bc2sc(@row,@col)
-					cc = sc2bc(r,sc)
-					if(cc>@text[r].length) then next end
-					insertchar(r,cc,c.chr)
+					#sc = bc2sc(@row,@col)
+					#cc = sc2bc(r,sc)
+					if(@col>@text[r].length) then next end
+					insertchar(r,@col,c)
 				elsif @cursormode == 'row'
-					insertchar(r,0,c.chr)
+					insertchar(r,0,c)
 				else
-					insertchar(r,cc,c.chr)
+					insertchar(r,cc,c)
 				end
 			end
 			@mark_list.map!{|r,c|[r,[c+1,@text[r].length].min]}
@@ -1996,7 +1912,7 @@ class FileBuffer
 	def dump_text(refresh=false)
 
 		# get only the rows of interest
-		text = @text[@linefeed,@window.rows]
+		text = @text[@linefeed,@window.rows].dup
 
 		# by default, don't update any rows
 		rows_to_update = []
@@ -2008,23 +1924,8 @@ class FileBuffer
 			end
 		}
 
-		# update any marked rows
-		if @marked
-			mark_row = @mark_row
-			row = @row
-			mark_row,row = @row,@mark_row if @mark_row > @row
-			srow = [mark_row-@linefeed,0].max
-			erow = [row-@linefeed,@window.rows-1].min
-			rows_to_update += Array(srow..erow)
-		end
-		if @marked_old
-			mark_row = @mark_row
-			row_old = @row_old
-			mark_row,row_old = @row_old,@mark_row if @mark_row > @row_old
-			srow = [mark_row-@linefeed,0].max
-			erow = [row_old-@linefeed,@window.rows-1].min
-			rows_to_update += Array(srow..erow)
-		end
+		# screen snapshot for next go-around
+		$screen_buffer = text.dup
 
 		# if colfeed changed, must update whole screen
 		if @colfeed != @colfeed_old || refresh
@@ -2053,7 +1954,6 @@ class FileBuffer
 			@window.write_line(r,@colfeed,aline)
 		end
 
-
 		# vi-style blank lines
 		r = text.length
 		while r < (@window.rows)
@@ -2061,54 +1961,15 @@ class FileBuffer
 			r += 1
 		end
 
-		# now go back and do marked text highlighting
-		if @marked
-			if @row == @mark_row
-				if @col < @mark_col
-					col = @mark_col
-					mark_col = @col
-				else
-					col = @col
-					mark_col = @mark_col
-				end
-				if @cursormode == 'row'
-					highlight(@row,mark_col,col)
-				end
-			else
-				if @row < @mark_row
-					row = @mark_row
-					mark_row = @row
-					col = @mark_col
-					mark_col = @col
-				else
-					row = @row
-					mark_row = @mark_row
-					col = @col
-					mark_col = @mark_col
-				end
-				if @cursormode == 'col'
-					sc = bc2sc(@row,@col)
-					for r in mark_row..row
-						c = sc2bc(r,sc)
-						highlight(r,c,c)
-					end
-				elsif @cursormode == 'row'
-					sl = @text[mark_row].length
-					highlight(mark_row,mark_col,sl)
-					for r in (mark_row+1)..(row-1)
-						sl = @text[r].length
-						highlight(r,0,sl)
-					end
-					highlight(row,0,col)
-				else
-					@mark_list.each{|r,c|
-						highlight(r,c,c)
-					}
-				end
-			end
-		end
+#		# do text highlighting
+#		if @marked==true || @marked==true
+#			rows_to_update == Array(0..(text.length-1))
+#		end
+#		if @marked==true
+#			marked_row,row = @marked_row,@row
+#			marked_row,row = row,marked_row if marked_row > row
+#		end
 
-		$screen_buffer = text.dup
 		@colfeed_old = @colfeed
 		@linefeed_old = @linefeed
 		@marked_old = @marked
@@ -2117,10 +1978,9 @@ class FileBuffer
 	end
 
 
-
 	# highlight a particular row, from scol to ecol
 	# scol & ecol are columns in the text buffer
-	def highlight(row,scol,ecol)
+	def highlight(row,scol,ecol,un=false)
 		# only do rows that are on the screen
 		if row < @linefeed then return end
 		if row > (@linefeed + @window.rows - 2) then return end
@@ -2146,10 +2006,17 @@ class FileBuffer
 			str = str[0,(@window.cols-ssc)]
 		end
 
-		@window.text_reverse(true)
-		@window.write_str((row-@linefeed+1),ssc,str)
-		@window.text_reverse(false)
+		if un
+			@window.write_str((row-@linefeed+1),ssc,str)
+			return
+		else
+			@window.write_str((row-@linefeed+1),ssc,"\e[7m"+str+"\e[m")
+		end
 	end
+	def unhighlight(row,scol,ecol)
+		highlight(row,scol,ecol,true)
+	end
+
 
 
 	#
@@ -2336,12 +2203,11 @@ class FileBuffer
 		return(bc)
 	end
 	def tabs2spaces(line)
-		if line == nil then return(nil) end
-		if line.length == 0 then return(line) end
+		return line if line == nil || line.length == 0
 		a = line.split("\t",-1)
 		ans = a[0]
 		a = a[1..-1]
-		if a == nil then return(ans) end
+		return ans if a == nil
 		a.each{|str|
 			n = ans.length
 			m = @tabsize - (n+@tabsize).modulo(@tabsize)
@@ -2763,6 +2629,7 @@ class BuffersList
 	end
 
 	def update_screen_size
+		$screen.update_screen_size
 		@pages[@ipage].resize_buffers
 		@pages[@ipage].refresh_buffers
 	end
@@ -3109,7 +2976,6 @@ class KeyMap
 			$ctrl_6 => "buffer.extramode = true",
 			$ctrl_s => "buffer.enter_command",
 			$ctrl_l => "$buffers.next_buffer",
-			$key_mouse => "buffer.handle_mouse",
 			$shift_up => "buffer.screen_down",
 			$shift_down => "buffer.screen_up",
 			$shift_right => "buffer.screen_right",
@@ -3118,38 +2984,39 @@ class KeyMap
 			$ctrl_down => "$buffers.screen_up",
 			$ctrl_left => "buffer.undo",
 			$ctrl_right => "buffer.redo",
-			$ctrl_shift_left => "buffer.revert_to_saved",
-			$ctrl_shift_right => "buffer.unrevert_to_saved"
+			$ctrlshift_left => "buffer.revert_to_saved",
+			$ctrlshift_right => "buffer.unrevert_to_saved"
 		}
 		@commandlist.default = ""
 		@extramode_commandlist = {
-			unpack(?b) => "buffer.bookmark",
-			unpack(?g) => "buffer.goto_bookmark",
-			unpack(?c) => "buffer.center_screen",
-			unpack(?0) => "$buffers.all_on_one_page",
-			unpack(?1) => "$buffers.move_to_page(1)",
-			unpack(?2) => "$buffers.move_to_page(2)",
-			unpack(?3) => "$buffers.move_to_page(3)",
-			unpack(?4) => "$buffers.move_to_page(4)",
-			unpack(?5) => "$buffers.move_to_page(5)",
-			unpack(?6) => "$buffers.move_to_page(6)",
-			unpack(?7) => "$buffers.move_to_page(7)",
-			unpack(?8) => "$buffers.move_to_page(8)",
-			unpack(?9) => "$buffers.move_to_page(9)",
-			unpack(?[) => "buffer.undo",
-			unpack(?]) => "buffer.redo",
-			unpack(?{) => "buffer.revert_to_saved",
-			unpack(?}) => "buffer.unrevert_to_saved",
-			unpack(?l) => "buffer.justify",
-			unpack(?s) => "buffer.run_script",
-			unpack(?h) => "buffer.hide_lines",
-			unpack(?u) => "buffer.unhide_lines",
-			unpack(?U) => "buffer.unhide_all",
-			unpack(?H) => "buffer.hide_by_pattern",
-			unpack(?r) => "buffer.reload",
-			unpack(?E) => "buffer.ide_linebyline",
-			unpack(?e) => "buffer.ide_all",
-			unpack(?f) => "buffer = $buffers.duplicate",
+			"b" => "buffer.bookmark",
+			"g" => "buffer.goto_bookmark",
+			"c" => "buffer.center_screen",
+			"0" => "$buffers.all_on_one_page",
+			"1" => "$buffers.move_to_page(1)",
+			"2" => "$buffers.move_to_page(2)",
+			"3" => "$buffers.move_to_page(3)",
+			"4" => "$buffers.move_to_page(4)",
+			"5" => "$buffers.move_to_page(5)",
+			"6" => "$buffers.move_to_page(6)",
+			"7" => "$buffers.move_to_page(7)",
+			"8" => "$buffers.move_to_page(8)",
+			"9" => "$buffers.move_to_page(9)",
+			"[" => "buffer.undo",
+			"]" => "buffer.redo",
+			"{" => "buffer.revert_to_saved",
+			"}" => "buffer.unrevert_to_saved",
+			"l" => "buffer.justify",
+			"s" => "buffer.run_script",
+			"h" => "buffer.hide_lines",
+			"u" => "buffer.unhide_lines",
+			"U" => "buffer.unhide_all",
+			"H" => "buffer.hide_by_pattern",
+			"R" => "buffer.reload",
+			"r" => "$buffers.update_screen_size",
+			"E" => "buffer.ide_linebyline",
+			"e" => "buffer.ide_all",
+			"f" => "buffer = $buffers.duplicate",
 			$ctrl_e => "buffer.set_ide",
 			$ctrl_w => "buffer.end_ide",
 			$up => "buffer.cursor_up(1)",
@@ -3177,91 +3044,73 @@ class KeyMap
 			$ctrl_d => "buffer.delete",
 			$ctrl_r => "buffer.search_and_replace",
 			$ctrl_i => "buffer.addchar(c)",
-			9 => "buffer.addchar(c)",
+			"\t" => "buffer.addchar(c)",
 		}
 		@editmode_commandlist.default = ""
 		@viewmode_commandlist = {
-			unpack(?q) => "buffer = $buffers.close",
-			unpack(?k) => "buffer.cursor_up(1)",
-			unpack(?j) => "buffer.cursor_down(1)",
-			unpack(?l) => "buffer.cursor_right",
-			unpack(?h) => "buffer.cursor_left",
+			"q" => "buffer = $buffers.close",
+			"k" => "buffer.cursor_up(1)",
+			"j" => "buffer.cursor_down(1)",
+			"l" => "buffer.cursor_right",
+			"h" => "buffer.cursor_left",
 			$space => "buffer.page_down",
-			unpack(?b) => "buffer.page_up",
-			unpack(?.) => "buffer = $buffers.next_buffer",
-			unpack(?,) => "buffer = $buffers.prev_buffer",
-			unpack(?/) => "buffer.search(0)",
-			unpack(?n) => "buffer.search(1)",
-			unpack(?N) => "buffer.search(-1)",
-			unpack(?g) => "buffer.goto_line",
-			unpack(?i) => "buffer.toggle_editmode",
-			unpack(?[) => "buffer.undo",
-			unpack(?]) => "buffer.redo",
-			unpack(?{) => "buffer.revert_to_saved",
-			unpack(?}) => "buffer.unrevert_to_saved",
-			unpack(?J) => "buffer.screen_up",
-			unpack(?K) => "buffer.screen_down",
-			unpack(?H) => "buffer.screen_left",
-			unpack(?L) => "buffer.screen_right",
-			unpack(?:) => "buffer.enter_command"
+			"b" => "buffer.page_up",
+			"." => "buffer = $buffers.next_buffer",
+			"," => "buffer = $buffers.prev_buffer",
+			"/" => "buffer.search(0)",
+			"n" => "buffer.search(1)",
+			"N" => "buffer.search(-1)",
+			"g" => "buffer.goto_line",
+			"i" => "buffer.toggle_editmode",
+			"[" => "buffer.undo",
+			"]" => "buffer.redo",
+			"{" => "buffer.revert_to_saved",
+			"}" => "buffer.unrevert_to_saved",
+			"J" => "buffer.screen_up",
+			"K" => "buffer.screen_down",
+			"H" => "buffer.screen_left",
+			"L" => "buffer.screen_right",
+			":" => "buffer.enter_command"
 		}
 		@viewmode_commandlist.default = ""
 
 
 		@togglelist = {
-			unpack(?e) => "@editmode = true",
-			unpack(?v) => "@editmode = false",
-			unpack(?a) => "@autoindent = true",
-			unpack(?n) => "@autoindent = false",
-			unpack(?i) => "@insertmode = true",
-			unpack(?o) => "@insertmode = false",
-			unpack(?w) => "@linewrap = true",
-			unpack(?l) => "@linewrap = false",
-			unpack(?c) => "@cursormode = 'col'",
-			unpack(?r) => "@cursormode = 'row'",
-			unpack(?f) => "@cursormode = 'multi'",
-			unpack(?s) => "@syntax_color = true",
-			unpack(?b) => "@syntax_color = false",
-			unpack(?m) => "$screen.enable_mouse",
-			unpack(?x) => "$screen.disable_mouse",
-			unpack(?-) => "$buffers.vstack",
-			unpack(?|) => "$buffers.hstack"
+			"e" => "@editmode = true",
+			"v" => "@editmode = false",
+			"a" => "@autoindent = true",
+			"n" => "@autoindent = false",
+			"i" => "@insertmode = true",
+			"o" => "@insertmode = false",
+			"w" => "@linewrap = true",
+			"l" => "@linewrap = false",
+			"c" => "@cursormode = 'col'",
+			"r" => "@cursormode = 'row'",
+			"f" => "@cursormode = 'multi'",
+			"s" => "@syntax_color = true",
+			"b" => "@syntax_color = false",
+			"m" => "$screen.enable_mouse",
+			"x" => "$screen.disable_mouse",
+			"-" => "$buffers.vstack",
+			"|" => "$buffers.hstack"
 		}
 		@togglelist.default = ""
 
 	end
 
 
-	def unpack(c)
-		if c.is_a?(String) then c = c.unpack('C')[0] end
-		return(c)
-	end
-
 	def extramode_command(keycode)
 		cmd = @extramode_commandlist[keycode]
-		if cmd == ""
-			cmd = @extramode_commandlist[Curses.keyname(keycode)]
-		end
 		return(cmd)
 	end
 
 	def command(keycode, editmode)
-		return nil if keycode > 1000
 		cmd = @commandlist[keycode]
-		if cmd == ""
-			cmd = @commandlist[Curses.keyname(keycode)]
-		end
 		if cmd == ""
 			if editmode
 				cmd = @editmode_commandlist[keycode]
-				if cmd == ""
-					cmd = @editmode_commandlist[Curses.keyname(keycode)]
-				end
 			else
 				cmd = @viewmode_commandlist[keycode]
-				if cmd == ""
-					cmd = @viewmode_commandlist[Curses.keyname(keycode)]
-				end
 			end
 		end
 		if cmd == ""
@@ -3295,18 +3144,17 @@ end
 # -------------------------------------------------------
 
 # color escape
-$color = "\300"
-$color_white = "\301"
-$color_red = "\302"
-$color_green = "\303"
-$color_blue = "\304"
-$color_cyan = "\305"
-$color_magenta = "\306"
-$color_yellow = "\307"
-$color_black = "\308"
+$color = "\e["
+$color_red = "31m"
+$color_green = "32m"
+$color_blue = "34m"
+$color_cyan = "36m"
+$color_magenta = "35m"
+$color_yellow = "33m"
+$color_default = "m"
 # highlighting
-$color_normal = "\310"
-$color_reverse = "\311"
+$color_normal = "0"
+$color_reverse = "7"
 
 # -------------------------------------------------------
 
@@ -3321,7 +3169,6 @@ $color_reverse = "\311"
 # -------------------------------------------------------
 
 # default text colors
-$color_default = $color_white
 $color_comment = $color_cyan
 $color_string = $color_yellow
 $color_whitespace = $color_red
@@ -3371,6 +3218,7 @@ $cursormode = 'row'
 $syntax_color = true
 $editmode = true
 $mouse = false
+$reverse_colors = false
 
 # -------------------------------------------------------
 
@@ -3418,6 +3266,9 @@ optparse = OptionParser.new{|opts|
 	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
 		$syntax_color = false
 	}
+	opts.on('-r', '--reverse', 'Reverse text colors'){
+		$reverse_colors = true
+	}
 	opts.on('-m', '--mouse', 'Turn on mouse support'){
 		$mouse = true
 	}
@@ -3452,6 +3303,7 @@ $copy_buffer = ""
 # for detecting changes to display,
 # so we don't have to redraw as frequently
 $screen_buffer = []
+$highlight_buffer = []
 
 
 # initialize curses screen and run with it
@@ -3463,9 +3315,9 @@ $screen.start_screen_loop do
 	loop do
 
 		# allow for resizes
-		if $screen.update_screen_size
-			$buffers.update_screen_size
-		end
+		#if $screen.update_screen_size
+		#	$buffers.update_screen_size
+		#end
 		$cols = $screen.cols
 		$rows = $screen.rows
 
@@ -3495,7 +3347,7 @@ $screen.start_screen_loop do
 		else
 			command = $keymap.command(c,buffer.editmode)
 			if command == nil
-				buffer.addchar(c) if buffer.editmode && c > 0
+				buffer.addchar(c) if buffer.editmode && c.is_a?(String)
 			else
 				eval(command)
 			end
