@@ -74,7 +74,9 @@ class Screen
 		$pagedown = "\e[6~"
 		$pageup = "\e[5~"
 		$home = "\e[H"
+		$home2 = "\eOH"
 		$end = "\e[F"
+		$end2 = "\eOF"
 
 		$shift_left = "\e[1;2D"
 		$shift_right = "\e[1;2C"
@@ -2958,7 +2960,9 @@ class KeyMap
 			$pagedown => "buffer.page_down",
 			$pageup => "buffer.page_up",
 			$home => "buffer.goto_line(0)",
+			$home2 => "buffer.goto_line(0)",
 			$end => "buffer.goto_line(-1)",
+			$end2 => "buffer.goto_line(-1)",
 			$ctrl_v => "buffer.page_down",
 			$ctrl_y => "buffer.page_up",
 			$ctrl_e => "buffer.cursor_eol",
@@ -3027,6 +3031,8 @@ class KeyMap
 			$pageup => "buffer.page_up",
 			$home => "buffer.goto_line(0)",
 			$end => "buffer.goto_line(-1)",
+			$home2 => "buffer.goto_line(0)",
+			$end2 => "buffer.goto_line(-1)",
 			$ctrl_x => "buffer.mark",
 			$ctrl_6 => "buffer.sticky_extramode ^= true",
 			$ctrl_i => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
