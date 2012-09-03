@@ -78,18 +78,18 @@ class Screen
 		$end = "\e[F"
 		$end2 = "\eOF"
 
-		$shift_left = "\e[1;2D"
-		$shift_right = "\e[1;2C"
-		$shift_up = "\e[1;2A"
-		$shift_down = "\e[1;2B"
-		$ctrl_left = "\e[1;5D"
-		$ctrl_right = "\e[1;5C"
-		$ctrl_up = "\e[1;5A"
-		$ctrl_down = "\e[1;5B"
-		$ctrlshift_left = "\e[1;6D"
-		$ctrlshift_right = "\e[1;6C"
-		$ctrlshift_up = "\e[1;6A"
-		$ctrlshift_down = "\e[1;6B"
+		$shift_left = "\e[2D"
+		$shift_right = "\e[2C"
+		$shift_up = "\e[2A"
+		$shift_down = "\e[2B"
+		$ctrl_left = "\e[5D"
+		$ctrl_right = "\e[5C"
+		$ctrl_up = "\e[5A"
+		$ctrl_down = "\e[5B"
+		$ctrlshift_left = "\e[6D"
+		$ctrlshift_right = "\e[6C"
+		$ctrlshift_up = "\e[6A"
+		$ctrlshift_down = "\e[6B"
 
 	end
 
@@ -106,8 +106,10 @@ class Screen
 		if c == "\e[5" || c == "\e[6"
 			c += STDIN.getc.chr
 		end
-		if c == "\e[1"
-			3.times{c += STDIN.getc.chr}
+		if c=="\e[1"
+			c += STDIN.getc.chr
+			c = "\e["
+			2.times{c += STDIN.getc.chr}
 		end
 		return(c)
 	end
