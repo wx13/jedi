@@ -3159,8 +3159,8 @@ $color_magenta = "35m"
 $color_yellow = "33m"
 $color_default = "m"
 # highlighting
-$color_normal = "0"
-$color_reverse = "7"
+$color_normal = "0m"
+$color_reverse = "7m"
 
 # -------------------------------------------------------
 
