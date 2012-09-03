@@ -1215,7 +1215,7 @@ class FileBuffer
 				if @text[@row].match(/^\s*$/)
 					@text[@row] = ""
 				end
-				insertchar(@row+1,0,ws)
+				insertchar(@row+1,0,ws) if ws.length > 0
 			end
 			@col = ws.length
 			@row += 1
