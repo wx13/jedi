@@ -2,38 +2,32 @@
 editor.rb
 =========
 
-editor.rb is a text editor writen in ruby/curses.
+editor.rb is a text editor writen in ruby for the unix console. It does
+not use curses or ncurses, but instead reads from standard in and
+writes to standard out.  It uses terminal escape codes to format the
+output.  Some terminals don't seem to support as many keycodes and will
+have reduced functionality.  For example, the mac terminal does not
+report shift/control + arrow keys (accept for ctrl-left/right).  I
+continually test it in xterm on linux, xterm on cygwin, gnome terminal
+on linux, and terminal on mac.
 
-Design goals:
-
+Major design goals:
 1. Zero install
 	- single file of ruby code
-	- only use built-in libraries (hence curses instead of ncurses)
-2. Easy to modify, customize & extend
-3. Scriptable
-	- execute single-line ruby commands within the editor
-	- execute ruby script files from within the editor
-	- execute ruby script files at startup
+	- only use built-in libraries
+2. Easy to modify, script, extend, and configure
+	- run scripts at startup or while running
 
+See http://wx13.com/code/editor for more details.
 
-
-Usage
-=====
 
 Installing & running
---------------------
-
-From easy to hard:
+====================
 
 1. Just run "ruby editor.rb".
 
-2. Put editor.rb in your path and give it execute permission.
-Rename it whatever you like.
-
-3. (This is what I do) I create a directory ~/.jedi (jedi = Jason's EDItor)
-containing the files config.rb and history.yaml.  It also contains a directory
-called snippets.  Snippets is where I keep snippets of useful code for
-modifying text.  Then I put the following line in my .bashrc file:
+2. Alternatively, create a directory ~/.editor containing the files
+config.rb and history.yaml.  Then create an alias:
 
 	alias jedi='ruby $HOME/bin/editor.rb -s $HOME/.jedi -y $HOME/.jedi/history.yaml'
 
@@ -52,264 +46,15 @@ available options.
 Configuration
 -------------
 
-The code does not parse a configuration file per se.  Because ruby
-supports metaprogramming, configuration and modification/extension
-are all the same.
-
-The "-s" or "--script" option calls a script or set of scripts to
-be run at startup.  This can be used to set basic parameters, for example:
-
-Create a file called "config.rb" containing:
+Configuration, scripting, and extensions are all the same.  The editor
+does not parse a configuration file; instead it can execute scripts at
+startup.  A simple configuration file might look like:
 
 	$tabsize = 8
 	$autoindent = true
 	$syntax_color = false
 
-And start the editor with "-s config.rb" set.
-
-One can do more complex configurations, such as swapping keybindings.
-Suppose you like to use nano's "ctrl-x" for quit, rather than
-"ctrl-q":
-
-	$keymap.commandlist[$ctrl_x] = "buffer = $buffers.close"
-	$keymap.commandlist[$ctrl_q] = "buffer.mark"
-
-One can go even further, and modify/create class methods.  For example,
-if you prefer that ctrl-e take you to the last character of the line,
-rather than just past the last character:
-
-	class FileBuffer
-		def cursor_eol
-			@col = @text[@row].length-1
-		end
-	end
-
-Here are some other useful mods:
-
-Change the syntax coloring:
-
-	$color_comment = $color_green
-
-Make files that end in ".h" get c-style coloring:
-
-	$filetypes[/\.h$/] = "c"
-
-Define a new filetype for syntax coloring
-
-	$filetypes[/\.abc$/] = "abc"
-	$syntax_color_lc["abc"] = ["||"]
-	$syntax_color_bc["abc"] = {"|+"=>"+|"}
-	$syntax_color_regex["abc"] = {/abc/=>$color_green}
-
-As you can see, this can be used for simple configuration, or to create
-mods/extenstions to the editor.
-
-
-
-
-
-
-
-Modes
------
-
-This is not a modal editor, but it does have two modes.
-In the "edit" mode you can do pretty much everything.
-In the "view" mode, you cannot modify the text (not strictly true),
-and there are some shorcuts for navigation, such as:
-	- h,j,k,l to move the cursor
-	- space, b for page down/up
-	- / to search
-	- H,J,K,L to shift screen around
-	- ",","." (unshifted >,<) to change buffers
-	- g to goto a line
-
-To get to view mode, hit "ctrl-t v". To get to edit mode, hit
-"ctrl-t e" or just hit "i".  There are some commans only available
-in view mode, because of the limited number of keys on the keyboard.
-
-Remember that all the keymappings can be easily changed, and one
-could easily write a set of keybindings that are very vim-like.
-
-
-
-Basic editing
--------------
-
-Basic editing uses control sequences similar to gnu-nano.  Some default
-keybindings (easy to change):
-
-	- Arrow keys & page up/down to move around.
-	- Shift-arrow to scroll the page
-	- Ctrl-{v,y} are also page down/up.
-	- Ctrl-w to search
-	- Ctrl-r search & replace
-	- Ctrl-o to save
-	- Ctrl-q to close file (quit if only one file open)
-	- Ctrl-e end of line
-	- Ctrl-a start of line
-	- Ctrl-d delete character
-	- Ctrl-l next text buffer
-	- Ctrl-f open file
-	- Ctrl-g go to line number (empty=0, negative = up from bottom)
-	- Ctrl-p copy
-	- Ctrl-k cut
-	- Ctrl-u paste
-	- Ctrl-c cancel operation
-	- Ctrl-t toggle various things
-		- e = edit mode
-		- v = view mode
-		- a = autoindent
-		- m = manual indent
-		- i = insert mode
-		- o = overwrite mode
-		- c = column mode
-		- r = row mode
-		- s = syntax coloring on
-		- b = syntax coloring off
-		- - = split screen vertically
-		- | = split screen horizontally
-	- Ctrl-x mark text
-	- Ctrl-^ N to move buffer to screen N (split screen)
-	- Ctrl-^ 0 to put all buffers on same screen (or undo such a move)
-	- Ctrl (left|right) arrow = undo/redo
-	- Ctrl-Shift (left|right) arrow = revert/unrevert to saved
-
-
-
-
-Entering ruby commands
-----------------------
-
-Type "ctrl-s <ruby commands> <enter>" to enter a ruby command.
-All commands entered this way, are run in the context of the current
-file buffer.  Thus "@text" refers to the text of that buffer.  The
-screen can be accessed by the global variable "$screen", and the other
-buffers can be accessed by the "$buffers" global variable.
-
-For example:
-
-To change the tabsize:
-
-	@tabsize = 8
-
-To specify that the file is a fortran file for syntax coloring:
-
-	@filetype = 'f'
-
-To change the color of comments from cyan to green
-
-	$color_comment = $color_green
-
-To change a bulleted ("-") list which starts on the current line and
-is 10 lines long to a numbered list
-
-	k=0; @text[@row,10].each{|line|; k+=1; line=line.sub(/^(\s*)-/,"\\1#{k}.")}
-
-To turn a double underline to a single underline, go to the underline row:
-                 =========             ---------
-
-	@text[@row] = @text[@row].gsub("=","-")
-
-To underline a line of text:
-
-	@text.insert(@row+1,"-"*@text[@row].length)
-
-**Important**:
-Notice in each of the above examples, when modifying the text buffer,
-I am careful to do stuff like:
-
-	@text[@row] = @text[@row].gsub(...
-
-instead of the more compact:
-
-	@text[@row].gsub!(...
-
-These are not the same command!  The first replaces the array element
-with a new element; the second modifies the existing element.  This
-is important because of undo-redo change detection.  The first is
-undo-able; the second is not.
-
-
-Running ruby scripts at startup
-------------------------------
-
-The "-s" or "--script" option specifies script files or directories
-containing script files to be run at startup.  If it is a directory,
-the all the files ending in ".rb" are run.  These can be simple
-configuration files, like:
-
-	@tabsize = 4
-	@autoindent = false
-	$color_comment = $color_green
-
-or can be modifications to the editor.  An empty method (called
-perbuffer_userscript) is run at the initialization of each buffer,
-so that the user can add startup methods to buffers.  For example,
-to set the tabsize to be 4 for fortran files only:
-
-	class FileBuffer
-		def perbuffer_userscript
-			if @filetype == "f"
-				@tabsize = 4
-			else
-				@tabsize = 8
-			end
-		end
-	end
-
-
-Examples
---------
-
-Some examples of configuration files and user scripts and mods can be
-found in the "scripts" directory.
-
-
-Description of code and methods
-===============================
-
-Keybindings
------------
-
-The keybindings code has four sections: commandlist,
-extramode_commandlist, editmode_commandlist, and viewmode_commandlist.
-The first is for universal keybindings. The third only works in
-editmode, and the fourth works only in viewmode. The second is for
-extra keybindings that there isn't room for.
-
-Classes
--------
-
-The code contains four classes:
-
-1. Screen
-	Low-level screen interactions
-2. Window
-	Per-buffer screen interactions (calls to Screen class)
-3. FileBuffer
-	Contains all info and methods regarding a single file
-4. BuffersList
-	Container class to manage multiple buffers
-5. BufferHistory
-	Store up snapshots for undo/redo
-6. KeyMap
-
-
-
-Undo-redo
----------
-
-The buffer text is stored in an array of strings (lines).  Each time
-the user does something, a snapshot of the text is saved.  This
-snapshot is a shallow copy (it is a new array, but each element is
-pointer to the old string). Before a line is changed, a deep copy is
-made of that line (now the array has one differing element). These
-sequences of snapshots are saved in a linked list (BufferHistory
-class). The linked list format allows the possibility of undo-trees if
-I ever feel they would be useful.  Undo and redo, are as simple as
-bumping a pointer up or down the link list of text buffers.
-
+Start the editor with "-s config.rb" or "-s dir_containing_config/" set.
 
 
 ------------------------------------------------------------------------
