@@ -1945,7 +1945,7 @@ class FileBuffer
 				if @syntax_color
 					aline = syntax_color(sline)
 				else
-					aline = sline
+					aline = sline + $color+$color_default
 				end
 			else
 				bline = tabs2spaces(line[0])
