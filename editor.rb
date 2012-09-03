@@ -130,10 +130,12 @@ class Screen
 	def start_screen_loop
 		system('stty raw -echo')
 		print "\e[2J"
+		print "\e[?7l"  # disable line wrap
 		begin
 			yield
 		ensure
 			print "\e[2J"
+			print "\e[?7h"
 			system('stty -raw echo')
 		end
 	end
