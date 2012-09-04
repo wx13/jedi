@@ -118,7 +118,7 @@ class Screen
 		cols_old = @cols
 		rows_old = @rows
 		@rows,@cols = `stty size`.split
-		@rows = @rows.to_i
+		@rows = @rows.to_i-1
 		@cols = @cols.to_i
 		if cols_old!=@cols || rows_old!=@rows
 			return true
@@ -171,8 +171,8 @@ class Screen
 
 	# write message at bottom (full line)
 	def write_bottom_line(str)
-		write_str(@rows-1,0,"\e[7m"+" "*@cols+"\e[0m")
-		write_str(@rows-1,0,"\e[7m"+str+"\e[0m")
+		write_str(@rows,0,"\e[7m"+" "*@cols+"\e[0m")
+		write_str(@rows,0,"\e[7m"+str+"\e[0m")
 	end
 
 	# Write a whole line of text.
