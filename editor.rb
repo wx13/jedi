@@ -217,7 +217,6 @@ class Screen
 	# write the info line at top of screen
 	def write_top_line(lstr,cstr,rstr,row,col,width)
 
-		#update_screen_size
 		rstr = cstr + "  " + rstr
 		ll = lstr.length
 		lr = rstr.length
@@ -240,7 +239,6 @@ class Screen
 
 	# write a message at the bottom
 	def write_message(message)
-		#update_screen_size
 		xpos = (@cols - message.length)/2
 		write_str(@rows,0," "*@cols)
 		write_str(@rows,xpos,"\e[7m"+message+"\e[0m")
@@ -2635,7 +2633,6 @@ class BuffersList
 	end
 
 	def update_screen_size
-		$screen.update_screen_size
 		@pages[@ipage].resize_buffers
 		@pages[@ipage].refresh_buffers
 	end
@@ -3021,7 +3018,7 @@ class KeyMap
 			"U" => "buffer.unhide_all",
 			"H" => "buffer.hide_by_pattern",
 			"R" => "buffer.reload",
-			"r" => "$buffers.update_screen_size",
+			"r" => "$screen.update_screen_size; $buffers.update_screen_size",
 			"E" => "buffer.ide_linebyline",
 			"e" => "buffer.ide_all",
 			"f" => "buffer = $buffers.duplicate",
@@ -3315,6 +3312,11 @@ $copy_buffer = ""
 $screen_buffer = []
 $highlight_buffer = []
 
+# catch screen resizes
+trap("WINCH"){
+	$screen.update_screen_size
+	$buffers.update_screen_size
+}
 
 # initialize curses screen and run with it
 $screen.start_screen_loop do
@@ -3325,9 +3327,6 @@ $screen.start_screen_loop do
 	loop do
 
 		# allow for resizes
-		#if $screen.update_screen_size
-		#	$buffers.update_screen_size
-		#end
 		$cols = $screen.cols
 		$rows = $screen.rows
 
