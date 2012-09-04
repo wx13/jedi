@@ -600,24 +600,33 @@ class Window
 
 
 
+	# Allow the use to choose from a menu of choices
 	def menu(items,header)
 
+		# how many rows should the menu take up (less than 1 screen)
 		nr = [rows-6,items.length].min
 
+		# write a blank menu
 		write_str(3,4,'-'*(cols-8))
 		for r in 4..(4+nr)
 			write_str(r,3,'|'+' '*(cols-8)+'|')
 		end
 		write_str(5+nr,4,'-'*(cols-8))
 
+		# write out menu choices and interact
 		selected = 0
 		selected_item = ''
 		write_message(header)
 		while true
+
+			# shift menu if need be
 			shift = [selected-nr,0].max
+
+			# loop over menu choices
 			r = 3
 			j = -1
 			items.each{|k,v|
+
 				j += 1
 				next if j < shift
 				r += 1
