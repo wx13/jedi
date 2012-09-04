@@ -169,6 +169,12 @@ class Screen
 		addstr(text)
 	end
 
+	# write message at bottom (full line)
+	def write_bottom_line(str)
+		write_str(@rows-1,0,"\e[7m"+" "*@cols+"\e[0m")
+		write_str(@rows-1,0,"\e[7m"+str+"\e[0m")
+	end
+
 	# Write a whole line of text.
 	def write_line(row,scol,width,colfeed,line)
 
@@ -331,8 +337,7 @@ class Screen
 		# put cursor at end of string
 		# Write questin and suggested answer
 		col = token.length
-		write_str(@rows,0," "*@cols)  # blank the line
-		write_str(@rows,0,question+" "+token)
+		write_bottom_line(question + " " + token)
 		shift = 0  # shift: in case we go past edge of screen
 		idx = 0  # for tabbing through files
 
@@ -453,13 +458,12 @@ class Screen
 			end
 
 			# display the answer so far
-			write_str(@rows,0," "*$cols)
 			if (col+question.length+2) > $cols
 				shift = col - $cols + question.length + 2
 			else
 				shift = 0
 			end
-			write_str(@rows,0,question+" "+token[shift..-1])
+			write_bottom_line(question+" "+token[shift..-1])
 			$screen.setpos(@rows,(col-shift)+question.length+1)
 
 		end
@@ -477,8 +481,7 @@ class Screen
 
 	# ask a yes or no question
 	def ask_yesno(question)
-		write_str(@rows,0," "*@cols)
-		write_str(@rows,0,question)
+		write_bottom_line(question)
 		answer = "cancel"
 		loop do
 			c = $screen.getch
