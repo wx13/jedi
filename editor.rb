@@ -353,6 +353,9 @@ class Screen
 				# abort
 				when $ctrl_c then return(nil)
 
+				# allow for empty strings
+				when $ctrl_n then return("")
+
 				# cursor up scrolls through history
 				when $up
 					if hist.length == 0
@@ -467,7 +470,7 @@ class Screen
 			$screen.setpos(@rows,(col-shift)+question.length+1)
 
 		end
-		if token == ""
+		if token == "" && hist[-1] != nil
 			token = hist[-1].dup
 		end
 		if token != hist[-1]
