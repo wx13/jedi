@@ -44,7 +44,6 @@ class Screen
 		:ctrl_f => "\006",
 		:ctrl_g => "\a",
 		:ctrl_h => "\b",
-		:ctrl_i => "\t",
 		:ctrl_j => "\n",
 		:ctrl_k => "\v",
 		:ctrl_l => "\f",
@@ -66,7 +65,6 @@ class Screen
 		:enter => "\r",
 		:backspace => "\177",
 		:backspace2 => "\037",
-		:space => " ",
 
 		:up => "\e[A",
 		:down => "\e[B",
@@ -438,7 +436,7 @@ class Screen
 					end
 					token0 = token.dup
 					glob = token
-				when ?\t, :ctrl_i
+				when "\t"
 					if file
 						# find files that match typed string
 						# Cycle through matches.
@@ -452,7 +450,7 @@ class Screen
 						idx += 1
 					else
 						# not a file, so insert literal tab character
-						token.insert(col,c.chr)
+						token.insert(col,c)
 						token0 = token.dup
 						col += 1
 						glob = token
@@ -854,7 +852,7 @@ class FileBuffer
 		@window.write_message('Toggle')
 		# get answer and execute the code
 		c = $screen.getch
-		if c == :ctrl_i
+		if c == "\t"
 			cmd = @window.menu($keymap.togglelist,"Toggle")
 			dump_to_screen(true)
 		else
@@ -1182,7 +1180,7 @@ class FileBuffer
 					cc = r[1]
 					r = r[0]
 				end
-				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c==:ctrl_i)||(c==:space))
+				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c=="\t")||(c==" "))
 					next
 				end
 				if @cursormode == 'col'
@@ -3057,7 +3055,7 @@ class KeyMap
 			:end2 => "buffer.goto_line(-1)",
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
-			:ctrl_i => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
+			"\t" => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
@@ -3071,7 +3069,6 @@ class KeyMap
 			:ctrl_j => "buffer.newline",
 			:ctrl_d => "buffer.delete",
 			:ctrl_r => "buffer.search_and_replace",
-			:ctrl_i => "buffer.addchar(c)",
 			"\t" => "buffer.addchar(c)",
 		}
 		@editmode_commandlist.default = ""
@@ -3081,7 +3078,7 @@ class KeyMap
 			"j" => "buffer.cursor_down(1)",
 			"l" => "buffer.cursor_right",
 			"h" => "buffer.cursor_left",
-			:space => "buffer.page_down",
+			" " => "buffer.page_down",
 			"b" => "buffer.page_up",
 			"." => "buffer = $buffers.next_buffer",
 			"," => "buffer = $buffers.prev_buffer",
