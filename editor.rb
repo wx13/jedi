@@ -34,62 +34,65 @@ class Screen
 		# get and store screen size
 		update_screen_size
 
-		# curses keycodes
-		$ctrl_a = "\001"
-		$ctrl_b = "\002"
-		$ctrl_c = "\003"
-		$ctrl_d = "\004"
-		$ctrl_e = "\005"
-		$ctrl_f = "\006"
-		$ctrl_g = "\a"
-		$ctrl_h = "\b"
-		$ctrl_i = "\t"
-		$ctrl_j = "\n"
-		$ctrl_k = "\v"
-		$ctrl_l = "\f"
-		$ctrl_m = "\r"
-		$ctrl_n = "\016"
-		$ctrl_o = "\017"
-		$ctrl_p = "\020"
-		$ctrl_q = "\021"
-		$ctrl_r = "\022"
-		$ctrl_s = "\023"
-		$ctrl_t = "\024"
-		$ctrl_u = "\025"
-		$ctrl_v = "\026"
-		$ctrl_w = "\027"
-		$ctrl_x = "\030"
-		$ctrl_y = "\031"
-		$ctrl_z = "\032"
-		$ctrl_6 = "\036"
-		$enter = "\r"
-		$backspace = "\177"
-		$backspace2 = "\037"
-		$space = " "
+		# keycodes
+		$keycodes = {
+		:ctrl_a => "\001",
+		:ctrl_b => "\002",
+		:ctrl_c => "\003",
+		:ctrl_d => "\004",
+		:ctrl_e => "\005",
+		:ctrl_f => "\006",
+		:ctrl_g => "\a",
+		:ctrl_h => "\b",
+		:ctrl_i => "\t",
+		:ctrl_j => "\n",
+		:ctrl_k => "\v",
+		:ctrl_l => "\f",
+		:ctrl_m => "\r",
+		:ctrl_n => "\016",
+		:ctrl_o => "\017",
+		:ctrl_p => "\020",
+		:ctrl_q => "\021",
+		:ctrl_r => "\022",
+		:ctrl_s => "\023",
+		:ctrl_t => "\024",
+		:ctrl_u => "\025",
+		:ctrl_v => "\026",
+		:ctrl_w => "\027",
+		:ctrl_x => "\030",
+		:ctrl_y => "\031",
+		:ctrl_z => "\032",
+		:ctrl_6 => "\036",
+		:enter => "\r",
+		:backspace => "\177",
+		:backspace2 => "\037",
+		:space => " ",
 
-		$up = "\e[A"
-		$down = "\e[B"
-		$right = "\e[C"
-		$left = "\e[D"
-		$pagedown = "\e[6~"
-		$pageup = "\e[5~"
-		$home = "\e[H"
-		$home2 = "\eOH"
-		$end = "\e[F"
-		$end2 = "\eOF"
+		:up => "\e[A",
+		:down => "\e[B",
+		:right => "\e[C",
+		:left => "\e[D",
+		:pagedown => "\e[6~",
+		:pageup => "\e[5~",
+		:home => "\e[H",
+		:home2 => "\eOH",
+		:end => "\e[F",
+		:end2 => "\eOF",
 
-		$shift_left = "\e[2D"
-		$shift_right = "\e[2C"
-		$shift_up = "\e[2A"
-		$shift_down = "\e[2B"
-		$ctrl_left = "\e[5D"
-		$ctrl_right = "\e[5C"
-		$ctrl_up = "\e[5A"
-		$ctrl_down = "\e[5B"
-		$ctrlshift_left = "\e[6D"
-		$ctrlshift_right = "\e[6C"
-		$ctrlshift_up = "\e[6A"
-		$ctrlshift_down = "\e[6B"
+		:shift_left => "\e[2D",
+		:shift_right => "\e[2C",
+		:shift_up => "\e[2A",
+		:shift_down => "\e[2B",
+		:ctrl_left => "\e[5D",
+		:ctrl_right => "\e[5C",
+		:ctrl_up => "\e[5A",
+		:ctrl_down => "\e[5B",
+		:ctrlshift_left => "\e[6D",
+		:ctrlshift_right => "\e[6C",
+		:ctrlshift_up => "\e[6A",
+		:ctrlshift_down => "\e[6B"
+		}
+		$keycodes = $keycodes.invert
 
 	end
 
@@ -111,7 +114,9 @@ class Screen
 			c = "\e["
 			2.times{c += STDIN.getc.chr}
 		end
-		return(c)
+		d = $keycodes[c]
+		d = c if d == nil
+		return(d)
 	end
 
 	def update_screen_size
@@ -271,32 +276,32 @@ class Screen
 			# get user input
 			c = getch
 			case c
-				when $backspace, $backspace2
+				when :backspace, :backspace2
 					# chop off a character, and search for a new match
 					token.chop!
 					ih = hist.rindex{|x|x.match(/#{token}/)}
 					if ih != nil
 						mline = hist[ih]
 					end
-				when $ctrl_r
+				when :ctrl_r
 					# get next match in reverse list
 					if ih == 0
 						next
 					end
 					ih = hist[0..(ih-1)].rindex{|x|x.match(/#{token}/)}
-				when $ctrl_c, $ctrl_g
+				when :ctrl_c, :ctrl_g
 					# 0 return value = cancelled search
 					return 0
-				when $enter,$ctrl_m,$ctrl_j
+				when :enter,:ctrl_m,:ctrl_j
 					# non-zero return value is index of the match.
 					# We've been searching backwards, so must invert index.
 					return hist.length - ih
-				when $up, $down
+				when :up, :down
 					# up/down treated same as enter
 					return hist.length - ih
-				when 10..126
+				else
 					# regular character
-					token += c.chr
+					token += c
 					ih = hist[0..ih].rindex{|x|x.match(/#{token}/)}
 			end
 			# ajust string for next loop
@@ -351,13 +356,13 @@ class Screen
 			case c
 
 				# abort
-				when $ctrl_c then return(nil)
+				when :ctrl_c then return(nil)
 
 				# allow for empty strings
-				when $ctrl_n then return("")
+				when :ctrl_n then return("")
 
 				# cursor up scrolls through history
-				when $up
+				when :up
 					if hist.length == 0
 						token = ''
 					else
@@ -369,7 +374,7 @@ class Screen
 					end
 					glob = token
 					col = token.length
-				when $down
+				when :down
 					if hist.length == 0
 						token = ''
 					else
@@ -385,7 +390,7 @@ class Screen
 					end
 					glob = token
 					col = token.length
-				when $ctrl_r
+				when :ctrl_r
 					ih = reverse_incremental(hist)
 					if ih == nil then ih = 0 end
 					if ih == 0
@@ -395,45 +400,45 @@ class Screen
 					end
 					glob = token
 					col = token.length
-				when $left
+				when :left
 					col -= 1
 					if col<0 then col=0 end
 					glob = token
-				when $right
+				when :right
 					col += 1
 					if col>token.length then col = token.length end
 					glob = token
-				when $ctrl_e
+				when :ctrl_e
 					col = token.length
 					glob = token
-				when $ctrl_a
+				when :ctrl_a
 					col = 0
 					glob = token
-				when $ctrl_u
+				when :ctrl_u
 					# cut to start-of-line
 					token = token[col..-1]
 					glob = token
 					col = 0
-				when $ctrl_k
+				when :ctrl_k
 					# cut to end-of-line
 					token = token[0,col]
 					glob = token
-				when $ctrl_d
+				when :ctrl_d
 					# delete character at cursor
 					if col < token.length
 						token[col] = ""
 					end
 					token0 = token.dup
 					glob = token
-				when $ctrl_m, $enter, $ctrl_j then break
-				when $backspace, $backspace2, $ctrl_h
+				when :ctrl_m, :enter, :ctrl_j then break
+				when :backspace, :backspace2, :ctrl_h
 					if col > 0
 						token[col-1] = ""
 						col -= 1
 					end
 					token0 = token.dup
 					glob = token
-				when ?\t, $ctrl_i
+				when ?\t, :ctrl_i
 					if file
 						# find files that match typed string
 						# Cycle through matches.
@@ -488,16 +493,17 @@ class Screen
 		answer = "cancel"
 		loop do
 			c = $screen.getch
+			if c == :ctrl_c
+				answer = "cancel"
+				break
+			end
+			next if c.is_a?(String) == false
 			if c.downcase == "y"
 				answer = "yes"
 				break
 			end
 			if c.downcase == "n"
 				answer = "no"
-				break
-			end
-			if c == $ctrl_c
-				answer = "cancel"
 				break
 			end
 		end
@@ -645,13 +651,13 @@ class Window
 			}
 			c = getch
 			case c
-				when $up
+				when :up
 					selected = [selected-1,0].max
-				when $down
+				when :down
 					selected = [selected+1,items.length-1].min
-				when $enter,$ctrl_m,$ctrl_j
+				when :enter,:ctrl_m,:ctrl_j
 					break
-				when $ctrl_c
+				when :ctrl_c
 					return('')
 			end
 		end
@@ -848,7 +854,7 @@ class FileBuffer
 		@window.write_message('Toggle')
 		# get answer and execute the code
 		c = $screen.getch
-		if c == $ctrl_i
+		if c == :ctrl_i
 			cmd = @window.menu($keymap.togglelist,"Toggle")
 			dump_to_screen(true)
 		else
@@ -1176,7 +1182,7 @@ class FileBuffer
 					cc = r[1]
 					r = r[0]
 				end
-				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c==$ctrl_i)||(c==$space))
+				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c==:ctrl_i)||(c==:space))
 					next
 				end
 				if @cursormode == 'col'
@@ -2968,44 +2974,44 @@ class KeyMap
 	def initialize
 
 		@commandlist = {
-			$ctrl_q => "buffer = $buffers.close",
-			$up => "buffer.cursor_up(1)",
-			$down => "buffer.cursor_down(1)",
-			$right => "buffer.cursor_right",
-			$left => "buffer.cursor_left",
-			$pagedown => "buffer.page_down",
-			$pageup => "buffer.page_up",
-			$home => "buffer.goto_line(0)",
-			$home2 => "buffer.goto_line(0)",
-			$end => "buffer.goto_line(-1)",
-			$end2 => "buffer.goto_line(-1)",
-			$ctrl_v => "buffer.page_down",
-			$ctrl_y => "buffer.page_up",
-			$ctrl_e => "buffer.cursor_eol",
-			$ctrl_a => "buffer.cursor_sol",
-			$ctrl_n => "buffer = $buffers.next_page",
-			$ctrl_b => "buffer = $buffers.prev_page",
-			$ctrl_x => "buffer.mark",
-			$ctrl_p => "buffer.copy",
-			$ctrl_w => "buffer.search(0)",
-			$ctrl_g => "buffer.goto_line",
-			$ctrl_o => "buffer.save",
-			$ctrl_f => "buffer = $buffers.open",
-			$ctrl_z => "$screen.suspend(buffer)",
-			$ctrl_t => "buffer.toggle",
-			$ctrl_6 => "buffer.extramode = true",
-			$ctrl_s => "buffer.enter_command",
-			$ctrl_l => "$buffers.next_buffer",
-			$shift_up => "buffer.screen_down",
-			$shift_down => "buffer.screen_up",
-			$shift_right => "buffer.screen_right",
-			$shift_left => "buffer.screen_left",
-			$ctrl_up => "$buffers.screen_down",
-			$ctrl_down => "$buffers.screen_up",
-			$ctrl_left => "buffer.undo",
-			$ctrl_right => "buffer.redo",
-			$ctrlshift_left => "buffer.revert_to_saved",
-			$ctrlshift_right => "buffer.unrevert_to_saved"
+			:ctrl_q => "buffer = $buffers.close",
+			:up => "buffer.cursor_up(1)",
+			:down => "buffer.cursor_down(1)",
+			:right => "buffer.cursor_right",
+			:left => "buffer.cursor_left",
+			:pagedown => "buffer.page_down",
+			:pageup => "buffer.page_up",
+			:home => "buffer.goto_line(0)",
+			:home2 => "buffer.goto_line(0)",
+			:end => "buffer.goto_line(-1)",
+			:end2 => "buffer.goto_line(-1)",
+			:ctrl_v => "buffer.page_down",
+			:ctrl_y => "buffer.page_up",
+			:ctrl_e => "buffer.cursor_eol",
+			:ctrl_a => "buffer.cursor_sol",
+			:ctrl_n => "buffer = $buffers.next_page",
+			:ctrl_b => "buffer = $buffers.prev_page",
+			:ctrl_x => "buffer.mark",
+			:ctrl_p => "buffer.copy",
+			:ctrl_w => "buffer.search(0)",
+			:ctrl_g => "buffer.goto_line",
+			:ctrl_o => "buffer.save",
+			:ctrl_f => "buffer = $buffers.open",
+			:ctrl_z => "$screen.suspend(buffer)",
+			:ctrl_t => "buffer.toggle",
+			:ctrl_6 => "buffer.extramode = true",
+			:ctrl_s => "buffer.enter_command",
+			:ctrl_l => "$buffers.next_buffer",
+			:shift_up => "buffer.screen_down",
+			:shift_down => "buffer.screen_up",
+			:shift_right => "buffer.screen_right",
+			:shift_left => "buffer.screen_left",
+			:ctrl_up => "$buffers.screen_down",
+			:ctrl_down => "$buffers.screen_up",
+			:ctrl_left => "buffer.undo",
+			:ctrl_right => "buffer.redo",
+			:ctrlshift_left => "buffer.revert_to_saved",
+			:ctrlshift_right => "buffer.unrevert_to_saved"
 		}
 		@commandlist.default = ""
 		@extramode_commandlist = {
@@ -3037,35 +3043,35 @@ class KeyMap
 			"E" => "buffer.ide_linebyline",
 			"e" => "buffer.ide_all",
 			"f" => "buffer = $buffers.duplicate",
-			$ctrl_e => "buffer.set_ide",
-			$ctrl_w => "buffer.end_ide",
-			$up => "buffer.cursor_up(1)",
-			$down => "buffer.cursor_down(1)",
-			$right => "buffer.cursor_right",
-			$left => "buffer.cursor_left",
-			$pagedown => "buffer.page_down",
-			$pageup => "buffer.page_up",
-			$home => "buffer.goto_line(0)",
-			$end => "buffer.goto_line(-1)",
-			$home2 => "buffer.goto_line(0)",
-			$end2 => "buffer.goto_line(-1)",
-			$ctrl_x => "buffer.mark",
-			$ctrl_6 => "buffer.sticky_extramode ^= true",
-			$ctrl_i => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
+			:ctrl_e => "buffer.set_ide",
+			:ctrl_w => "buffer.end_ide",
+			:up => "buffer.cursor_up(1)",
+			:down => "buffer.cursor_down(1)",
+			:right => "buffer.cursor_right",
+			:left => "buffer.cursor_left",
+			:pagedown => "buffer.page_down",
+			:pageup => "buffer.page_up",
+			:home => "buffer.goto_line(0)",
+			:end => "buffer.goto_line(-1)",
+			:home2 => "buffer.goto_line(0)",
+			:end2 => "buffer.goto_line(-1)",
+			:ctrl_x => "buffer.mark",
+			:ctrl_6 => "buffer.sticky_extramode ^= true",
+			:ctrl_i => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
-			$backspace => "buffer.backspace",
-			$backspace2 => "buffer.backspace",
-			$ctrl_h => "buffer.backspace",
-			$enter => "buffer.newline",
-			$ctrl_k => "buffer.cut",
-			$ctrl_u => "buffer.paste",
-			$ctrl_m => "buffer.newline",
-			$ctrl_j => "buffer.newline",
-			$ctrl_d => "buffer.delete",
-			$ctrl_r => "buffer.search_and_replace",
-			$ctrl_i => "buffer.addchar(c)",
+			:backspace => "buffer.backspace",
+			:backspace2 => "buffer.backspace",
+			:ctrl_h => "buffer.backspace",
+			:enter => "buffer.newline",
+			:ctrl_k => "buffer.cut",
+			:ctrl_u => "buffer.paste",
+			:ctrl_m => "buffer.newline",
+			:ctrl_j => "buffer.newline",
+			:ctrl_d => "buffer.delete",
+			:ctrl_r => "buffer.search_and_replace",
+			:ctrl_i => "buffer.addchar(c)",
 			"\t" => "buffer.addchar(c)",
 		}
 		@editmode_commandlist.default = ""
@@ -3075,7 +3081,7 @@ class KeyMap
 			"j" => "buffer.cursor_down(1)",
 			"l" => "buffer.cursor_right",
 			"h" => "buffer.cursor_left",
-			$space => "buffer.page_down",
+			:space => "buffer.page_down",
 			"b" => "buffer.page_up",
 			"." => "buffer = $buffers.next_buffer",
 			"," => "buffer = $buffers.prev_buffer",
