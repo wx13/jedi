@@ -268,8 +268,7 @@ class Screen
 		loop do
 
 			# write out current match status
-			write_str(@rows,0," "*@cols)
-			write_str(@rows,0,"(reverse-i-search) #{token}: #{mline}")
+			write_bottom_line("(reverse-i-search) #{token}: #{mline}")
 
 			# get user input
 			c = getch
@@ -293,13 +292,21 @@ class Screen
 				when :enter,:ctrl_m,:ctrl_j
 					# non-zero return value is index of the match.
 					# We've been searching backwards, so must invert index.
-					return hist.length - ih
+					if hist.length > 0
+						return hist.length - ih
+					else
+						return 0
+					end
 				when :up, :down
 					# up/down treated same as enter
-					return hist.length - ih
+					if hist.length > 0
+						return hist.length - ih
+					else
+						return 0
+					end
 				else
 					# regular character
-					token += c
+					token += c if c.is_a?(String)
 					ih = hist[0..ih].rindex{|x|x.match(/#{token}/)}
 			end
 			# ajust string for next loop
@@ -457,9 +464,11 @@ class Screen
 					end
 				else
 					# regular character
-					token.insert(col,c)
-					token0 = token.dup
-					col += 1
+					if c.is_a?(String)
+						token.insert(col,c)
+						token0 = token.dup
+						col += 1
+					end
 					glob = token
 			end
 
