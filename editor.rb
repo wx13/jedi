@@ -265,9 +265,11 @@ class Screen
 
 	# write a message at the bottom (centered, partial line)
 	def write_message(message)
+		print "\e[s"
 		xpos = (@cols - message.length)/2
 		clear_line(@rows)
 		write_string_reversed(@rows,xpos,message)
+		print "\e[u"
 	end
 
 
@@ -636,6 +638,9 @@ class Window
 	# Allow the use to choose from a menu of choices
 	def menu(items,header)
 
+		# hide the cursor
+		puts "\e[?25l"
+
 		# how many rows should the menu take up (less than 1 screen)
 		nr = [rows-6,items.length].min
 
@@ -691,6 +696,8 @@ class Window
 			end
 		end
 
+		# show the cursor
+		puts "\e[?25h"
 		return(selected_item)
 
 	end
@@ -3334,6 +3341,7 @@ $highlight_buffer = []
 trap("WINCH"){
 	$screen.update_screen_size
 	$buffers.update_screen_size
+	$screen.write_message("resized")
 }
 
 # initialize curses screen and run with it
