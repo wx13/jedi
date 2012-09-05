@@ -642,14 +642,16 @@ class Window
 		puts "\e[?25l"
 
 		# how many rows should the menu take up (less than 1 screen)
-		nr = [rows-6,items.length].min
+		margin = 2
+		nr = [rows-2*margin,items.length-1].min
+		cols = @cols-2*margin
 
 		# write a blank menu
-		write_string(3,4,'-'*(cols-8))
-		for r in 4..(4+nr)
-			write_string(r,3,'|'+' '*(cols-8)+'|')
+		write_string(margin,margin+1,'-'*(cols-2))
+		for r in (margin+1)..(margin+1+nr)
+			write_string(r,margin,'|'+' '*(cols-2)+'|')
 		end
-		write_string(5+nr,4,'-'*(cols-8))
+		write_string(margin+nr+2,margin+1,'-'*(cols-2))
 
 		# write out menu choices and interact
 		selected = 0
@@ -663,14 +665,14 @@ class Window
 			shift = selected if selected < shift
 
 			# loop over menu choices
-			r = 3
+			r = margin
 			j = -1
 			items.each{|k,v|
 
 				j += 1
 				next if j < shift
 				r += 1
-				break if r > (4+nr)
+				break if r > (margin+1+nr)
 				if j==selected
 					pre = $color+$color_reverse
 					post = $color+$color_normal
@@ -679,9 +681,9 @@ class Window
 					post = ""
 				end
 				selected_item = v if j == selected
-				write_string(r,5,pre+' '*(cols-9))
-				write_string(r,5,k)
-				write_string(r,18,v+post)
+				write_string(r,margin+2,pre+' '*(cols-3))
+				write_string(r,margin+2,k)
+				write_string(r,margin+15,v+post)
 			}
 			c = getch
 			case c
@@ -689,6 +691,10 @@ class Window
 					selected = [selected-1,0].max
 				when :down
 					selected = [selected+1,items.length-1].min
+				when :pagedown
+					selected = [selected+nr/2,items.length-1].min
+				when :pageup
+					selected = [selected-nr/2,0].max
 				when :enter,:ctrl_m,:ctrl_j
 					break
 				when :ctrl_c
@@ -696,9 +702,12 @@ class Window
 			end
 		end
 
+		return(selected_item)
+
+	ensure
+
 		# show the cursor
 		puts "\e[?25h"
-		return(selected_item)
 
 	end
 
