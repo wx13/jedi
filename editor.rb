@@ -135,7 +135,7 @@ class Screen
 	# When this exits, the screen closes.
 	def start_screen_loop
 		system('stty raw -echo')
-		print "\e[2J"   # clear the screen
+		print "\e[#{@rows}S"  # roll screen up (clear, but preserve)
 		print "\e[?7l"  # disable line wrap
 		begin
 			yield
