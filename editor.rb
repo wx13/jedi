@@ -15,7 +15,7 @@ require 'yaml'
 
 
 #------------------------------------------------------------
-# This class manages the screen output and input.
+# The Screen class manages the screen output and input.
 # It includes all the user interface stuff, such as:
 #   - write text to a position on the screen
 #   - write status line
@@ -132,7 +132,7 @@ class Screen
 	end
 
 	# This starts the interactive session.
-	# When this exits, the screen closes.
+	# When this exits, return screen to normal.
 	def start_screen_loop
 		system('stty raw -echo')
 		print "\e[#{@rows}S"  # roll screen up (clear, but preserve)
@@ -154,40 +154,57 @@ class Screen
 		buffer.dump_to_screen(true)
 	end
 
-	# position cursor
+	# Set cursor position
 	def setpos(r,c)
 		print "\e[#{r+1};#{c+1}H"
 	end
 
-	# write a string
+	# Write a string at the current cursor position
 	def addstr(text)
 		print text
 	end
 
-	# Write a string at a position.
-	def write_str(line,column,text)
-		if text == nil
-			return
-		end
+	# Write a string at a specified position.
+	def write_string(line,column,text)
 		setpos(line,column)
 		addstr(text)
 	end
+	def write_string_reversed(line,column,text)
+		setpos(line,column)
+		addstr($color+$color_reverse+text+$color+$color_normal)
+	end
 
-	# write message at bottom (full line)
+	# clear a line
+	def clear_line(r)
+		setpos(r,0)
+		print "\e[2K"
+	end
+
+	# Write to the bottom line (full with)
 	def write_bottom_line(str)
-		write_str(@rows,0,$color+$color_reverse+" "*@cols+$color+$color_normal)
-		write_str(@rows,0,$color+$color_reverse+str+$color+$color_normal)
+		write_string_reversed(@rows,0," "*@cols)
+		write_string_reversed(@rows,0,str)
 	end
 
 	# Write a whole line of text.
+	# Handle horizontal shifts (colfeed).
 	def write_line(row,scol,width,colfeed,line)
 
-		write_str(row,scol," "*width)  # clear row
-
-		if line == nil || line == ""
-			return
+		# clear the line
+		setpos(row,scol)
+		if width == @cols
+			clear_line(row)
+		else
+			write_string(row,scol," "*width)
 		end
 
+		# Don't bother unless there is something to write
+		return if line == nil || line == ""
+
+		# If screen is shifted, we must be careful to:
+		#   - shift by whole number of characters
+		#     (including multibyte escape codes)
+		#   - apply chopped-off escape codes (color codes) to the line
 		code = ""
 		while colfeed > 0
 			j = line.index("\e")
@@ -202,25 +219,24 @@ class Screen
 			code = line[0..j]
 			line = line[j+1..-1]
 		end
-		write_str(row,scol,code+line)
+		print code
+		words = line.split("\e")
+		return if words.length == 0
+		word = words[0]
+		write_string(row,scol,word[0,width])
+		scol += word.length
+		width -= word.length
+		flag = true
+		flag = false if width <= 0
+		words[1..-1].each{|word|
+			j = word.index("m")
+			print "\e" + word[0..j]
+			write_string(row,scol,word[j+1,width]) if flag
+			scol += word[j+1..-1].length
+			width -= word[j+1..-1].length
+			flag = false if width <= 0
+		}
 
-	end
-
-	# INPUT: row,col ==> where on screen to write
-	#        line ==> full row of text
-	#        i0,i1 ==> start and end indices into line
-	# We need the whole line, so that we can set the color
-	def write_part_of_line(row,col,line,i0,i1=-1)
-		return if line == nil || line.length == 0
-		k = line[0,i0].rindex(/\e\[.*m/)
-		if k == nil
-			code = ''
-		else
-			code = line[k..(i0-1)]
-			k = code.index('m')
-			code = code[0..k]
-		end
-		write_str(row,col,code+line[i0..i1]+$color+$color_normal)
 	end
 
 
@@ -242,16 +258,16 @@ class Screen
 		nspaces = width - ll - lr
 		return if nspaces < 0  # line is too long to write
 		all = lstr + (" "*nspaces) + rstr
-		write_str(row,col,$color+$color_reverse+all+$color+$color_normal)
+		write_string_reversed(row,col,all)
 
 	end
 
 
-	# write a message at the bottom
+	# write a message at the bottom (centered, partial line)
 	def write_message(message)
 		xpos = (@cols - message.length)/2
-		write_str(@rows,0," "*@cols)
-		write_str(@rows,xpos,$color+$color_reverse+message+$color+$color_normal)
+		clear_line(@rows)
+		write_string_reversed(@rows,xpos,message)
 	end
 
 
@@ -522,7 +538,7 @@ class Screen
 	def draw_vertical_line(i,n)
 		c = i*@cols/n - 1
 		for r in 1..(@rows-1)
-			write_str(r,c,"|")
+			write_string(r,c,"|")
 		end
 	end
 
@@ -576,8 +592,11 @@ class Window
 		$screen.write_line(row+1+@pos_row,@pos_col,@cols,colfeed,line)
 	end
 
-	def write_str(row,col,str)
-		$screen.write_str(@pos_row+row,@pos_col+col,str)
+	def write_string(row,col,str)
+		$screen.write_string(@pos_row+row,@pos_col+col,str)
+	end
+	def write_string_reversed(row,col,str)
+		$screen.write_string_reversed(@pos_row+row,@pos_col+col,str)
 	end
 
 	def setpos(r,c)
@@ -621,11 +640,11 @@ class Window
 		nr = [rows-6,items.length].min
 
 		# write a blank menu
-		write_str(3,4,'-'*(cols-8))
+		write_string(3,4,'-'*(cols-8))
 		for r in 4..(4+nr)
-			write_str(r,3,'|'+' '*(cols-8)+'|')
+			write_string(r,3,'|'+' '*(cols-8)+'|')
 		end
-		write_str(5+nr,4,'-'*(cols-8))
+		write_string(5+nr,4,'-'*(cols-8))
 
 		# write out menu choices and interact
 		selected = 0
@@ -655,9 +674,9 @@ class Window
 					post = ""
 				end
 				selected_item = v if j == selected
-				write_str(r,5,pre+' '*(cols-9))
-				write_str(r,5,k)
-				write_str(r,18,v+post)
+				write_string(r,5,pre+' '*(cols-9))
+				write_string(r,5,k)
+				write_string(r,18,v+post)
 			}
 			c = getch
 			case c
@@ -2033,10 +2052,10 @@ class FileBuffer
 		end
 
 		if un
-			@window.write_str((row-@linefeed+1),ssc,str)
+			@window.write_string((row-@linefeed+1),ssc,str)
 			return
 		else
-			@window.write_str((row-@linefeed+1),ssc,$color+$color_reverse+str+$color+$color_normal)
+			@window.write_string_reversed((row-@linefeed+1),ssc,str)
 		end
 	end
 	def unhighlight(row,scol,ecol)
