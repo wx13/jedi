@@ -14,15 +14,13 @@ require 'yaml'
 
 
 
-
-
 #------------------------------------------------------------
-# This class will manage the curses screen output.
-# It should include all the user interface stuff, such as:
+# This class manages the screen output and input.
+# It includes all the user interface stuff, such as:
 #   - write text to a position on the screen
 #   - write status line
 #   - ask user a question
-# It should not deal with text buffer management or the like.
+# It does not deal with text buffer management or the like.
 #------------------------------------------------------------
 
 class Screen
@@ -34,7 +32,7 @@ class Screen
 		# get and store screen size
 		update_screen_size
 
-		# keycodes
+		# define keycodes
 		$keycodes = {
 		:ctrl_a => "\001",
 		:ctrl_b => "\002",
@@ -94,11 +92,13 @@ class Screen
 
 	end
 
+	# get the numeric code for a character
 	def unpack(c)
 		if c.is_a?(String) then c = c.unpack('C')[0] end
 		return(c)
 	end
 
+	# Read a character from stdin
 	def getch
 		c = STDIN.getc.chr
 		if c=="\e"
@@ -117,6 +117,7 @@ class Screen
 		return(d)
 	end
 
+	# Call to stty utility for screen size update
 	def update_screen_size
 		cols_old = @cols
 		rows_old = @rows
@@ -130,17 +131,17 @@ class Screen
 		end
 	end
 
-	# This starts the curses session.
-	# When this exits, screen closes.
+	# This starts the interactive session.
+	# When this exits, the screen closes.
 	def start_screen_loop
 		system('stty raw -echo')
-		print "\e[2J"
+		print "\e[2J"   # clear the screen
 		print "\e[?7l"  # disable line wrap
 		begin
 			yield
 		ensure
-			print "\e[2J"
-			print "\e[?7h"
+			print "\e[2J"   # clear the screen
+			print "\e[?7h"  # enable line wrap
 			system('stty -raw echo')
 		end
 	end
@@ -174,8 +175,8 @@ class Screen
 
 	# write message at bottom (full line)
 	def write_bottom_line(str)
-		write_str(@rows,0,"\e[7m"+" "*@cols+"\e[0m")
-		write_str(@rows,0,"\e[7m"+str+"\e[0m")
+		write_str(@rows,0,$color+$color_reverse+" "*@cols+$color+$color_normal)
+		write_str(@rows,0,$color+$color_reverse+str+$color+$color_normal)
 	end
 
 	# Write a whole line of text.
@@ -219,7 +220,7 @@ class Screen
 			k = code.index('m')
 			code = code[0..k]
 		end
-		write_str(row,col,code+line[i0..i1]+"\e[0m")
+		write_str(row,col,code+line[i0..i1]+$color+$color_normal)
 	end
 
 
@@ -241,7 +242,7 @@ class Screen
 		nspaces = width - ll - lr
 		return if nspaces < 0  # line is too long to write
 		all = lstr + (" "*nspaces) + rstr
-		write_str(row,col,"\e[7m"+all+"\e[0m")
+		write_str(row,col,$color+$color_reverse+all+$color+$color_normal)
 
 	end
 
@@ -250,7 +251,7 @@ class Screen
 	def write_message(message)
 		xpos = (@cols - message.length)/2
 		write_str(@rows,0," "*@cols)
-		write_str(@rows,xpos,"\e[7m"+message+"\e[0m")
+		write_str(@rows,xpos,$color+$color_reverse+message+$color+$color_normal)
 	end
 
 
@@ -647,8 +648,8 @@ class Window
 				r += 1
 				break if r > (4+nr)
 				if j==selected
-					pre = "\e[7m"
-					post = "\e[m"
+					pre = $color+$color_reverse
+					post = $color+$color_normal
 				else
 					pre = ""
 					post = ""
@@ -1995,15 +1996,6 @@ class FileBuffer
 			r += 1
 		end
 
-#		# do text highlighting
-#		if @marked==true || @marked==true
-#			rows_to_update == Array(0..(text.length-1))
-#		end
-#		if @marked==true
-#			marked_row,row = @marked_row,@row
-#			marked_row,row = row,marked_row if marked_row > row
-#		end
-
 		@colfeed_old = @colfeed
 		@linefeed_old = @linefeed
 		@marked_old = @marked
@@ -2044,7 +2036,7 @@ class FileBuffer
 			@window.write_str((row-@linefeed+1),ssc,str)
 			return
 		else
-			@window.write_str((row-@linefeed+1),ssc,"\e[7m"+str+"\e[m")
+			@window.write_str((row-@linefeed+1),ssc,$color+$color_reverse+str+$color+$color_normal)
 		end
 	end
 	def unhighlight(row,scol,ecol)
@@ -2252,15 +2244,6 @@ class FileBuffer
 
 	# end of text display stuff
 	# -----------------------------------------------
-
-
-	#
-	# mouse handling
-	#
-	def handle_mouse
-		cmd = $screen.getmouse
-		eval(cmd)
-	end
 
 
 	#
@@ -2971,7 +2954,6 @@ end
 #     4. extra_commandlist -- ones that don't fit
 #     5. togglelist -- for toggling states on/off
 #     	 These get run when buffer.toggle is run.
-#        It is an array, because I want to preserve order.
 # -----------------------------------------------------------------
 
 class KeyMap
@@ -3125,8 +3107,6 @@ class KeyMap
 			"f" => "@cursormode = 'multi'",
 			"s" => "@syntax_color = true",
 			"b" => "@syntax_color = false",
-			"m" => "$screen.enable_mouse",
-			"x" => "$screen.disable_mouse",
 			"-" => "$buffers.vstack",
 			"|" => "$buffers.hstack"
 		}
@@ -3216,10 +3196,11 @@ $filetypes = {
 	/\.csh$/ => "shell",
 	/\.rb$/ => "shell",
 	/\.py$/ => "shell",
-	/\.[cC]$/ => "c",
+	/\.[cCh]$/ => "c",
 	/\.cpp$/ => "c",
 	"COMMIT_EDITMSG" => "shell",
 	/\.m$/ => "m",
+	/\.pro$/ => "idl",
 	/\.[fF]$/ => "f"
 }
 
@@ -3253,8 +3234,6 @@ $linewrap = false
 $cursormode = 'row'
 $syntax_color = true
 $editmode = true
-$mouse = false
-$reverse_colors = false
 
 # -------------------------------------------------------
 
@@ -3301,15 +3280,6 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
 		$syntax_color = false
-	}
-	opts.on('-r', '--reverse', 'Reverse text colors'){
-		$reverse_colors = true
-	}
-	opts.on('-m', '--mouse', 'Turn on mouse support'){
-		$mouse = true
-	}
-	opts.on('-x', '--nomouse', 'Turn off mouse support'){
-		$mouse = false
 	}
 }
 optparse.parse!
