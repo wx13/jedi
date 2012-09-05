@@ -619,12 +619,14 @@ class Window
 
 		# write out menu choices and interact
 		selected = 0
+		shift = 0
 		selected_item = ''
 		write_message(header)
 		while true
 
 			# shift menu if need be
-			shift = [selected-nr,0].max
+			shift = selected-nr if selected-shift > nr
+			shift = selected if selected < shift
 
 			# loop over menu choices
 			r = 3
