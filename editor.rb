@@ -168,7 +168,7 @@ class Screen
 	end
 	def write_string_reversed(line,column,text)
 		setpos(line,column)
-		addstr($color+$color_reverse+text+$color+$color_normal)
+		addstr($color[:reverse]+text+$color[:normal])
 	end
 
 	# clear a line
@@ -671,8 +671,8 @@ class Window
 				r += 1
 				break if r > (margin+1+nr)
 				if j==selected
-					pre = $color+$color_reverse
-					post = $color+$color_normal
+					pre = $color[:reverse]
+					post = $color[:normal]
 				else
 					pre = ""
 					post = ""
@@ -2065,13 +2065,13 @@ class FileBuffer
 				if @syntax_color
 					aline = syntax_color(sline)
 				else
-					aline = sline + $color+$color_default
+					aline = sline + $color[:normal]
 				end
 			else
 				bline = tabs2spaces(line[0])
-				aline = $color+$color_hiddentext + ">>>>" + \
+				aline = $color[:hiddentext] + ">>>>" + \
 				        bline[0,(@window.cols-8).floor] + \
-				        "<<<<" + $color+$color_default
+				        "<<<<" + $color[:normal]
 			end
 			@window.write_line(r,@colfeed,aline)
 		end
@@ -2229,9 +2229,9 @@ class FileBuffer
 			flag = false
 			lccs.each{|str|
 				if cline.index(str)==0
-					bline += $color+$color_comment
+					bline += $color[:comment]
 					bline += cline
-					bline += $color+$color_default
+					bline += $color[:normal]
 					flag = true
 					break
 				end
@@ -2244,9 +2244,9 @@ class FileBuffer
 				if cline.index(sc)==0
 					b,c = syntax_find_match(cline,ec,bline)
 					if b != nil
-						bline += $color+$color_comment
+						bline += $color[:comment]
 						bline += b
-						bline += $color+$color_default
+						bline += $color[:normal]
 						cline = c
 						flag = true
 					end
@@ -2259,9 +2259,9 @@ class FileBuffer
 				cqc = cline[0].chr
 				b,c = syntax_find_match(cline,cqc,bline)
 				if b != nil
-					bline += $color+$color_string
+					bline += $color[:string]
 					bline += b
-					bline += $color+$color_default
+					bline += $color[:normal]
 					cline = c
 					next
 				end
@@ -2271,7 +2271,7 @@ class FileBuffer
 			cline = cline[1..-1]
 		end
 
-		aline = bline + $color+$color_default
+		aline = bline + $color[:normal]
 		return aline
 	end
 
@@ -2282,10 +2282,10 @@ class FileBuffer
 		aline = sline.dup
 		# general regex coloring
 		@syntax_color_regex.each{|k,v|
-			aline.gsub!(k,$color+v+"\\0"+$color+$color_default)
+			aline.gsub!(k,$color[v]+"\\0"+$color[:normal])
 		}
 		# trailing whitespace
-		aline.gsub!(/\s+$/,$color+$color_whitespace+$color+$color_reverse+"\\0"+$color+$color_normal+$color+$color_default)
+		aline.gsub!(/\s+$/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		return(aline)
@@ -3252,18 +3252,21 @@ end
 # Don't change unless you know what you're doing
 # -------------------------------------------------------
 
-# color escape
-$color = "\e["
-$color_red = "31m"
-$color_green = "32m"
-$color_blue = "34m"
-$color_cyan = "36m"
-$color_magenta = "35m"
-$color_yellow = "33m"
-$color_default = "m"
-# highlighting
-$color_normal = "0m"
-$color_reverse = "7m"
+# color escapes
+$color = {
+	:red   => "\e[31m",
+	:green => "\e[32m",
+	:blue => "\e[34m",
+	:cyan => "\e[36m",
+	:magenta => "\e[35m",
+	:yellow => "\e[33m",
+	:normal => "\e[0m",
+	:reverse => "\e[7m",
+}
+$color[:comment] = $color[:cyan]
+$color[:string] = $color[:yellow]
+$color[:whitespace] = $color[:red]
+$color[:hiddentext] = $color[:green]
 
 # -------------------------------------------------------
 
@@ -3277,11 +3280,6 @@ $color_reverse = "7m"
 # default configuration
 # -------------------------------------------------------
 
-# default text colors
-$color_comment = $color_cyan
-$color_string = $color_yellow
-$color_whitespace = $color_red
-$color_hiddentext = $color_green
 
 # define file types for syntax coloring
 $filetypes = {
@@ -3315,7 +3313,7 @@ $syntax_color_bc = {
 $syntax_color_bc.default = {}
 # general regex
 $syntax_color_regex = {
-	"f" => {/^[^cC][^!]{71,}.*$/=>$color_magenta}
+	"f" => {/^[^cC][^!]{71,}.*$/=>:magenta}
 }
 $syntax_color_regex.default = {}
 
