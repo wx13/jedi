@@ -852,15 +852,15 @@ class FileBuffer
 
 	# set the file type from the filename
 	def set_filetype(filename)
-		$filetypes.each{|k,v|
+		$syntax_colors.filetypes.each{|k,v|
 			if filename.match(k) != nil
 				@filetype = v
 			end
 		}
 		# set up syntax coloring
-		@syntax_color_lc = $syntax_color_lc[@filetype]
-		@syntax_color_bc = $syntax_color_bc[@filetype]
-		@syntax_color_regex = $syntax_color_regex[@filetype]
+		@syntax_color_lc = $syntax_colors.lc[@filetype]
+		@syntax_color_bc = $syntax_colors.bc[@filetype]
+		@syntax_color_regex = $syntax_colors.regex[@filetype]
 	end
 
 
@@ -3273,59 +3273,54 @@ $color[:hiddentext] = $color[:green]
 
 
 
+# syntax color defaults
+class SyntaxColors
+	attr_accessor :filetypes, :lc, :bc, :regex
+	def initialize
+		@filetypes = {
+			/\.sh$/ => "shell",
+			/\.csh$/ => "shell",
+			/\.rb$/ => "shell",
+			/\.py$/ => "shell",
+			/\.[cCh]$/ => "c",
+			/\.cpp$/ => "c",
+			"COMMIT_EDITMSG" => "shell",
+			/\.m$/ => "m",
+			/\.pro$/ => "idl",
+			/\.[fF]$/ => "f"
+		}
+		@lc = {
+			"shell" => ["#"],
+			"ruby" => ["#"],
+			"c" => ["//"],
+			"f" => ["!",/^c/],
+			"m" => ["#","%"],
+			"idl" => [";"]
+		}
+		@lc.default = []
+		@bc = {
+			"c" => {"/*"=>"*/"},
+		}
+		@bc.default = {}
+		@regex = {
+			"f" => {/^[^cC][^!]{71,}.*$/=>:magenta}
+		}
+		@regex.default = {}
+	end
+end
+$syntax_colors = SyntaxColors.new
 
 
 
 # -------------------------------------------------------
 # default configuration
 # -------------------------------------------------------
-
-
-# define file types for syntax coloring
-$filetypes = {
-	/\.sh$/ => "shell",
-	/\.csh$/ => "shell",
-	/\.rb$/ => "shell",
-	/\.py$/ => "shell",
-	/\.[cCh]$/ => "c",
-	/\.cpp$/ => "c",
-	"COMMIT_EDITMSG" => "shell",
-	/\.m$/ => "m",
-	/\.pro$/ => "idl",
-	/\.[fF]$/ => "f"
-}
-
-# --- default syntax coloring rules ---
-# line comments
-$syntax_color_lc = {
-	"shell" => ["#"],
-	"ruby" => ["#"],
-	"c" => ["//"],
-	"f" => ["!",/^c/],
-	"m" => ["#","%"],
-	"idl" => [";"]
-}
-$syntax_color_lc.default = []
-# block comments
-$syntax_color_bc = {
-	"c" => {"/*"=>"*/"},
-}
-$syntax_color_bc.default = {}
-# general regex
-$syntax_color_regex = {
-	"f" => {/^[^cC][^!]{71,}.*$/=>:magenta}
-}
-$syntax_color_regex.default = {}
-
-
-# other default config
 $tabsize = 4
 $autoindent = true
 $linewrap = false
 $cursormode = 'row'
 $syntax_color = true
 $editmode = true
-
 # -------------------------------------------------------
 
 
