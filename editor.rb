@@ -1995,6 +1995,7 @@ class FileBuffer
 		text.each_index{|i|
 			if text[i] != $screen_buffer[i]
 				rows_to_update << i
+				@buffer_marks.delete(i+@linefeed)
 			end
 		}
 
@@ -2079,6 +2080,7 @@ class FileBuffer
 			@window.write_line(r,@colfeed,aline)
 		end
 
+		# now highlight text
 		if buffer_marks != @buffer_marks
 			buffer_marks.each_key{|k|
 				hpair = buffer_marks[k]
