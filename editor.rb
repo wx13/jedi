@@ -33,7 +33,7 @@ class Screen
 		update_screen_size
 
 		# define keycodes
-		$keycodes = {
+		@keycodes = {
 		:ctrl_a => "\001",
 		:ctrl_b => "\002",
 		:ctrl_c => "\003",
@@ -88,7 +88,7 @@ class Screen
 		:ctrlshift_up => "\e[6A",
 		:ctrlshift_down => "\e[6B"
 		}
-		$keycodes = $keycodes.invert
+		@keycodes = @keycodes.invert
 
 	end
 
@@ -113,7 +113,7 @@ class Screen
 			$screen.write_message(c.inspect)
 			c += STDIN.getc.chr
 		end
-		d = $keycodes[c]
+		d = @keycodes[c]
 		d = c if d == nil
 		return(d)
 	end
