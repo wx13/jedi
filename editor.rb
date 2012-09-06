@@ -802,6 +802,10 @@ class FileBuffer
 		# grab a window to write to
 		@window = Window.new
 
+		# for marked text highlighting
+		@buffer_marks = {}
+		@buffer_marks.default = [-1,-1]
+
 		# This does nothing, by default; it is here to allow
 		# a user script to modify each text buffer that is opened.
 		perbuffer_userscript
@@ -2002,6 +2006,56 @@ class FileBuffer
 			rows_to_update = Array(0..(text.length-1))
 		end
 
+		#
+		# take into account highlighting
+		#
+		# 1. populate buffer_marks = {} with a list of start
+		#    and end points for highlighting.
+		# 2. if it is unchanged, do nothing.
+		# 3. if it has changed, then update highlighting based on changes
+		#
+		buffer_marks = {}
+		buffer_marks.default = [-1,-1]
+		if @marked
+			mark_row,row = @mark_row,@row
+			mark_row,row = row,mark_row if mark_row > row
+			if @cursormode == 'col'
+				for j in mark_row..row
+					buffer_marks[j] = [@col,@col] if j!=@row
+				end
+			elsif @cursormode == 'row'
+				for j in (mark_row+1)..(row-1)
+					buffer_marks[j] = [0,@text[j].length]
+				end
+				if @row > @mark_row
+					buffer_marks[@mark_row] = [@mark_col,@text[@mark_row].length]
+					buffer_marks[@row] = [0,@col-1] unless @col == 0
+				elsif @row == @mark_row
+					if @col > @mark_col
+						buffer_marks[@row] = [@mark_col,@col-1]
+					elsif @col < @mark_col
+						buffer_marks[@row] = [@col+1,@mark_col]
+					end
+				else
+					buffer_marks[@mark_row] = [0,@mark_col]
+					buffer_marks[@row] = [@col+1,@text[@row].length] unless @col==@text[@row].length
+				end
+			else  # multicursor mode
+				@mark_list.each{|r,c|
+					buffer_marks[r] = [c,c] unless r==@row && c==@col
+				}
+			end
+		end
+		if buffer_marks != @buffer_marks
+			buffer_marks.merge(@buffer_marks).each_key{|k|
+				hpair = buffer_marks[k]
+				upair = @buffer_marks[k]
+				if hpair != upair
+					rows_to_update << k
+				end
+			}
+		end
+
 		rows_to_update.uniq!
 
 		# write out text
@@ -2024,6 +2078,17 @@ class FileBuffer
 			@window.write_line(r,@colfeed,aline)
 		end
 
+		if buffer_marks != @buffer_marks
+			buffer_marks.each_key{|k|
+				hpair = buffer_marks[k]
+				upair = @buffer_marks[k]
+				if hpair != upair
+					highlight(k,hpair[0],hpair[1])
+				end
+			}
+		end
+		@buffer_marks = buffer_marks.dup
+
 		# vi-style blank lines
 		r = text.length
 		while r < (@window.rows)
@@ -2033,7 +2098,6 @@ class FileBuffer
 
 		@colfeed_old = @colfeed
 		@linefeed_old = @linefeed
-		@marked_old = @marked
 		@row_old = @row
 
 	end
@@ -2046,7 +2110,7 @@ class FileBuffer
 		if row < @linefeed then return end
 		if row > (@linefeed + @window.rows - 2) then return end
 
-		return if @text[row].length < 1
+		#return if @text[row].length < 1
 		return if @text[row].kind_of?(Array)
 
 		# convert pos in text to pos on screen
