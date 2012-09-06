@@ -2984,63 +2984,6 @@ end
 
 
 
-# ----------------------------------------------------------
-# This is a separate global function which runs an arbitrary
-# ruby script.
-# It can read from a file or from user input.
-#
-# It is global, because we want to be able to call it right
-# at startup. That way a user can modify the editor's behavior
-# before any buffers have been loaded.
-# ----------------------------------------------------------
-def run_script(file=nil)
-	if file == nil
-		file = $screen.ask("run script file: ",[""],false,true)
-		if (file==nil) || (file=="")
-			$screen.write_message("cancelled")
-			return
-		end
-	end
-	if File.directory?(file)
-		list = Dir.glob(file+"/*.rb")
-		list.each{|f|
-			script = File.read(f)
-			eval(script)
-			if $screen != nil
-				$screen.write_message("done")
-			end
-		}
-	elsif File.exist?(file)
-		script = File.read(file)
-		eval(script)
-		if $screen != nil
-			$screen.write_message("done")
-		end
-	else
-		puts "Script file #{file} doesn't exist."
-		puts "Press any key to continue anyway."
-		STDIN.getc
-	end
-rescue
-	if $screen != nil
-		$screen.write_message("Bad script")
-	else
-		puts "Bad script file: #{file}"
-		puts "Press any key to continue anyway."
-		STDIN.getc
-	end
-end
-# --------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3241,6 +3184,58 @@ class KeyMap
 end
 
 
+
+
+
+
+
+# ----------------------------------------------------------
+# This is a separate global function which runs an arbitrary
+# ruby script.
+# It can read from a file or from user input.
+#
+# It is global, because we want to be able to call it right
+# at startup. That way a user can modify the editor's behavior
+# before any buffers have been loaded.
+# ----------------------------------------------------------
+def run_script(file=nil)
+	if file == nil
+		file = $screen.ask("run script file: ",[""],false,true)
+		if (file==nil) || (file=="")
+			$screen.write_message("cancelled")
+			return
+		end
+	end
+	if File.directory?(file)
+		list = Dir.glob(file+"/*.rb")
+		list.each{|f|
+			script = File.read(f)
+			eval(script)
+			if $screen != nil
+				$screen.write_message("done")
+			end
+		}
+	elsif File.exist?(file)
+		script = File.read(file)
+		eval(script)
+		if $screen != nil
+			$screen.write_message("done")
+		end
+	else
+		puts "Script file #{file} doesn't exist."
+		puts "Press any key to continue anyway."
+		STDIN.getc
+	end
+rescue
+	if $screen != nil
+		$screen.write_message("Bad script")
+	else
+		puts "Bad script file: #{file}"
+		puts "Press any key to continue anyway."
+		STDIN.getc
+	end
+end
+# --------------------------------------------------------
 
 
 
