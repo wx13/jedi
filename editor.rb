@@ -92,12 +92,6 @@ class Screen
 
 	end
 
-	# get the numeric code for a character
-	def unpack(c)
-		if c.is_a?(String) then c = c.unpack('C')[0] end
-		return(c)
-	end
-
 	# Read a character from stdin
 	def getch
 		c = STDIN.getc.chr
@@ -1045,8 +1039,7 @@ class FileBuffer
 	# insert a character
 	def insertchar(row,col,c)
 		return if @text[row].kind_of?(Array)
-		n = c.unpack('C')[0]
-		return unless n < 127 && n > 8
+		return if c.is_a?(String) == false
 		if @text[row] == nil
 			@text[row] = c
 			return
