@@ -17,9 +17,9 @@ $cursormode = 'row'
 
 # enable syntax coloring & choose colors
 $syntax_color = true
-$color_comment = $color_cyan
-$color_string = $color_yellow
-$color_whitespace = $color_red
+$color[:comment] = $color[:cyan]
+$color[:string] = $color[:yellow]
+$color[:whitespace] = $color[:red]
 
 
 #
@@ -27,21 +27,19 @@ $color_whitespace = $color_red
 #
 
 # let perl and awk files be colored like shell scripts
-$filetypes[/\.pl$/] = "shell"
-$filetypes[/\.awk$/] = "shell"
+$syntax_colors.filetypes[/\.pl$/] = "shell"
+$syntax_colors.filetypes[/\.awk$/] = "shell"
 
 # configure html highlighting
-$filetypes[/\.html$/] = "html"
-$syntax_color_bc["html"] = {"<!--"=>"-->"}
+$syntax_colors.filetypes[/\.html$/] = "html"
+$syntax_colors.bc["html"] = {"<!--"=>"-->"}
 
 #
 # keybindings
 #
 
 # swap ctrl_x and ctrl_q
-$keymap.commandlist[:ctrl_x] = "buffer = $buffers.close"
-$keymap.commandlist[:ctrl_q] = "buffer.mark"
+$keymap.commandlist[:ctrl_q] = "buffer = $buffers.close"
+$keymap.commandlist[:ctrl_x] = "buffer.mark"
 
-# edit mode keybindings
-$keymap.edimode_commandlist[:ctrl_r] = "buffer.bookmark"
 

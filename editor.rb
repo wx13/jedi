@@ -3332,6 +3332,8 @@ $editmode = true
 # -------------------------------------------------------
 
 
+# define key mapping
+$keymap = KeyMap.new
 
 
 # parse the command line options
@@ -3391,9 +3393,6 @@ $endfolding_hist = []
 
 # start screen
 $screen = Screen.new
-
-# define key mapping
-$keymap = KeyMap.new
 
 # read specified files into buffers of buffer list
 $buffers = BuffersList.new(ARGV)
