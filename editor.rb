@@ -109,10 +109,6 @@ class Screen
 		if c == "\e" || c == "\e\e" || c == "\e\e\e" || c == "\e\e\e\e"
 			return nil
 		end
-		if c[0,1] != "\e" && c[0,1] == "\\"
-			$screen.write_message(c.inspect)
-			c += STDIN.getc.chr
-		end
 		d = @keycodes[c]
 		d = c if d == nil
 		return(d)
