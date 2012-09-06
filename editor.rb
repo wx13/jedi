@@ -8,6 +8,8 @@
 #	are permitted in any medium without royalty or restriction. This file
 #	is offered as-is, without any warranty.
 #
+$version = "editor.rb 0.0.0"
+
 
 require 'optparse'
 require 'yaml'
@@ -489,8 +491,8 @@ class Screen
 			end
 
 			# display the answer so far
-			if (col+question.length+2) > $cols
-				shift = col - $cols + question.length + 2
+			if (col+question.length+2) > @cols
+				shift = col - @cols + question.length + 2
 			else
 				shift = 0
 			end
@@ -3239,7 +3241,6 @@ end
 
 # -------------------------------------------------------
 # End of methods and classes definitions.
-# Start of directly executed code.
 # -------------------------------------------------------
 
 
@@ -3248,8 +3249,7 @@ end
 
 
 # -------------------------------------------------------
-# internal definitions
-# Don't change unless you know what you're doing
+# Default configurations
 # -------------------------------------------------------
 
 # color escapes
@@ -3267,10 +3267,6 @@ $color[:comment] = $color[:cyan]
 $color[:string] = $color[:yellow]
 $color[:whitespace] = $color[:red]
 $color[:hiddentext] = $color[:green]
-
-# -------------------------------------------------------
-
-
 
 
 # syntax color defaults
@@ -3312,19 +3308,28 @@ $syntax_colors = SyntaxColors.new
 
 
 
-# -------------------------------------------------------
-# default configuration
-# -------------------------------------------------------
+
 $tabsize = 4
 $autoindent = true
 $linewrap = false
 $cursormode = 'row'
 $syntax_color = true
 $editmode = true
+
+# -------------------------------------------------------
+# end of default configuration
 # -------------------------------------------------------
 
 
 
+
+
+
+
+
+# -------------------------------------------------------
+# Start of directly executed code
+# -------------------------------------------------------
 
 
 
@@ -3349,10 +3354,10 @@ optparse = OptionParser.new{|opts|
 	opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
 		$hist_file = file
 	}
-	opts.on('-v', '--view', 'Start in view mode'){
+	opts.on('-n', '--noedit', 'Start in view mode'){
 		$editmode = false
 	}
-	opts.on('-n', '--noautoindent', 'Turn off autoindent'){
+	opts.on('-m', '--manualindent', 'Turn off autoindent'){
 		$autoindent = false
 	}
 	opts.on('-w', '--linewrap', 'Turn on linewrap'){
@@ -3366,6 +3371,10 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
 		$syntax_color = false
+	}
+	opts.on('-v', '--version', 'Print version number'){
+		puts $version
+		exit
 	}
 }
 optparse.parse!
@@ -3395,7 +3404,6 @@ $copy_buffer = ""
 # for detecting changes to display,
 # so we don't have to redraw as frequently
 $screen_buffer = []
-$highlight_buffer = []
 
 # catch screen resizes
 trap("WINCH"){
@@ -3411,10 +3419,6 @@ $screen.start_screen_loop do
 
 	# this is the main action loop
 	loop do
-
-		# allow for resizes
-		$cols = $screen.cols
-		$rows = $screen.rows
 
 		# make sure we are on the current buffer
 		buffer = $buffers.current
