@@ -2002,8 +2002,9 @@ class FileBuffer
 		$screen_buffer = text.dup
 
 		# if colfeed changed, must update whole screen
-		if @colfeed != @colfeed_old || refresh
+		if @colfeed != @colfeed_old || refresh || @linefeed != @linefeed_old
 			rows_to_update = Array(0..(text.length-1))
+			@buffer_marks = {}
 		end
 
 		#
@@ -2051,12 +2052,12 @@ class FileBuffer
 				hpair = buffer_marks[k]
 				upair = @buffer_marks[k]
 				if hpair != upair
-					rows_to_update << k
+					rows_to_update << k - @linefeed
 				end
 			}
 		end
 
-		rows_to_update.uniq!
+		rows_to_update = rows_to_update.uniq.delete_if{|x|x<0}
 
 		# write out text
 		for r in rows_to_update
