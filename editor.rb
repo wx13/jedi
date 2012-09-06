@@ -106,6 +106,9 @@ class Screen
 			c = "\e["
 			2.times{c += STDIN.getc.chr}
 		end
+		if c == "\e" || c == "\e\e" || c == "\e\e\e" || c == "\e\e\e\e"
+			return nil
+		end
 		d = $keycodes[c]
 		d = c if d == nil
 		return(d)
@@ -284,7 +287,7 @@ class Screen
 			write_bottom_line("(reverse-i-search) #{token}: #{mline}")
 
 			# get user input
-			c = getch
+			c = getch until c!=nil
 			case c
 				when :backspace, :backspace2
 					# chop off a character, and search for a new match
@@ -370,7 +373,7 @@ class Screen
 		# interact with user
 		loop do
 
-			c = getch
+			c = getch until c!=nil
 			case c
 
 				# abort
@@ -512,7 +515,7 @@ class Screen
 		write_bottom_line(question)
 		answer = "cancel"
 		loop do
-			c = $screen.getch
+			c = $screen.getch until c!=nil
 			if c == :ctrl_c
 				answer = "cancel"
 				break
@@ -679,7 +682,7 @@ class Window
 				write_string(r,margin+2,k)
 				write_string(r,margin+15,v+post)
 			}
-			c = getch
+			c = getch until c!=nil
 			case c
 				when :up
 					selected = [selected-1,0].max
@@ -896,7 +899,7 @@ class FileBuffer
 	def toggle
 		@window.write_message('Toggle')
 		# get answer and execute the code
-		c = $screen.getch
+		c = $screen.getch until c!=nil
 		if c == "\t"
 			cmd = @window.menu($keymap.togglelist,"Toggle")
 			dump_to_screen(true)
@@ -3437,7 +3440,7 @@ $screen.start_screen_loop do
 		buffer.dump_to_screen
 
 		# wait for a key press
-		c = $screen.getch
+		c = $screen.getch until c!=nil
 
 		# process key press -- run associated command
 		if buffer.extramode
