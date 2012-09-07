@@ -2185,7 +2185,7 @@ class FileBuffer
 	def highlight(row,scol,ecol,un=false)
 		# only do rows that are on the screen
 		if row < @linefeed then return end
-		if row > (@linefeed + @window.rows - 2) then return end
+		if row > (@linefeed + @window.rows - 1) then return end
 
 		#return if @text[row].length < 1
 		return if @text[row].kind_of?(Array)
