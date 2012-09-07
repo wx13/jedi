@@ -1293,7 +1293,10 @@ class FileBuffer
 	end
 	# insert a char and move to the right
 	def addchar(c)
-		c = @tabchar if c == :tab
+		if c == :tab
+			c = @tabchar
+			c = " "*6 if @filetype == 'f' && @col == 0
+		end
 		return if ! c.is_a?(String)
 		if @marked == false
 			insertchar(@row,@col,c)
