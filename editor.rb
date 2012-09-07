@@ -65,6 +65,7 @@ class Screen
 		:enter => "\r",
 		:backspace => "\177",
 		:backspace2 => "\037",
+		:tab => "\t",
 
 		:up => "\e[A",
 		:down => "\e[B",
@@ -526,7 +527,7 @@ class Screen
 					end
 					token0 = token.dup
 					glob = token
-				when "\t"
+				when :tab
 					if file
 						# find files that match typed string
 						# Cycle through matches.
@@ -540,7 +541,7 @@ class Screen
 						idx += 1
 					else
 						# not a file, so insert literal tab character
-						token.insert(col,c)
+						token.insert(col,$tabchar)
 						token0 = token.dup
 						col += 1
 						glob = token
@@ -824,6 +825,7 @@ class FileBuffer
 
 		# set some parameters
 		@tabsize = $tabsize
+		@tabchar = $tabchar
 		@linelength = 0  # 0 means full screen width
 
 		# read in the file
@@ -978,7 +980,7 @@ class FileBuffer
 		@window.write_message('Toggle')
 		# get answer and execute the code
 		c = $screen.getch until c!=nil
-		if c == "\t"
+		if c == :tab
 			cmd = @window.menu($keymap.togglelist,"Toggle")
 			dump_to_screen(true)
 		else
@@ -1119,6 +1121,7 @@ class FileBuffer
 	end
 	# insert a character
 	def insertchar(row,col,c)
+		c = @tabchar if c == :tab
 		return if @text[row].kind_of?(Array)
 		return if c.is_a?(String) == false
 		if @text[row] == nil
@@ -1290,6 +1293,7 @@ class FileBuffer
 	end
 	# insert a char and move to the right
 	def addchar(c)
+		c = @tabchar if c == :tab
 		return if ! c.is_a?(String)
 		if @marked == false
 			insertchar(@row,@col,c)
@@ -1321,7 +1325,7 @@ class FileBuffer
 			end
 			@mark_list.map!{|r,c|[r,[c+1,@text[r].length].min]}
 		end
-		cursor_right if @cursormode != 'multi' || !@marked
+		cursor_right(c.length) if @cursormode != 'multi' || !@marked
 		if @linewrap
 			justify(true)
 		end
@@ -1525,19 +1529,19 @@ class FileBuffer
 			return line.length
 		end
 	end
-	def cursor_right
-		@col += 1
+	def cursor_right(n=1)
+		@col += n
 		if @col > linelength(@text[@row])
 			if @row < (@text.length-1)
 				@col = 0
 				@row += 1
 			else
-				@col -= 1
+				@col -= n
 			end
 		end
 	end
-	def cursor_left
-		@col -= 1
+	def cursor_left(n=1)
+		@col -= n
 		if @col < 0
 			if @row > 0
 				@col = linelength(@text[@row-1])
@@ -3167,7 +3171,7 @@ class KeyMap
 			:end2 => "buffer.goto_line(-1)",
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
-			"\t" => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
+			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
@@ -3181,7 +3185,7 @@ class KeyMap
 			:ctrl_j => "buffer.newline",
 			:ctrl_d => "buffer.delete",
 			:ctrl_r => "buffer.search_and_replace",
-			"\t" => "buffer.addchar(c)",
+			:tab => "buffer.addchar(c)",
 		}
 		@editmode_commandlist.default = ""
 		@viewmode_commandlist = {
@@ -3386,6 +3390,7 @@ $syntax_colors = SyntaxColors.new
 
 
 $tabsize = 4
+$tabchar = "\t"
 $autoindent = true
 $linewrap = false
 $cursormode = 'row'
@@ -3425,6 +3430,9 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-t', '--tabsize N', 'Set tabsize'){|n|
 		$tabsize = n.to_i
+	}
+	opts.on('-T', '--tabchar c', 'Set tab character'){|c|
+		$tabchar = c
 	}
 	opts.on('-a', '--autoindent', 'Turn on autoindent'){
 		$autoindent = true
