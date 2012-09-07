@@ -1,28 +1,59 @@
-=========
 editor.rb
 =========
 
-editor.rb is a text editor writen in ruby for the unix console. It does
-not use curses or ncurses, but instead reads from standard in and
-writes to standard out.  It uses terminal escape codes to format the
-output.  Some terminals don't seem to support as many keycodes and will
-have reduced functionality.  For example, the mac terminal does not
-report shift/control + arrow keys (accept for ctrl-left/right).  I
-continually test it in xterm on linux, xterm on cygwin, gnome terminal
-on linux, and terminal on mac.
 
-Major design goals:
+editor.rb is a text editor writen in ruby for the unix console.
+
+
+Why another text editor?
+------------------------
+
 1. Zero install
-	- single file of ruby code
-	- only use built-in libraries
-2. Easy to modify, script, extend, and configure
-	- run scripts at startup or while running
+	- Single file of ruby code
+	- No external libraries
+2. Hackable
+	- Metaprogramming
+	- No compiling
+3. Text UI
 
-See http://wx13.com/code/editor for more details.
+
+Most text editors are written in C, which causes several problems.
+
+1. C is cumbersome for working with strings that keep changing.
+
+Answer: Ruby handles strings very easily.
+
+2. Modifying a C text editor requires you to
+
+	a. keep a set of patches (and continually resolve conflicts
+	   as the code changes)
+
+Answer: Ruby allows metaprogramming, which means writing extensions
+is almost trivial.
+
+	b. recompile the editor (I hope your admin has installed all
+	   the right development libraries!)
+
+Answer: It is possible in ruby to write a text editor which uses no
+external libraries.
+
+
+
+Caveats
+-------
+
+editor.rb does not use curses or ncurses, but instead reads from
+standard in and writes to standard out.  It uses terminal escape codes
+to format the output.  Some terminals don't seem to support as many
+keycodes and will have reduced functionality.  For example, the mac
+terminal does not report shift/control + arrow keys (accept for
+ctrl-left/right).  I continually test it in xterm on linux, xterm on
+cygwin, gnome terminal on linux, and terminal on mac; and on ruby 1.8
+and 1.9.
 
 
 Installing & running
-====================
+--------------------
 
 1. Just run "ruby editor.rb".
 
@@ -35,26 +66,10 @@ This tells editor.rb to read all *.rb files from ~/.jedi/ as scripts and to
 save command/search/script history in ~/.jedi/history.yaml.
 
 
-Options
--------
+More information
+----------------
 
-A few parameters and flags, (such as tab size, and autoindent)
-can be set with command line options.  Type "ruby editor.rb -h" to see
-available options.
-
-
-Configuration
--------------
-
-Configuration, scripting, and extensions are all the same.  The editor
-does not parse a configuration file; instead it can execute scripts at
-startup.  A simple configuration file might look like:
-
-	$tabsize = 8
-	$autoindent = true
-	$syntax_color = false
-
-Start the editor with "-s config.rb" or "-s dir_containing_config/" set.
+See http://wx13.com/code/editor for more details.
 
 
 ------------------------------------------------------------------------
