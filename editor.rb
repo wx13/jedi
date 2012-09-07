@@ -94,7 +94,10 @@ class Screen
 
 	end
 
-	# Read a character from stdin
+	# Read a character from stdin. Handle escape codes.
+	#
+	# Returns a symbol if the character is a key in the keycodes hash,
+	# otherwise returns the raw string.
 	def getch
 		c = STDIN.getc.chr
 		if c=="\e"
@@ -116,7 +119,10 @@ class Screen
 		return(d)
 	end
 
-	# Call to stty utility for screen size update
+	# Call to stty utility for screen size update, and set
+	# @rows and @cols.
+	#
+	# Returns nothing.
 	def update_screen_size
 		cols_old = @cols
 		rows_old = @rows
@@ -132,6 +138,8 @@ class Screen
 
 	# This starts the interactive session.
 	# When this exits, return screen to normal.
+	#
+	# Returns nothing.
 	def start_screen_loop
 		system('stty raw -echo')
 		print "\e[#{@rows}S"  # roll screen up (clear, but preserve)
@@ -145,7 +153,11 @@ class Screen
 		end
 	end
 
-	# Suspend the editor
+	# Suspend the editor, and refresh on return.
+	#
+	# buffer - the current buffer, so we can refresh upon return.
+	#
+	# Returns nothing.
 	def suspend(buffer)
 		system('stty -raw echo')
 		Process.kill("SIGSTOP",0)
@@ -153,48 +165,87 @@ class Screen
 		buffer.dump_to_screen(true)
 	end
 
-	# Set cursor position
-	def setpos(r,c)
-		print "\e[#{r+1};#{c+1}H"
+	# Set cursor position.
+	#
+	# row - screen row (0 = first line)
+	# col - screen column (0 = first column)
+	#
+	# Returns nothing.
+	def setpos(row,col)
+		print "\e[#{row+1};#{col+1}H"
 	end
 
-	# Write a string at the current cursor position
+	# Write a string at the current cursor position.
+	# This was more complex when using curses, but now is trivial.
+	#
+	# text - a string to be printed, including escape codes
+	#
+	# Returns nothing.
 	def addstr(text)
 		print text
 	end
 
 	# Write a string at a specified position.
-	def write_string(line,column,text)
-		setpos(line,column)
+	#
+	# row - screen row
+	# cow - screen column
+	# text - string to be printed
+	#
+	# Returns nothing.
+	def write_string(row,col,text)
+		setpos(row,col)
 		addstr(text)
 	end
-	def write_string_reversed(line,column,text)
-		setpos(line,column)
+	# Write a reverse-text string at a specified position.
+	#
+	# row - screen row
+	# col - screen column
+	# text - string to be printed
+	#
+	# Returns nothing.
+	def write_string_reversed(row,col,text)
+		setpos(row,col)
 		addstr($color[:reverse]+text+$color[:normal])
 	end
 
-	# clear a line
-	def clear_line(r)
-		setpos(r,0)
+	# Clear an entrire line on the screen.
+	#
+	# row - screen row
+	#
+	# Returns nothing.
+	def clear_line(row)
+		setpos(row,0)
 		print "\e[2K"
 	end
 
-	# Write to the bottom line (full with)
+	# Write to the bottom line (full with).
+	# Typically used for asking the user a question.
+	#
+	# str - string of text to write
+	#
+	# Returns nothing.
 	def write_bottom_line(str)
 		write_string_reversed(@rows,0," "*@cols)
 		write_string_reversed(@rows,0,str)
 	end
 
-	# Write a whole line of text.
-	# Handle horizontal shifts (colfeed).
-	def write_line(row,scol,width,colfeed,line)
+	# Write an entire line of text to the screen.
+	# Handle horizontal shifts (colfeed), escape chars, and tab chars.
+	#
+	# row - screen row
+	# col - screen column to start writing at
+	# width - how many columns of text to write
+	# lin - the entire line of text (a substring of which will be printed)
+	#
+	# Returns nothing.
+	def write_line(row,col,width,colfeed,line)
 
 		# clear the line
-		setpos(row,scol)
+		setpos(row,col)
 		if width == @cols
 			clear_line(row)
 		else
-			write_string(row,scol," "*width)
+			write_string(row,col," "*width)
 		end
 
 		# Don't bother unless there is something to write
@@ -222,16 +273,16 @@ class Screen
 		words = line.split("\e")
 		return if words.length == 0
 		word = words[0]
-		write_string(row,scol,word[0,width])
-		scol += word.length
+		write_string(row,col,word[0,width])
+		col += word.length
 		width -= word.length
 		flag = true
 		flag = false if width <= 0
 		words[1..-1].each{|word|
 			j = word.index("m")
 			print "\e" + word[0..j]
-			write_string(row,scol,word[j+1,width]) if flag
-			scol += word[j+1..-1].length
+			write_string(row,col,word[j+1,width]) if flag
+			col += word[j+1..-1].length
 			width -= word[j+1..-1].length
 			flag = false if width <= 0
 		}
@@ -239,8 +290,16 @@ class Screen
 	end
 
 
-	# write the info line at top of screen
-	def write_top_line(lstr,cstr,rstr,row,col,width)
+	# Write the info line at top of screen (or elsewhere).
+	#
+	# lstr - left justifed text
+	# rstr - right justified text
+	# cstr - centered text
+	# row - screen row
+	# col - screen column
+	#
+	# Returns nothing.
+	def write_info_line(lstr,cstr,rstr,row,col,width)
 
 		rstr = cstr + "  " + rstr
 		ll = lstr.length
@@ -262,7 +321,11 @@ class Screen
 	end
 
 
-	# write a message at the bottom (centered, partial line)
+	# Write a message at the bottom (centered, partial line).
+	#
+	# message - text to write
+	#
+	# Returns nothing.
 	def write_message(message)
 		print "\e[s"
 		xpos = (@cols - message.length)/2
@@ -272,10 +335,12 @@ class Screen
 	end
 
 
-	#
 	# Do a reverese incremental search through a history.
 	# This is a helper function for asking the user for input.
 	#
+	# hist - array of previously entered text
+	#
+	# Returns integer index into hist array.
 	def reverse_incremental(hist)
 
 		token = ""  # user's search token
@@ -338,14 +403,14 @@ class Screen
 
 
 
+	# Ask the user a question, and return the response.
 	#
-	# ask the user a question
-	# INPUT:
-	#   question  = "string"
-	#   history = ["string1","string2"]
-	#   last_answer = true/false (start with last hist item as current answe?)
-	#   file = true/false (should we do tab-completion on files?)
+	# question    - text to print when asking
+	# hist        - array of strings (past answers)
+	# last_answer - true/false (start with last hist item as default answer?)
+	# file        = true/false (should we do tab-completion on files?)
 	#
+	# Returns the users answer as a string.
 	def ask(question,hist=[],last_answer=false,file=false)
 
 		# if last_answer is set, then set the current token to the last answer.
@@ -512,7 +577,11 @@ class Screen
 
 
 
-	# ask a yes or no question
+	# Ask a yes or no question.
+	#
+	# question - question to ask (string)
+	#
+	# Returns "yes" or "no".
 	def ask_yesno(question)
 		write_bottom_line(question)
 		answer = "cancel"
@@ -536,6 +605,12 @@ class Screen
 	end
 
 
+	# Draw a vertical line on the screen.
+	#
+	# i,n - i/n is fraction of the screen width,
+	#       and gives the location of the line.
+	#
+	# Returns nothing.
 	def draw_vertical_line(i,n)
 		c = i*@cols/n - 1
 		for r in 1..(@rows-1)
@@ -571,9 +646,11 @@ end
 
 class Window
 
+	# width, height, and position of the window
 	attr_accessor :rows, :cols, :pos_row, :pos_col
 
-	# optional dimensions are: upper left row, col; num rows, num cols
+	# Create a new window.
+	# Optional dimensions are: upper left row, col; num rows, num cols.
 	def initialize(dimensions=[0,0,0,0])
 		@pos_row = dimensions[0]
 		@pos_col = dimensions[1]
@@ -585,27 +662,26 @@ class Window
 		@stack = "v"  # vertical ("v") or horizontal ("h")
 	end
 
-	def write_top_line(l,c,r)
-		$screen.write_top_line(l,c,r,@pos_row,@pos_col,@cols)
+	# These all translate window position to screen position,
+	# and then pass off to screen class methods
+	def write_info_line(l,c,r)
+		$screen.write_info_line(l,c,r,@pos_row,@pos_col,@cols)
 	end
-
 	def write_line(row,colfeed,line)
 		$screen.write_line(row+1+@pos_row,@pos_col,@cols,colfeed,line)
 	end
-
 	def write_string(row,col,str)
 		$screen.write_string(@pos_row+row,@pos_col+col,str)
 	end
 	def write_string_reversed(row,col,str)
 		$screen.write_string_reversed(@pos_row+row,@pos_col+col,str)
 	end
-
 	def setpos(r,c)
 		$screen.setpos(r+@pos_row,c+@pos_col)
 	end
 
-	# set the window size, where k is the number of windows
-	# and j is the number of this window
+	# Set the window size, where k is the number of windows
+	# and j is the number of this window.
 	def set_window_size(j,k,vh="v")
 		if vh == "v"
 			@pos_row = j*($screen.rows)/k
@@ -620,8 +696,8 @@ class Window
 		end
 	end
 
-	# set the size of the last window to fit to the remainder of
-	# the screen
+	# Set the size of the last window to fit to the remainder of
+	# the screen.
 	def set_last_window_size(vh="v")
 		if vh == "v"
 			@rows = $screen.rows - @pos_row - 1
@@ -634,7 +710,7 @@ class Window
 
 
 
-	# Allow the use to choose from a menu of choices
+	# Allow the use to choose from a menu of choices.
 	def menu(items,header)
 
 		# hide the cursor
@@ -1959,7 +2035,7 @@ class FileBuffer
 			ib = $buffers.ipage
 			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
 		end
-		@window.write_top_line(lstr,status,position)
+		@window.write_info_line(lstr,status,position)
 	end
 
 
