@@ -2150,9 +2150,11 @@ class FileBuffer
 				end
 			else
 				bline = tabs2spaces(line[0])
-				aline = $color[:hiddentext] + ">>>>" + \
-				        bline[0,(@window.cols-8).floor] + \
-				        "<<<<" + $color[:normal]
+				descr = "[[" + line.length.to_s + " lines: "
+				tail = "]]"
+				aline = $color[:hiddentext] + descr + \
+				        bline[0,(@window.cols-descr.length-tail.length).floor] + \
+				        tail + $color[:normal]
 			end
 			@window.write_line(r,@colfeed,aline)
 		end
