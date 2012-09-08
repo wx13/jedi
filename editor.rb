@@ -1199,9 +1199,9 @@ class FileBuffer
 		if col == 0 then return end
 		for r in row1..row2
 			next if @text[r].kind_of?(Array)
+			next if @text[r].length < -col
 			c = col
 			if @text[r].length == 0 then next end
-			if c<=0 then next end
 			@text[r] = @text[r].dup
 			@text[r][c-1] = ""
 		end
@@ -1210,8 +1210,8 @@ class FileBuffer
 	def column_delete(row1,row2,col)
 		for r in row1..row2
 			next if @text[r].kind_of?(Array)
+			next if @text[r].length < -col
 			c = col
-			if c<0 then next end
 			if c==@text[r].length then next end
 			@text[r] = @text[r].dup
 			@text[r][c] = ""
@@ -1249,6 +1249,9 @@ class FileBuffer
 				column_delete(mark_row,row,@col)
 			elsif @cursormode == 'row'
 				column_delete(mark_row,row,0)
+			elsif @cursormode == 'loc'
+				n = @text[@row][@col..-1].length
+				column_delete(mark_row,row,-n)
 			else
 				@mark_list.each{|r,c|
 					column_delete(r,r,c)
@@ -1267,6 +1270,10 @@ class FileBuffer
 				cursor_left
 			elsif @cursormode == 'row'
 				column_backspace(mark_row,row,1)
+				cursor_left
+			elsif @cursormode == 'loc'
+				n = @text[@row][@col..-1].length
+				column_backspace(mark_row,row,-n)
 				cursor_left
 			else
 				@mark_list.each{|r,c|
@@ -1303,6 +1310,9 @@ class FileBuffer
 			else
 				iter = Array(mark_row..row)
 			end
+			if @cursormode == 'loc'
+				n = @text[@row][@col..-1].length
+			end
 			for r in iter
 				if @cursormode == 'multi'
 					cc = r[1]
@@ -1312,12 +1322,13 @@ class FileBuffer
 					next
 				end
 				if @cursormode == 'col'
-					#sc = bc2sc(@row,@col)
-					#cc = sc2bc(r,sc)
 					if(@col>@text[r].length) then next end
 					insertchar(r,@col,c)
 				elsif @cursormode == 'row'
 					insertchar(r,0,c)
+				elsif @cursormode == 'loc'
+					next if(n>@text[r].length)
+					insertchar(r,@text[r].length-n,c)
 				else
 					insertchar(r,cc,c)
 				end
@@ -2101,6 +2112,12 @@ class FileBuffer
 			if @cursormode == 'col'
 				for j in mark_row..row
 					buffer_marks[j] = [@col,@col] if j!=@row
+				end
+			elsif @cursormode == 'loc'
+				n =  @text[@row][@col..-1].length
+				for j in mark_row..row
+					m = @text[j].length - n
+					buffer_marks[j] = [m,m] if j!=@row
 				end
 			elsif @cursormode == 'row'
 				for j in (mark_row+1)..(row-1)
@@ -3162,6 +3179,7 @@ class KeyMap
 			"w" => "@linewrap = true",
 			"l" => "@linewrap = false",
 			"c" => "@cursormode = 'col'",
+			"C" => "@cursormode = 'loc'",
 			"r" => "@cursormode = 'row'",
 			"f" => "@cursormode = 'multi'",
 			"s" => "@syntax_color = true",
