@@ -620,6 +620,84 @@ class Screen
 	end
 
 
+
+	# Allow the use to choose from a menu of choices.
+	def menu(items,header)
+
+		# hide the cursor
+		puts "\e[?25l"
+
+		# how many rows should the menu take up (less than 1 screen)
+		margin = 2
+		nr = [rows-3*margin,items.length-1].min
+		cols = @cols-2*margin
+
+		# write a blank menu
+		write_string(margin,margin+1,'-'*(cols-2))
+		for r in (margin+1)..(margin+1+nr)
+			write_string(r,margin,'|'+' '*(cols-2)+'|')
+		end
+		write_string(margin+nr+2,margin+1,'-'*(cols-2))
+
+		# write out menu choices and interact
+		selected = 0
+		shift = 0
+		selected_item = ''
+		write_message(header)
+		while true
+
+			# shift menu if need be
+			shift = selected-nr if selected-shift > nr
+			shift = selected if selected < shift
+
+			# loop over menu choices
+			r = margin
+			j = -1
+			items.each{|k,v|
+
+				j += 1
+				next if j < shift
+				r += 1
+				break if r > (margin+1+nr)
+				if j==selected
+					pre = $color[:reverse]
+					post = $color[:normal]
+				else
+					pre = ""
+					post = ""
+				end
+				selected_item = v if j == selected
+				write_string(r,margin+2,pre+' '*(cols-3))
+				write_string(r,margin+2,k)
+				write_string(r,margin+15,v+post)
+			}
+			c = getch
+			case c
+				when :up
+					selected = [selected-1,0].max
+				when :down
+					selected = [selected+1,items.length-1].min
+				when :pagedown
+					selected = [selected+nr/2,items.length-1].min
+				when :pageup
+					selected = [selected-nr/2,0].max
+				when :enter,:ctrl_m,:ctrl_j
+					break
+				when :ctrl_c
+					return('')
+			end
+		end
+
+		return(selected_item)
+
+	ensure
+
+		# show the cursor
+		puts "\e[?25h"
+
+	end
+
+
 end
 
 
@@ -707,84 +785,6 @@ class Window
 			@cols = $screen.cols - @pos_col
 			@rows = $screen.rows - 1
 		end
-	end
-
-
-
-	# Allow the use to choose from a menu of choices.
-	def menu(items,header)
-
-		# hide the cursor
-		puts "\e[?25l"
-
-		# how many rows should the menu take up (less than 1 screen)
-		margin = 2
-		nr = [rows-2*margin,items.length-1].min
-		cols = @cols-2*margin
-
-		# write a blank menu
-		write_string(margin,margin+1,'-'*(cols-2))
-		for r in (margin+1)..(margin+1+nr)
-			write_string(r,margin,'|'+' '*(cols-2)+'|')
-		end
-		write_string(margin+nr+2,margin+1,'-'*(cols-2))
-
-		# write out menu choices and interact
-		selected = 0
-		shift = 0
-		selected_item = ''
-		write_message(header)
-		while true
-
-			# shift menu if need be
-			shift = selected-nr if selected-shift > nr
-			shift = selected if selected < shift
-
-			# loop over menu choices
-			r = margin
-			j = -1
-			items.each{|k,v|
-
-				j += 1
-				next if j < shift
-				r += 1
-				break if r > (margin+1+nr)
-				if j==selected
-					pre = $color[:reverse]
-					post = $color[:normal]
-				else
-					pre = ""
-					post = ""
-				end
-				selected_item = v if j == selected
-				write_string(r,margin+2,pre+' '*(cols-3))
-				write_string(r,margin+2,k)
-				write_string(r,margin+15,v+post)
-			}
-			c = getch until c!=nil
-			case c
-				when :up
-					selected = [selected-1,0].max
-				when :down
-					selected = [selected+1,items.length-1].min
-				when :pagedown
-					selected = [selected+nr/2,items.length-1].min
-				when :pageup
-					selected = [selected-nr/2,0].max
-				when :enter,:ctrl_m,:ctrl_j
-					break
-				when :ctrl_c
-					return('')
-			end
-		end
-
-		return(selected_item)
-
-	ensure
-
-		# show the cursor
-		puts "\e[?25h"
-
 	end
 
 
@@ -2515,7 +2515,7 @@ class FileBuffer
 
 	def menu(list,text)
 		cmd = @window.menu(list,text)
-		dump_to_screen(true)
+		$buffers.update_screen_size
 		cmd = '' if cmd == nil
 		return(cmd)
 	end
