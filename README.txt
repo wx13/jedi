@@ -1,47 +1,29 @@
 editor.rb
 =========
 
-
 editor.rb is a text editor writen in ruby for the unix console.
 
-
-Why another text editor?
-------------------------
-
+Design goals
+------------
 1. Zero install
-	- Single file of ruby code
-	- No external libraries
-2. Hackable
-	- Metaprogramming
-	- No compiling
+2. Easily customizable
 3. Text UI
 
+Goal #1 is achieved with a single file of ruby code with no
+external library dependencies.  The only libraries it requires
+are optparse (for parsing command line options) and yaml (for
+storing history).  Even those are non-essential, if you really
+want no dependencies.
 
-Most text editors are written in C, which causes several problems.
+Goal #2 is achieved because ruby supports metaprogramming, which
+means writing extensions is very simple.  See the extras/ folder
+for example extensions.  Also ruby's wonderful string handling
+makes adding or changing features quite simple.
 
-1. C is cumbersome for working with strings that keep changing.
-
-Answer: Ruby handles strings very easily.
-
-2. Modifying a C text editor requires you to
-
-	a. keep a set of patches (and continually resolve conflicts
-	   as the code changes)
-
-Answer: Ruby allows metaprogramming, which means writing extensions
-is almost trivial.
-
-	b. recompile the editor (I hope your admin has installed all
-	   the right development libraries!)
-
-Answer: It is possible in ruby to write a text editor which uses no
-external libraries.
-
-
+Goal #3 is achieved by reading and writing to stdin and stdout.
 
 Caveats
 -------
-
 editor.rb does not use curses or ncurses, but instead reads from
 standard in and writes to standard out.  It uses terminal escape codes
 to format the output.  Some terminals don't seem to support as many
@@ -54,7 +36,6 @@ and 1.9.
 
 Installing & running
 --------------------
-
 1. Just run "ruby editor.rb".
 
 2. Alternatively, create a directory ~/.editor containing the files
@@ -68,9 +49,7 @@ save command/search/script history in ~/.jedi/history.yaml.
 
 More information
 ----------------
-
 See http://wx13.com/code/editor for more details.
-
 
 ------------------------------------------------------------------------
 Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
