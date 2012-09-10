@@ -1022,6 +1022,7 @@ class FileBuffer
 
 	# Save buffer to a file.
 	def save
+
 		# Ask the user for a file.
 		# Defaults to current file.
 		ans = @window.ask("save to: ",[@filename],true,true)
@@ -1034,6 +1035,7 @@ class FileBuffer
 			@window.write_message("Cancelled")
 			return
 		end
+
 		# If name is different from current file name,
 		# ask for verification.
 		if ans != @filename
@@ -1046,19 +1048,23 @@ class FileBuffer
 				return
 			end
 		end
+
 		# Dump the text to the file.
 		File.open(@filename,"w"){|file|
 			text = @text.join(@eol)
 			file.write(text)
 		}
+
 		# Let the undo/redo history know that we have saved,
 		# for revert-to-saved purposes.
 		@buffer_history.save
+
 		# Save the command/search histories.
 		if $hist_file != nil
 			$buffers.save_hists
 		end
 		@window.write_message("saved to: "+@filename)
+
 	end
 
 	# re-open current buffer from file
@@ -1173,21 +1179,6 @@ class FileBuffer
 	def insertrow(row,text)
 		@text.insert(row,text)
 	end
-	# multiple new rows
-	def insertrows(row,text_array)
-		@text = @text[0,row] + text_array + @text[row..-1]
-	end
-	# completely change a row's text
-	def setrow(row,text)
-		old = @text[row]
-		@text[row] = text
-	end
-	# add to the end of a line
-	def append(row,text)
-		return if @text[row].kind_of?(Array)
-		@text[row] = @text[row].dup
-		@text[row] += text
-	end
 	# insert a string
 	def insert(row,col,text)
 		return if @text[row].kind_of?(Array)
@@ -1231,6 +1222,7 @@ class FileBuffer
 	# (which call the low-level ones)
 	# -----------------------------------------------
 
+	# sort row & mark_row
 	def ordered_mark_rows
 		if @row < @mark_row
 			row = @mark_row
@@ -1642,11 +1634,6 @@ class FileBuffer
 			center_screen
 		end
 		@window.write_message("went to line "+@row.to_s)
-	end
-	# go to a position on the screen
-	def goto_position(r,c)
-		@row = r+@linefeed
-		@col = sc2bc(@row,c)+@colfeed
 	end
 	def screen_left(n=1)
 		@colfeed += n
