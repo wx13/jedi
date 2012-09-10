@@ -1484,8 +1484,8 @@ class FileBuffer
 			@buffer_history.tree = @buffer_history.prev  # set pointer back
 			@text.delete_if{|x|true}
 			@text.concat(@buffer_history.copy)
-			@row = @buffer_history.row
-			@col = @buffer_history.col
+			@row = @buffer_history.next.row
+			@col = @buffer_history.next.col
 			better_cursor_position
 		end
 	end
@@ -1502,8 +1502,8 @@ class FileBuffer
 	def revert_to_saved
 		@text.delete_if{|x|true}
 		@text.concat(@buffer_history.revert_to_saved)
-		@row = @buffer_history.row
-		@col = @buffer_history.col
+		@row = @buffer_history.next.row
+		@col = @buffer_history.next.col
 		better_cursor_position
 	end
 	def unrevert_to_saved
