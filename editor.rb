@@ -824,9 +824,11 @@ class FileBuffer
 	def initialize(filename)
 
 		# set some parameters
-		@tabsize = $tabsize
-		@tabchar = $tabchar
-		@indentchar = @tabchar
+		@tabsize = $tabsize  # display width of a tab chracter
+		@tabchar = $tabchar  # what to insert when tab key is pressed
+		@fileindentchar = @tabchar[0].chr  # char the file uses for indentation
+		@fileindentstring = @tabchar  # string the file uses for indentation
+		@indentstring = @fileindentstring  # convert file indents to this
 		@linelength = 0  # 0 means full screen width
 
 		# read in the file
@@ -906,9 +908,9 @@ class FileBuffer
 		@nleadingspaces = a.count(" ")
 		$screen.write_message([@nleadingtabs,@nleadingspaces].join(", "))
 		if @nleadingtabs < @nleadingspaces
-			@indentchar = " "
+			@fileindentchar = " "
 		else
-			@indentchar = "\t"
+			@fileindentchar = "\t"
 		end
 	end
 
@@ -2388,7 +2390,7 @@ class FileBuffer
 		aline.gsub!(/\s+$/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
 		# leading whitespace
 		q = aline.partition(/\S/)
-		q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
+		q[0].gsub!(/([^#{@fileindentchar}]+)/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
 		aline = q.join
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
@@ -2524,6 +2526,21 @@ class FileBuffer
 		return(cmd)
 	end
 
+
+
+	def indentation_facade
+		a = @text.map{|line|
+			if line != nil
+				line.partition(/\S/)[0]
+			end
+		}.join
+		if a.count(" ")*a.count("\t") != 0
+				@window.ask_yesno("WARNING: tab/space mix => unreversible! ok?")
+		end
+	end
+	def indentation_real
+		update_indentation
+	end
 
 
 end
@@ -3117,6 +3134,8 @@ class KeyMap
 			"R" => "buffer.reload",
 			"r" => "$screen.update_screen_size; $buffers.update_screen_size",
 			"f" => "buffer = $buffers.duplicate",
+			"i" => "buffer.indentation_facade",
+			"I" => "buffer.indentation_real",
 			:up => "buffer.cursor_up(1)",
 			:down => "buffer.cursor_down(1)",
 			:right => "buffer.cursor_right",
