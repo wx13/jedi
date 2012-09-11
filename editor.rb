@@ -2306,8 +2306,10 @@ class FileBuffer
 
 		dqc = '"'
 		sqc = '\''
+		rxc = '/'
 		dquote = false
 		squote = false
+		regx = false
 		comment = false
 		bline = ""
 		escape = false
@@ -2316,7 +2318,7 @@ class FileBuffer
 		while (cline!=nil)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union([lccs,bccs.keys,dqc,sqc,"\\"].flatten)
+			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,"\\"].flatten)
 			k = cline.index(all)
 			if k==nil
 				bline += cline
@@ -2370,6 +2372,19 @@ class FileBuffer
 				b,c = syntax_find_match(cline,cqc,bline)
 				if b != nil
 					bline += $color[:string]
+					bline += b
+					bline += $color[:normal]
+					cline = c
+					next
+				end
+			end
+
+			# if regex, look for match
+			if (cline[0].chr == rxc)
+				cqc = cline[0].chr
+				b,c = syntax_find_match(cline,cqc,bline)
+				if b != nil
+					bline += $color[:regex]
 					bline += b
 					bline += $color[:normal]
 					cline = c
@@ -3362,6 +3377,7 @@ $color[:comment] = $color[:cyan]
 $color[:string] = $color[:yellow]
 $color[:whitespace] = $color[:red]
 $color[:hiddentext] = $color[:green]
+$color[:regex] = $color[:magenta]
 
 
 # syntax color defaults
