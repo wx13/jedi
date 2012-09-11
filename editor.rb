@@ -901,13 +901,14 @@ class FileBuffer
 	end
 
 	def update_indentation
-		a = @text.map{|line| line[0].chr}
+		a = @text.map{|line|line[0].chr if line[0] != nil}
 		@nleadingtabs = a.count("\t")
 		@nleadingspaces = a.count(" ")
-		if @nleadingtabs > @nleadingpspaces
-			@indentchar = "\t"
-		else
+		$screen.write_message([@nleadingtabs,@nleadingspaces].join(", "))
+		if @nleadingtabs < @nleadingspaces
 			@indentchar = " "
+		else
+			@indentchar = "\t"
 		end
 	end
 
@@ -1029,6 +1030,7 @@ class FileBuffer
 		end
 		text.gsub!(/\r/,"\n")
 		@text = text.split("\n",-1)
+		update_indentation
 	end
 
 	# Save buffer to a file.
@@ -1074,6 +1076,8 @@ class FileBuffer
 		if $hist_file != nil
 			$buffers.save_hists
 		end
+
+		update_indentation
 		@window.write_message("saved to: "+@filename)
 
 	end
@@ -2157,12 +2161,12 @@ class FileBuffer
 			line = text[r]
 			next if line == nil
 			if line.kind_of?(String)
-				sline = tabs2spaces(line)
 				if @syntax_color
-					aline = syntax_color(sline)
+					aline = syntax_color(line)
 				else
-					aline = sline + $color[:normal]
+					aline = line + $color[:normal]
 				end
+				aline = tabs2spaces(aline)
 			else
 				bline = tabs2spaces(line[0])
 				descr = "[[" + line.length.to_s + " lines: "
@@ -2385,7 +2389,9 @@ class FileBuffer
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
 		# leading whitespace
-		#aline.
+		q = aline.partition(/\S/)
+		q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
+		aline = q.join
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		return(aline)
@@ -2433,7 +2439,7 @@ class FileBuffer
 		a = a[1..-1]
 		return ans if a == nil
 		a.each{|str|
-			n = ans.length
+			n = ans.gsub(/\e\[.*?m/,"").length
 			m = @tabsize - (n+@tabsize).modulo(@tabsize)
 			ans += " "*m + str
 		}
@@ -3466,7 +3472,6 @@ $screen.start_screen_loop do
 		# for undo/redo purposes
 		if buffer.buffer_history.text != buffer.text
 			buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
-			buffer.update_indentation
 		end
 
 		# display the current buffer
