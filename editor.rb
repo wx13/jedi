@@ -817,9 +817,9 @@ end
 
 class FileBuffer
 
-	attr_accessor :filename, :text, :editmode, :buffer_history,\
-	              :extramode, :cutscore, :window, :sticky_extramode,\
-	              :row, :col
+	attr_accessor \
+		:filename, :text, :editmode, :buffer_history, :extramode, \
+		:cutscore, :window, :sticky_extramode, :row, :col
 
 	def initialize(filename)
 
@@ -1726,9 +1726,8 @@ class FileBuffer
 		@window.write_message("Found match")
 		@row = row
 		@col = idx
-		# recenter sreen, when we have gone off page
-		if ((@row - @linefeed) > (@window.rows - 1)) ||
-		   ((@row - @linefeed) < (0))
+		# recenter screen, when we have gone off page
+		if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
 			center_screen(@row)
 		end
 	end
@@ -1766,8 +1765,7 @@ class FileBuffer
 				@row = row
 				@col = idx
 				# recenter sreen, when we have gone off page
-				if ((@row - @linefeed) > (@window.rows - 1)) ||
-				   ((@row - @linefeed) < (0))
+				if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
 					center_screen(@row)
 				end
 				dump_to_screen(true)
@@ -2172,8 +2170,8 @@ class FileBuffer
 				descr = "[[" + line.length.to_s + " lines: "
 				tail = "]]"
 				aline = $color[:hiddentext] + descr + \
-				        bline[0,(@window.cols-descr.length-tail.length).floor] + \
-				        tail + $color[:normal]
+					bline[0,(@window.cols-descr.length-tail.length).floor] + \
+					tail + $color[:normal]
 			end
 			@window.write_line(r,@colfeed,aline)
 		end
@@ -2877,13 +2875,14 @@ class BuffersList
 		if ($hist_file != nil) && (File.exist?($hist_file))
 			read_hists
 		end
-		hists = {"search_hist" => $search_hist.last(1000),\
-	             "replace_hist" => $replace_hist.last(1000),\
-	             "command_hist" => $command_hist.last(1000),\
-	             "script_hist" => $script_hist.last(1000),\
-	             "startfolding_hist" => $startfolding_hist.last(1000),\
-	             "endfolding_hist" => $endfolding_hist.last(1000)\
-	            }
+		hists = {
+			"search_hist" => $search_hist.last(1000),\
+			"replace_hist" => $replace_hist.last(1000),\
+			"command_hist" => $command_hist.last(1000),\
+			"script_hist" => $script_hist.last(1000),\
+			"startfolding_hist" => $startfolding_hist.last(1000),\
+			"endfolding_hist" => $endfolding_hist.last(1000)\
+		}
 		File.open($hist_file,"w"){|file|
 			YAML.dump(hists,file)
 		}
@@ -3044,9 +3043,9 @@ end
 
 class KeyMap
 
-	attr_accessor :commandlist, :editmode_commandlist, \
-	              :extramode_commandlist, :viewmode_commandlist, \
-	              :togglelist
+	attr_accessor \
+		:commandlist, :editmode_commandlist, :extramode_commandlist, \
+		:viewmode_commandlist, :togglelist
 
 	def initialize
 
