@@ -826,6 +826,7 @@ class FileBuffer
 		# set some parameters
 		@tabsize = $tabsize
 		@tabchar = $tabchar
+		@indentchar = @tabchar
 		@linelength = 0  # 0 means full screen width
 
 		# read in the file
@@ -899,6 +900,16 @@ class FileBuffer
 		@window.write_message("Unknown command")
 	end
 
+	def update_indentation
+		a = @text.map{|line| line[0].chr}
+		@nleadingtabs = a.count("\t")
+		@nleadingspaces = a.count(" ")
+		if @nleadingtabs > @nleadingpspaces
+			@indentchar = "\t"
+		else
+			@indentchar = " "
+		end
+	end
 
 	# run a script file of ruby commands
 	def run_script
@@ -2373,6 +2384,8 @@ class FileBuffer
 		}
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
+		# leading whitespace
+		#aline.
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		return(aline)
@@ -3453,6 +3466,7 @@ $screen.start_screen_loop do
 		# for undo/redo purposes
 		if buffer.buffer_history.text != buffer.text
 			buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
+			buffer.update_indentation
 		end
 
 		# display the current buffer
