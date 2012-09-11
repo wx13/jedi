@@ -826,7 +826,6 @@ class FileBuffer
 		# set some parameters
 		@tabsize = $tabsize
 		@tabchar = $tabchar
-		@forcetabs = $forcetabs
 		@linelength = 0  # 0 means full screen width
 
 		# read in the file
@@ -888,6 +887,7 @@ class FileBuffer
 
 	def perbuffer_userscript
 	end
+
 
 
 	# Enter arbitrary ruby command.
@@ -1017,13 +1017,6 @@ class FileBuffer
 			@eol = "\r\n"
 		end
 		text.gsub!(/\r/,"\n")
-		# force tabs
-		if @forcetabs
-			m = text.gsub!(Regexp.new("^"+" "*@forcetabs),"\t")
-			while m!=nil
-				m = text.gsub!(Regexp.new("\t"+" "*@forcetabs),"\t\t")
-			end
-		end
 		@text = text.split("\n",-1)
 	end
 
@@ -1059,12 +1052,6 @@ class FileBuffer
 		# Dump the text to the file.
 		File.open(@filename,"w"){|file|
 			text = @text.join(@eol)
-			if @forcetabs
-				m = text.gsub!(/^\t/," "*@forcetabs)
-				while m!=nil
-					m = text.gsub!(/( *)\t/,"\\1"+" "*@forcetabs)
-				end
-			end
 			file.write(text)
 		}
 
@@ -3345,7 +3332,6 @@ $syntax_colors = SyntaxColors.new
 
 $tabsize = 4
 $tabchar = "\t"
-$forcetabs = nil
 $autoindent = true
 $linewrap = false
 $cursormode = 'row'
@@ -3388,9 +3374,6 @@ optparse = OptionParser.new{|opts|
 	}
 	opts.on('-T', '--tabchar c', 'Set tab character'){|c|
 		$tabchar = c
-	}
-	opts.on('-i', '--idiots N', 'Convert N leading spaces to tabs'){|n|
-		$forcetabs = n.to_i
 	}
 	opts.on('-a', '--autoindent', 'Turn on autoindent'){
 		$autoindent = true
