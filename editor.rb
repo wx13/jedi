@@ -827,6 +827,7 @@ class FileBuffer
 		@tabsize = $tabsize  # display width of a tab chracter
 		@tabchar = $tabchar  # what to insert when tab key is pressed
 		@fileindentchar = @tabchar[0].chr  # char the file uses for indentation
+		@indentchar = @fileindentchar
 		@fileindentstring = @tabchar  # string the file uses for indentation
 		@indentstring = @fileindentstring  # convert file indents to this
 		@linelength = 0  # 0 means full screen width
@@ -1033,6 +1034,7 @@ class FileBuffer
 		text.gsub!(/\r/,"\n")
 		@text = text.split("\n",-1)
 		update_indentation
+		@indentchar = @fileindentchar
 	end
 
 	# Save buffer to a file.
@@ -1067,6 +1069,12 @@ class FileBuffer
 		# Dump the text to the file.
 		File.open(@filename,"w"){|file|
 			text = @text.join(@eol)
+			if @fileindentstring != @indentstring
+				m = text.gsub!(/^#{@indentstring}/,@fileindentstring)
+				while m!=nil
+					m = text.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+				end
+			end
 			file.write(text)
 		}
 
@@ -2390,7 +2398,7 @@ class FileBuffer
 		aline.gsub!(/\s+$/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
 		# leading whitespace
 		q = aline.partition(/\S/)
-		q[0].gsub!(/([^#{@fileindentchar}]+)/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
+		q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
 		aline = q.join
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
@@ -2528,18 +2536,47 @@ class FileBuffer
 
 
 
+
 	def indentation_facade
+		if @fileindentstring != @indentstring
+			ans = @window.ask_yesno("Reset indentation change?")
+			return unless ans == "yes"
+			indentation_real
+		end
 		a = @text.map{|line|
 			if line != nil
 				line.partition(/\S/)[0]
 			end
 		}.join
 		if a.count(" ")*a.count("\t") != 0
-				@window.ask_yesno("WARNING: tab/space mix => unreversible! ok?")
+			ans = @window.ask_yesno("WARNING: tab/space mix => IRREVERSIBLE! ok? ")
+			if ans == "no"
+				@window.write_message("Cancelled.")
+				return
+			end
 		end
+		@fileindentstring = @window.ask("File indent string:")
+		return if @fileindentstring == "" || @fileindentstring == nil
+		@indentstring = @window.ask("User indent string:")
+		return if @indentstring == "" || @indentstring == nil
+		return if @indentstring == @fileindentstring
+		text = @text.join("\n")
+		m = text.gsub!(/^#{@fileindentstring}/,@indentstring)
+		while m!=nil
+			m = text.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
+		end
+		@text = text.split("\n")
+		@indentchar = @indentstring[0].chr
 	end
 	def indentation_real
-		update_indentation
+		return if @indentstring == @fileindentstring
+		text = @text.join("\n")
+		m = text.gsub!(/^#{@indentstring}/,@fileindentstring)
+		while m!=nil
+			m = text.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+		end
+		@text = text.split("\n")
+		@indentchar = @fileindentstring[0].chr
 	end
 
 
