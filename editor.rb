@@ -1373,6 +1373,10 @@ class FileBuffer
 			splitrow(@row,@col)
 			ws = ""
 			if @autoindent
+
+				# snap shot, so we can undo auto-indent
+				@buffer_history.add(@text,@row,@col)
+
 				ws = ""
 				if @row > 1
 					s0 = @text[@row-2].dup
