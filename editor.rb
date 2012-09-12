@@ -3383,7 +3383,7 @@ $color[:comment] = $color[:cyan]
 $color[:string] = $color[:yellow]
 $color[:whitespace] = $color[:red]
 $color[:hiddentext] = $color[:green]
-$color[:regex] = $color[:magenta]
+$color[:regex] = $color[:normal]
 
 
 # syntax color defaults
