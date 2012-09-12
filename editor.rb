@@ -163,7 +163,8 @@ class Screen
 		system('stty -raw echo')
 		Process.kill("SIGSTOP",0)
 		system('stty raw -echo')
-		buffer.dump_to_screen(true)
+		$screen.update_screen_size
+		$buffers.update_screen_size
 	end
 
 	# Set cursor position.
@@ -3524,7 +3525,6 @@ $screen_buffer = []
 trap("WINCH"){
 	$screen.update_screen_size
 	$buffers.update_screen_size
-	$screen.write_message("resized")
 }
 
 # initialize curses screen and run with it
