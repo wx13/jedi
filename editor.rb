@@ -1318,6 +1318,7 @@ class FileBuffer
 			c = " "*6 if @filetype == 'f' && @col == 0
 		end
 		return if ! c.is_a?(String)
+		return if c.index("\e")
 		if @marked == false
 			insertchar(@row,@col,c)
 		else
