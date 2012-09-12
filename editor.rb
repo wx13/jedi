@@ -2845,6 +2845,7 @@ class BuffersList
 		# for each file on the command line,
 		# put text on its own page
 		for filename in files
+			next if File.directory?(filename)
 			@pages[@npage] = Page.new([FileBuffer.new(filename)])
 			@npage += 1
 		end
