@@ -160,9 +160,13 @@ class Screen
 	#
 	# Returns nothing.
 	def suspend(buffer)
+		print "\e[2J"
+		print "\e[?7h"
 		system('stty -raw echo')
 		Process.kill("SIGSTOP",0)
 		system('stty raw -echo')
+		print "\e[#{@rows}S"
+		print "\e[?7l"
 		$screen.update_screen_size
 		$buffers.update_screen_size
 	end
