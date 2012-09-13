@@ -1854,7 +1854,7 @@ class FileBuffer
 
 
 	def copy(cut=0)
-		return if @cursormode == 'multi'
+		return if @cursormode == 'multi' || @cursormode == 'col'
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
@@ -1876,14 +1876,11 @@ class FileBuffer
 		# rectify row, mark_row order
 		if @row == @mark_row
 			if @col < @mark_col
-				temp = @col
-				@col = @mark_col
-				@mark_col = temp
+				@mark_col,@col = @col, @mark_col
 			end
 		elsif @row < @mark_row
-			temp = @row
-			@row = @mark_row
-			@mark_row = temp
+			@mark_row,@row = @row,@mark_row
+			@mark_col,@col = @col,@mark_col
 		end
 
 
