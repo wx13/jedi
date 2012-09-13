@@ -1864,10 +1864,11 @@ class FileBuffer
 
 
 	def copy(cut=0)
-		return if @cursormode == 'multi' || @cursormode == 'col'
+		return if @cursormode == 'multi'
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
+			return if @cursormode == 'col' || @cursormode == 'loc'
 			$copy_buffer = []
 			@marked = false
 		else
