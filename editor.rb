@@ -2077,13 +2077,13 @@ class FileBuffer
 	# write everything, including status lines
 	def dump_to_screen(refresh=false)
 		cursrow,curscol = get_cursor_position
-		update_top_line(cursrow,curscol)
 		# write the text to the screen
 		dump_text(refresh)
 		if @extramode
 			@window.write_message("EXTRAMODE")
 		end
 		# set cursor position
+		update_top_line(cursrow,curscol)
 		@window.setpos(cursrow,curscol)
 	end
 
@@ -2098,6 +2098,10 @@ class FileBuffer
 
 		# by default, don't update any rows
 		rows_to_update = []
+		if refresh
+			rows_to_update = (0..(@window.rows-1)).to_a
+			print "\e[2J" # clear the screen
+		end
 
 		# update any rows that have changed
 		text.each_index{|i|
