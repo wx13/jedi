@@ -626,7 +626,7 @@ class Screen
 	# Returns nothing.
 	def draw_vertical_line(i,n)
 		c = i*@cols/n - 1
-		for r in 1..(@rows-1)
+		for r in 0..(@rows-1)
 			write_string(r,c,"|")
 		end
 	end
@@ -2091,6 +2091,7 @@ class FileBuffer
 		end
 		# set cursor position
 		update_top_line(cursrow,curscol)
+		@window.clear_message_text
 		@window.setpos(cursrow,curscol)
 	end
 
@@ -2107,7 +2108,6 @@ class FileBuffer
 		rows_to_update = []
 		if refresh
 			rows_to_update = (0..(@window.rows-1)).to_a
-			print "\e[2J" # clear the screen
 		end
 
 		# update any rows that have changed
