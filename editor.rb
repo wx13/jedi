@@ -2091,7 +2091,7 @@ class FileBuffer
 		end
 		# set cursor position
 		update_top_line(cursrow,curscol)
-		@window.clear_message_text
+		@window.clear_message_text if refresh
 		@window.setpos(cursrow,curscol)
 	end
 
