@@ -2141,21 +2141,23 @@ class FileBuffer
 					buffer_marks[j] = [m,m] if j!=@row
 				end
 			elsif @cursormode == 'row'
+				# Start with 'internal' rows (not first nor last.
+				# Easy: do the whole row.
 				for j in (mark_row+1)..(row-1)
 					buffer_marks[j] = [0,@text[j].length]
 				end
 				if @row > @mark_row
 					buffer_marks[@mark_row] = [@mark_col,@text[@mark_row].length]
-					buffer_marks[@row] = [0,@col-1] unless @col == 0
+					buffer_marks[@row] = [0,@col] unless @col == 0
 				elsif @row == @mark_row
 					if @col > @mark_col
-						buffer_marks[@row] = [@mark_col,@col-1]
+						buffer_marks[@row] = [@mark_col,@col]
 					elsif @col < @mark_col
-						buffer_marks[@row] = [@col+1,@mark_col]
+						buffer_marks[@row] = [@col,@mark_col]
 					end
 				else
 					buffer_marks[@mark_row] = [0,@mark_col]
-					buffer_marks[@row] = [@col+1,@text[@row].length] unless @col==@text[@row].length
+					buffer_marks[@row] = [@col,@text[@row].length] unless @col==@text[@row].length
 				end
 			else  # multicursor mode
 				@mark_list.each{|r,c|
@@ -2236,6 +2238,13 @@ class FileBuffer
 		# convert pos in text to pos on screen
 		sc = bc2sc(row,scol)
 		ec = bc2sc(row,ecol)
+		if @row == row
+			if @col == ecol
+				ec -= 1
+			elsif @col == scol
+				sc += 1
+			end
+		end
 
 		# replace tabs with spaces
 		sline = tabs2spaces(@text[row])
