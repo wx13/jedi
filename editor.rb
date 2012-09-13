@@ -213,6 +213,10 @@ class Screen
 		setpos(row,col)
 		addstr($color[:reverse]+text+$color[:normal])
 	end
+	def write_string_colored(row,col,text,color)
+		setpos(row,col)
+		addstr($color[color]+text+$color[:normal])
+	end
 
 	# Clear an entrire line on the screen.
 	#
@@ -223,6 +227,9 @@ class Screen
 		setpos(row,0)
 		print "\e[2K"
 	end
+	def clear_message_text
+		clear_line(@rows)
+	end
 
 	# Write to the bottom line (full with).
 	# Typically used for asking the user a question.
@@ -231,8 +238,8 @@ class Screen
 	#
 	# Returns nothing.
 	def write_bottom_line(str)
-		write_string_reversed(@rows,0," "*@cols)
-		write_string_reversed(@rows,0,str)
+		write_string_colored(@rows,0," "*@cols,:message)
+		write_string_colored(@rows,0,str,:message)
 	end
 
 	# Write an entire line of text to the screen.
@@ -322,7 +329,7 @@ class Screen
 		nspaces = width - ll - lr
 		return if nspaces < 0  # line is too long to write
 		all = lstr + (" "*nspaces) + rstr
-		write_string_reversed(row,col,all)
+		write_string_colored(row,col,all,:status)
 
 	end
 
@@ -333,11 +340,11 @@ class Screen
 	#
 	# Returns nothing.
 	def write_message(message)
-		print "\e[s"
+		print "\e[s"  # save cursor position
 		xpos = (@cols - message.length)/2
 		clear_line(@rows)
-		write_string_reversed(@rows,xpos,message)
-		print "\e[u"
+		write_string_colored(@rows,xpos,message,:message)
+		print "\e[u"  # restore cursor position
 	end
 
 
@@ -759,6 +766,9 @@ class Window
 	end
 	def write_string_reversed(row,col,str)
 		$screen.write_string_reversed(@pos_row+row,@pos_col+col,str)
+	end
+	def write_string_colored(row,col,str,color)
+		$screen.write_string_colored(@pos_row+row,@pos_col+col,str,color)
 	end
 	def setpos(r,c)
 		$screen.setpos(r+@pos_row,c+@pos_col)
@@ -2117,14 +2127,11 @@ class FileBuffer
 			@buffer_marks = {}
 		end
 
+		# Handle marked text highlightin
 		#
-		# take into account highlighting
-		#
-		# 1. populate buffer_marks = {} with a list of start
-		#    and end points for highlighting.
-		# 2. if it is unchanged, do nothing.
-		# 3. if it has changed, then update highlighting based on changes
-		#
+		# Populate buffer_marks = {} with a list of start
+		# and end points for highlighting, so that we
+		# will know what needs to be updated.
 		buffer_marks = {}
 		buffer_marks.default = [-1,-1]
 		if @marked
@@ -2132,13 +2139,13 @@ class FileBuffer
 			mark_row,row = row,mark_row if mark_row > row
 			if @cursormode == 'col'
 				for j in mark_row..row
-					buffer_marks[j] = [@col,@col] if j!=@row
+					buffer_marks[j] = [@col,@col]
 				end
 			elsif @cursormode == 'loc'
 				n =  @text[@row][@col..-1].length
 				for j in mark_row..row
 					m = @text[j].length - n
-					buffer_marks[j] = [m,m] if j!=@row
+					buffer_marks[j] = [m,m]
 				end
 			elsif @cursormode == 'row'
 				# Start with 'internal' rows (not first nor last.
@@ -2227,7 +2234,7 @@ class FileBuffer
 
 	# highlight a particular row, from scol to ecol
 	# scol & ecol are columns in the text buffer
-	def highlight(row,scol,ecol,un=false)
+	def highlight(row,scol,ecol)
 		# only do rows that are on the screen
 		if row < @linefeed then return end
 		if row > (@linefeed + @window.rows - 1) then return end
@@ -2238,13 +2245,6 @@ class FileBuffer
 		# convert pos in text to pos on screen
 		sc = bc2sc(row,scol)
 		ec = bc2sc(row,ecol)
-		if @row == row
-			if @col == ecol
-				ec -= 1
-			elsif @col == scol
-				sc += 1
-			end
-		end
 
 		# replace tabs with spaces
 		sline = tabs2spaces(@text[row])
@@ -2260,15 +2260,7 @@ class FileBuffer
 			str = str[0,(@window.cols-ssc)]
 		end
 
-		if un
-			@window.write_string((row-@linefeed+1),ssc,str)
-			return
-		else
-			@window.write_string_reversed((row-@linefeed+1),ssc,str)
-		end
-	end
-	def unhighlight(row,scol,ecol)
-		highlight(row,scol,ecol,true)
+		@window.write_string_colored((row-@linefeed+1),ssc,str,:marked)
 	end
 
 
@@ -2430,10 +2422,10 @@ class FileBuffer
 			aline.gsub!(k,$color[v]+"\\0"+$color[:normal])
 		}
 		# trailing whitespace
-		aline.gsub!(/\s+$/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
+		aline.gsub!(/\s+$/,$color[:whitespace]+"\\0"+$color[:normal])
 		# leading whitespace
 		q = aline.partition(/\S/)
-		q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+$color[:reverse]+"\\0"+$color[:normal])
+		q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+"\\0"+$color[:normal])
 		aline = q.join
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
@@ -3393,12 +3385,17 @@ $color = {
 	:yellow => "\e[33m",
 	:normal => "\e[0m",
 	:reverse => "\e[7m",
+	:underline => "\e[4m",
+	:bold => "\e[1m"
 }
 $color[:comment] = $color[:cyan]
 $color[:string] = $color[:yellow]
-$color[:whitespace] = $color[:red]
+$color[:whitespace] = $color[:red]+$color[:reverse]
 $color[:hiddentext] = $color[:green]
 $color[:regex] = $color[:normal]
+$color[:marked] = $color[:reverse]+$color[:blue]
+$color[:message] = $color[:yellow]
+$color[:status] = $color[:underline]
 
 
 # syntax color defaults
@@ -3570,6 +3567,9 @@ $screen.start_screen_loop do
 
 		# wait for a key press
 		c = $screen.getch until c!=nil
+
+		# clear old message text
+		buffer.window.clear_message_text
 
 		# process key press -- run associated command
 		if buffer.extramode
