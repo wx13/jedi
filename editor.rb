@@ -1970,6 +1970,7 @@ class FileBuffer
 		@cutscore = 0
 
 		return if @text[@row].kind_of?(Array)
+		return if $copy_buffer.empty?
 
 		if $copy_buffer.length > 1  # multi-line paste
 
