@@ -19,7 +19,11 @@ $cursormode = 'row'
 $syntax_color = true
 $color[:comment] = $color[:cyan]
 $color[:string] = $color[:yellow]
-$color[:whitespace] = $color[:red]
+$color[:whitespace] = $color[:red]+$color[:reverse]
+$color[:hiddentext] = $color[:green]
+$color[:message] = $color[:yellow]
+$color[:status] = $color[:underline]
+$color[:regex] = $color[:normal]
 
 
 #
