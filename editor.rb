@@ -291,8 +291,10 @@ class Screen
 		width -= word.length
 		flag = true
 		flag = false if width <= 0
+		return if words.length <= 1  # in case file contains control characters
 		words[1..-1].each{|word|
 			j = word.index("m")
+			next if j.nil?
 			print "\e" + word[0..j]
 			write_string(row,col,word[j+1,width]) if flag
 			col += word[j+1..-1].length
