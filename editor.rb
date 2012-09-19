@@ -639,7 +639,7 @@ class Screen
 	def menu(items,header)
 
 		# hide the cursor
-		puts "\e[?25l"
+		print "\e[?25l"
 
 		# how many rows should the menu take up (less than 1 screen)
 		margin = 2
@@ -1005,7 +1005,6 @@ class FileBuffer
 
 	# Toggle one of many states.
 	def toggle
-		@window.write_message('Toggle')
 		# get answer and execute the code
 		c = $screen.getch until c!=nil
 		if c == :tab
