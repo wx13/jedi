@@ -1235,6 +1235,7 @@ class FileBuffer
 			c = col
 			if @text[r].length == 0 then next end
 			@text[r] = @text[r].dup
+			c = [c,@text[r].length].min
 			@text[r][c-1] = ""
 		end
 	end
@@ -1246,6 +1247,8 @@ class FileBuffer
 			c = col
 			if c==@text[r].length then next end
 			@text[r] = @text[r].dup
+			c = [c,@text[r].length-1].min
+			next if c < 0
 			@text[r][c] = ""
 		end
 	end
