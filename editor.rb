@@ -1493,7 +1493,18 @@ class FileBuffer
 				break
 			end
 		end
-		insertrow(r,text)
+		if linewrap && @text[r].is_a?(String)
+			if @text[r] == nil || @text[r] == ""
+				insertrow(r,text)
+			else
+				@text[r] = text + " " + @text[r]
+				@row += 1
+				justify(true)
+				@row -= 1
+			end
+		else
+			insertrow(r,text)
+		end
 		@window.write_message("Justified to "+cols.to_s+" columns")
 		if linewrap
 			if @col >= @text[@row].length+1
