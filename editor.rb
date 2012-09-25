@@ -1135,9 +1135,12 @@ class FileBuffer
 		if @row >= @text.length
 			@row = @text.length - 1
 		end
-		if @col > @text[@row].length
-			@col = @text[@row].length
+		if @text[@row].is_a?(String)
+			len = @text[@row].length
+		else
+			len = 0
 		end
+		@col = [@col,len].min
 	end
 
 
