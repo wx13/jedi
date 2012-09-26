@@ -3279,20 +3279,20 @@ class KeyMap
 
 
 		@togglelist = {
-			"e" => "@editmode = true",
-			"v" => "@editmode = false",
-			"a" => "@autoindent = true",
-			"n" => "@autoindent = false",
-			"i" => "@insertmode = true",
-			"o" => "@insertmode = false",
-			"w" => "@linewrap = true",
-			"l" => "@linewrap = false",
+			"E" => "@editmode = true",
+			"e" => "@editmode = false",
+			"A" => "@autoindent = true",
+			"a" => "@autoindent = false",
+			"I" => "@insertmode = true",
+			"i" => "@insertmode = false",
+			"W" => "@linewrap = true",
+			"w" => "@linewrap = false",
 			"c" => "@cursormode = 'col'",
 			"C" => "@cursormode = 'loc'",
 			"r" => "@cursormode = 'row'",
 			"f" => "@cursormode = 'multi'",
-			"s" => "@syntax_color = true",
-			"b" => "@syntax_color = false",
+			"S" => "@syntax_color = true",
+			"s" => "@syntax_color = false",
 			"-" => "$buffers.vstack",
 			"|" => "$buffers.hstack"
 		}
@@ -3503,28 +3503,31 @@ optparse = OptionParser.new{|opts|
 	opts.on('-T', '--tabchar c', 'Set tab character'){|c|
 		$tabchar = c
 	}
-	opts.on('-a', '--autoindent', 'Turn on autoindent'){
+	opts.on('-A', '--autoindent', 'Turn on autoindent'){
 		$autoindent = true
+	}
+	opts.on('-a', '--no-autoindent', 'Turn off autoindent'){
+		$autoindent = false
 	}
 	opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
 		$hist_file = file
 	}
-	opts.on('-n', '--noedit', 'Start in view mode'){
+	opts.on('-E', '--edit', 'Start in edit mode'){
 		$editmode = false
 	}
-	opts.on('-m', '--manualindent', 'Turn off autoindent'){
-		$autoindent = false
+	opts.on('-e', '--no-edit', 'Start in view mode'){
+		$editmode = false
 	}
-	opts.on('-w', '--linewrap', 'Turn on linewrap'){
+	opts.on('-W', '--linewrap', 'Turn on linewrap'){
 		$linewrap = true
 	}
-	opts.on('-l', '--longlines', 'Turn off linewrap'){
+	opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
 		$linewrap = false
 	}
-	opts.on('-c', '--color', 'Turn on syntax coloring'){
+	opts.on('-C', '--color', 'Turn on syntax coloring'){
 		$syntax_color = true
 	}
-	opts.on('-b', '--nocolor', 'Turn off syntax coloring'){
+	opts.on('-c', '--no-color', 'Turn off syntax coloring'){
 		$syntax_color = false
 	}
 	opts.on('-v', '--version', 'Print version number'){
