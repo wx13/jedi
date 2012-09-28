@@ -871,7 +871,8 @@ class FileBuffer
 		@cutscore = 0  # don't let cuts be consecutive after lots of stuff has happened
 		@mark_col = 0
 		@mark_row = 0
-		@mark_list = []
+		@mark_list = {}
+		@multimarkmode = false
 
 		# flags
 		@autoindent = $autoindent
@@ -1170,6 +1171,7 @@ class FileBuffer
 		c = @tabchar if c == :tab
 		return if @text[row].kind_of?(Array)
 		return if c.is_a?(String) == false
+		return if col > @text[row].length
 		if @text[row] == nil
 			@text[row] = c
 			return
@@ -1280,8 +1282,17 @@ class FileBuffer
 		end
 		return mark_row,row
 	end
-	# delete a character
+
+	# Delete a character.
+	# Very simple, if text is not marked;
+	# otherwise, much more complicated.
+	# Four modes:
+	# - col => delete text in range of rows at current column
+	# - loc => same as col, but measure from end of line
+	# - row => delete first character of each marked line
+	# - multi => delete at each mark
 	def delete
+		return if @multimarkmode
 		if @marked
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
@@ -1292,16 +1303,33 @@ class FileBuffer
 				n = @text[@row][@col..-1].length
 				column_delete(mark_row,row,-n)
 			else
-				@mark_list.each{|r,c|
-					column_delete(r,r,c)
+				mark_list.each{|row,cols|
+					# Loop over column positions starting from end,
+					# because doing stuff at early in the line changes
+					# positions later in the line.
+					cols.uniq.sort.reverse.each{|col|
+						column_delete(row,row,col)
+						# Adjust mark positions due to changes to the left
+						# of the mark.
+						@mark_list[row-@row].map!{|x|
+							if (x+@col) > col
+								x-1
+							else
+								x
+							end
+						}
+					}
 				}
 			end
 		else
 			delchar(@row,@col) if @text[@row].kind_of?(String)
 		end
 	end
-	# backspace over a character
+
+	# Backspace over a character.
+	# Similar to delete (above).
 	def backspace
+		return if @multimarkmode
 		if @marked
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
@@ -1315,10 +1343,19 @@ class FileBuffer
 				column_backspace(mark_row,row,-n)
 				cursor_left
 			else
-				@mark_list.each{|r,c|
-					column_backspace(r,r,c)
+				mark_list.each{|row,cols|
+					cols.uniq.sort.reverse.each{|col|
+						column_backspace(row,row,col)
+						@mark_list[row-@row].map!{|x|
+							if (x+@col) > col
+								x-1
+							else
+								x
+							end
+						}
+					}
 				}
-				@mark_list.map!{|r,c|[r,[c-1,0].max]}
+				cursor_left
 			end
 		else
 			if (@col+@row)==0
@@ -1333,8 +1370,12 @@ class FileBuffer
 			delchar(@row,@col)
 		end
 	end
-	# insert a char and move to the right
+
+	# Insert a char and move to the right.
+	# Very simple if text is not marked.
+	# For marked text, issues are similar to delete method above.
 	def addchar(c)
+		return if @multimarkmode
 		if c == :tab
 			c = @tabchar
 			c = " "*6 if @filetype == 'f' && @col == 0
@@ -1346,41 +1387,55 @@ class FileBuffer
 		else
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'multi'
-				iter = @mark_list
-			else
-				iter = Array(mark_row..row)
-			end
-			if @cursormode == 'loc'
-				n = @text[@row][@col..-1].length
-			end
-			for r in iter
-				if @cursormode == 'multi'
-					cc = r[1]
-					r = r[0]
+				list = mark_list
+			elsif @cursormode == 'col'
+				list = {}
+				for r in mark_row..row
+					list[r] = [@col] unless @col > @text[r].length
 				end
-				if (@text[r].length==0)&&((c==?\s)||(c==?\t)||(c=="\t")||(c==" "))
+			elsif @cursormode == 'loc'
+				n = @text[@row][@col..-1].length
+				list = {}
+				for r in mark_row..row
+					list[r] = [@text[r].length-n] unless n > @text[r].length
+				end
+			else
+				list = {}
+				for r in mark_row..row
+					list[r] = [0]
+				end
+			end
+			list.each{|row,cols|
+
+				# don't insert blanks at start of line
+				if (@text[row].length==0)&&((c==?\s)||(c==?\t)||(c=="\t")||(c==" "))
 					next
 				end
-				if @cursormode == 'col'
-					if(@col>@text[r].length) then next end
-					insertchar(r,@col,c)
-				elsif @cursormode == 'row'
-					insertchar(r,0,c)
-				elsif @cursormode == 'loc'
-					next if(n>@text[r].length)
-					insertchar(r,@text[r].length-n,c)
-				else
-					insertchar(r,cc,c)
-				end
-			end
-			@mark_list.map!{|r,c|[r,[c+1,@text[r].length].min]}
+
+				cols = cols.uniq.sort.reverse
+				cols.each{|col|
+					insertchar(row,col,c)
+					if @cursormode == 'multi'
+						@mark_list[row-@row].map!{|x|
+							if (x+@col) > col
+								x+1
+							else
+								x
+							end
+						}
+					end
+				}
+
+			}
 		end
-		cursor_right(c.length) if @cursormode != 'multi' || !@marked
+		cursor_right(c.length)
 		if @linewrap
 			justify(true)
 		end
 	end
-	# add a line-break
+
+	# Add a line-break.
+	# Pretty simple except for autoindent.
 	def newline
 		if @marked then return end
 		if @col == 0
@@ -1394,6 +1449,9 @@ class FileBuffer
 				# snap shot, so we can undo auto-indent
 				@buffer_history.add(@text,@row,@col)
 
+				# Figure out leading "whitespace", where "whitespace"
+				# now includes non-whitespace leading characters which are
+				# the same on the last few lines.
 				ws = ""
 				if @row > 1
 					s0 = @text[@row-2].dup
@@ -1415,7 +1473,8 @@ class FileBuffer
 					ws2 = a[0]
 				end
 				ws = [ws,ws2].max
-				# if current line is just whitespace, remove it
+				# If current line is just whitespace, remove it.
+				# Rule #1: no trailing whitespace.
 				if @text[@row].match(/^\s*$/)
 					@text[@row] = ""
 				end
@@ -1426,16 +1485,23 @@ class FileBuffer
 		end
 	end
 
-	# justify a block of text
+	# Justify a block of text.
+	# If linewrap is false, we justify the marked text (or current line).
+	# If linewrap is true, then we justify the current line, under
+	# asumption that we want to wrap the line when it gets too long.
 	def justify(linewrap=false)
 
+		# If the linelength hasn't been specified, let it be the window width.
 		if @linelength == 0 then @linelength = @window.cols end
 
+		# If we are doing linewrap, use the current linelength,
+		# otherwise ask for the linelength to use.
 		if linewrap
 			cols = @linelength
-			if @text[@row].length < cols then return end
+			# If line is short, nothing to be done.
+			return if @text[@row].length < cols
 		else
-			# ask for screen width
+			# Ask for desired line length.
 			# nil means cancel, empty means screen width
 			ans = @window.ask("Justify width: ",[@linelength.to_s],true)
 			if ans == nil
@@ -1493,6 +1559,9 @@ class FileBuffer
 				break
 			end
 		end
+		# If we are linewrapping, then stick the overflow at the start
+		# of the following line, and justify that line (recursive).
+		# Otherwise, create a new row for the overflow.
 		if linewrap && @text[r].is_a?(String)
 			if @text[r] == nil || @text[r] == ""
 				insertrow(r,text)
@@ -1505,7 +1574,11 @@ class FileBuffer
 		else
 			insertrow(r,text)
 		end
+
 		@window.write_message("Justified to "+cols.to_s+" columns")
+
+		# If we are line-wrapping, we must be careful to place the cursor
+		# at the correct position.
 		if linewrap
 			if @col >= @text[@row].length+1
 				@col = @col - @text[@row].length - 1
@@ -1858,28 +1931,76 @@ class FileBuffer
 
 
 	# -----------------------------------------------
-	# copy/paste
+	# copy/paste and text marking
 	# -----------------------------------------------
 
-
-	def mark
-		if @cursormode == 'multi'
-			@marked = true
-			@mark_list << [@row,@col]
-			return
+	# When we have list of marked positions:
+	# if we are still selecting (@multimarkmode),
+	# then return the truth (absolute positions);
+	# otherwise, we have stored up the distance from
+	# the cursor, so we must add that back into
+	# the answer.
+	def mark_list
+		if @multimarkmode
+			ans = @mark_list
+		else
+			ans = {}
+			@mark_list.each{|k,v|
+				k = k + @row
+				v = v.map{|x| x+=@col}
+				ans[k] = v.map{|x| x if x >= 0}.compact
+			}
 		end
-		if @marked
-			@marked = false
-			@mark_list = []
-			@window.write_message("Unmarked")
-			return
-		end
-		@marked = true
-		@window.write_message("Marked")
-		@mark_col = @col
-		@mark_row = @row
+		return ans
 	end
 
+	# Set a mark at the current cursor position.
+	def mark
+		# For multiple, manually placed, marks:
+		if @multimarkmode
+			@marked = true
+			if @mark_list[@row] == nil
+				@mark_list[@row] = [@col]
+			else
+				@mark_list[@row] += [@col]
+				@mark_list[@row].uniq!
+			end
+		# otherwise toggle marked state:
+		elsif @marked
+			unmark
+		else
+			@marked = true
+			@window.write_message("Marked")
+			@mark_col = @col
+			@mark_row = @row
+		end
+	end
+
+	def unmark
+		@marked = false
+		@mark_list = {}
+		@cursormode = $cursormode if @cursormode == 'multi'
+		@window.write_message("Unmarked")
+	end
+
+	# Enter or exit multimark mode.
+	# In multimark mode, we manually select many marks.
+	def multimark
+		if @multimarkmode
+			@multimarkmode = false
+			nml = {}
+			@mark_list.each{|k,v|
+				nml[k-@row] = v.map{|x| x -= @col}
+			}
+			@mark_list = nml
+			@marked = true
+		else
+			@multimarkmode = true
+			@marked = false
+			@cursormode = 'multi'
+			@mark_list = {}
+		end
+	end
 
 	def copy(cut=0)
 		return if @cursormode == 'multi'
@@ -2147,56 +2268,59 @@ class FileBuffer
 			@buffer_marks = {}
 		end
 
-		# Handle marked text highlightin
+		# Handle marked text highlighting
 		#
 		# Populate buffer_marks = {} with a list of start
 		# and end points for highlighting, so that we
 		# will know what needs to be updated.
 		buffer_marks = {}
-		buffer_marks.default = [-1,-1]
 		if @marked
 			mark_row,row = @mark_row,@row
 			mark_row,row = row,mark_row if mark_row > row
 			if @cursormode == 'col'
 				for j in mark_row..row
-					buffer_marks[j] = [@col,@col]
+					buffer_marks[j] = [[@col,@col]] unless j==@row
 				end
 			elsif @cursormode == 'loc'
 				n =  @text[@row][@col..-1].length
 				for j in mark_row..row
 					m = @text[j].length - n
-					buffer_marks[j] = [m,m]
+					buffer_marks[j] = [[m,m]] unless j==@row
 				end
 			elsif @cursormode == 'row'
 				# Start with 'internal' rows (not first nor last.
 				# Easy: do the whole row.
 				for j in (mark_row+1)..(row-1)
-					buffer_marks[j] = [0,@text[j].length]
+					buffer_marks[j] = [[0,@text[j].length]]
 				end
 				if @row > @mark_row
-					buffer_marks[@mark_row] = [@mark_col,@text[@mark_row].length]
-					buffer_marks[@row] = [0,@col] unless @col == 0
+					buffer_marks[@mark_row] = [[@mark_col,@text[@mark_row].length]]
+					buffer_marks[@row] = [[0,@col-1]] unless @col == 0
 				elsif @row == @mark_row
 					if @col > @mark_col
-						buffer_marks[@row] = [@mark_col,@col]
+						buffer_marks[@row] = [[@mark_col,@col-1]]
 					elsif @col < @mark_col
-						buffer_marks[@row] = [@col,@mark_col]
+						buffer_marks[@row] = [[@col+1,@mark_col]]
 					end
 				else
-					buffer_marks[@mark_row] = [0,@mark_col]
-					buffer_marks[@row] = [@col,@text[@row].length] unless @col==@text[@row].length
+					buffer_marks[@mark_row] = [[0,@mark_col]]
+					buffer_marks[@row] = [[@col+1,@text[@row].length]] unless @col==@text[@row].length
 				end
 			else  # multicursor mode
-				@mark_list.each{|r,c|
-					buffer_marks[r] = [c,c] unless r==@row && c==@col
+				mark_list.each{|r,v|
+					v.each{|c|
+						if buffer_marks[r] == nil
+							buffer_marks[r] = [[c,c]] unless r==@row && c==@col
+						else
+							buffer_marks[r] << [c,c] unless r==@row && c==@col
+						end
+					}
 				}
 			end
 		end
 		if buffer_marks != @buffer_marks
 			buffer_marks.merge(@buffer_marks).each_key{|k|
-				hpair = buffer_marks[k]
-				upair = @buffer_marks[k]
-				if hpair != upair
+				if buffer_marks[k] != @buffer_marks[k]
 					rows_to_update << k - @linefeed
 				end
 			}
@@ -2229,10 +2353,10 @@ class FileBuffer
 		# now highlight text
 		if buffer_marks != @buffer_marks
 			buffer_marks.each_key{|k|
-				hpair = buffer_marks[k]
-				upair = @buffer_marks[k]
-				if hpair != upair
-					highlight(k,hpair[0],hpair[1])
+				if buffer_marks[k] != @buffer_marks[k]
+					buffer_marks[k].each{|pair|
+						highlight(k,pair[0],pair[1])
+					}
 				end
 			}
 		end
@@ -3221,6 +3345,7 @@ class KeyMap
 			"f" => "buffer = $buffers.duplicate",
 			"i" => "buffer.indentation_facade",
 			"I" => "buffer.indentation_real",
+			"x" => "buffer.multimark",
 			:up => "buffer.cursor_up(1)",
 			:down => "buffer.cursor_down(1)",
 			:right => "buffer.cursor_right",
