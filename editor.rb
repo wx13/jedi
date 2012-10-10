@@ -916,7 +916,7 @@ class FileBuffer
 
 	# Enter arbitrary ruby command.
 	def enter_command
-		answer = @window.ask("command:",$command_hist)
+		answer = @window.ask("command:",$histories.command)
 		eval(answer)
 		@window.write_message("done")
 	rescue
@@ -938,7 +938,7 @@ class FileBuffer
 
 	# run a script file of ruby commands
 	def run_script
-		file = @window.ask("run script file: ",$script_hist,false,true)
+		file = @window.ask("run script file: ",$histories.script,false,true)
 		if (file==nil) || (file=="")
 			@window.write_message("cancelled")
 			return
@@ -1106,9 +1106,7 @@ class FileBuffer
 		@buffer_history.save
 
 		# Save the command/search histories.
-		if $hist_file != nil
-			$buffers.save_hists
-		end
+		$histories.save
 
 		update_indentation
 		@indentchar = @fileindentchar
@@ -1757,7 +1755,7 @@ class FileBuffer
 	# go to a line in the buffer
 	def goto_line(num=nil)
 		if num==nil
-			num = @window.ask("go to line:",$lineno_hist)
+			num = @window.ask("go to line:",$histories.line_number)
 			if num == nil
 				@window.write_message("Cancelled")
 				return
@@ -1806,9 +1804,9 @@ class FileBuffer
 	def search(p)
 		if p == 0
 			# get search string from user
-			token = @window.ask("Search:",$search_hist)
+			token = @window.ask("Search:",$histories.search)
 		elsif
-			token = $search_hist[-1]
+			token = $histories.search[-1]
 		end
 		if token == nil || token == ""
 			@window.write_message("Cancelled")
@@ -1866,7 +1864,7 @@ class FileBuffer
 		@linefeed0 = @linefeed
 		@colfeed0 = @colfeed
 		# get search string from user
-		token = @window.ask("Search:",$search_hist)
+		token = @window.ask("Search:",$histories.search)
 		if token == nil
 			@window.write_message("Cancelled")
 			return
@@ -1876,7 +1874,7 @@ class FileBuffer
 			token = eval(token)
 		end
 		# get replace string from user
-		replacement = @window.ask("Replace:",$replace_hist)
+		replacement = @window.ask("Replace:",$histories.replace)
 		if replacement == nil
 			@window.write_message("Cancelled")
 			return
@@ -2657,8 +2655,8 @@ class FileBuffer
 		@row = oldrow
 	end
 	def hide_by_pattern
-		pstart = @window.ask("start pattern:",$startfolding_hist)
-		pend = @window.ask("end pattern:",$endfolding_hist)
+		pstart = @window.ask("start pattern:",$histories.start_folding)
+		pend = @window.ask("end pattern:",$histories.end_folding)
 		return if pstart == nil || pend == nil
 		if pstart[0,1] == '/'
 			pstart = eval(pstart)
@@ -3015,9 +3013,7 @@ class BuffersList
 		end
 		@ipage = 0  # start on the first buffer
 		# read in histories
-		if ($hist_file != nil) && (File.exist?($hist_file))
-			read_hists
-		end
+		$histories.read
 
 	end
 
@@ -3091,9 +3087,7 @@ class BuffersList
 		# if no pages left, or if only buffer is nil,
 		# then exit the editor
 		if @npage == 0 || @pages[0].buffer == nil
-			if $hist_file != nil
-				save_hists
-			end
+			$histories.save
 			exit
 		end
 
@@ -3103,44 +3097,6 @@ class BuffersList
 		# return the (new) current buffer
 		@pages[@ipage].buffer
 
-	end
-
-	# save histories to histories file
-	def save_hists
-		if ($hist_file != nil) && (File.exist?($hist_file))
-			read_hists
-		end
-		hists = {
-			"search_hist" => $search_hist.last(1000),\
-			"replace_hist" => $replace_hist.last(1000),\
-			"command_hist" => $command_hist.last(1000),\
-			"script_hist" => $script_hist.last(1000),\
-			"startfolding_hist" => $startfolding_hist.last(1000),\
-			"endfolding_hist" => $endfolding_hist.last(1000)\
-		}
-		File.open($hist_file,"w"){|file|
-			YAML.dump(hists,file)
-		}
-	end
-
-
-
-	# read histories from histories file
-	def read_hists
-		if ($hist_file == nil) || (!File.exist?($hist_file))
-			return
-		end
-		hists = YAML.load_file($hist_file)
-		if !hists
-			return
-		end
-		hists.default = []
-		$search_hist = $search_hist.reverse.concat(hists["search_hist"].reverse).uniq.reverse
-		$replace_hist = $replace_hist.reverse.concat(hists["replace_hist"].reverse).uniq.reverse
-		$command_hist = $command_hist.reverse.concat(hists["command_hist"].reverse).uniq.reverse
-		$script_hist = $script_hist.reverse.concat(hists["script_hist"].reverse).uniq.reverse
-		$startfolding_hist = $startfolding_hist.reverse.concat(hists["startfolding_hist"].reverse).uniq.reverse
-		$endfolding_hist = $endfolding_hist.reverse.concat(hists["endfolding_hist"].reverse).uniq.reverse
 	end
 
 
@@ -3459,6 +3415,61 @@ class KeyMap
 end
 
 
+# Store up various histories.
+class Histories
+
+	attr_accessor :file, :search, :replace, :line_number, \
+	:command, :script, :start_folding, :end_folding
+
+	def initialize
+		@file = nil
+		@search = []
+		@replace = []
+		@line_number = []
+		@script = []
+		@command = []
+		@start_folding = []
+		@end_folding = []
+	end
+
+	# Save histories to the file.
+	def save
+		return if @file.nil?
+		# If file exists, read first so we can append changes.
+		read if File.exist?(@file)
+		# Only save some of them.
+		hists = {
+			"search" => @search.last(1000),
+			"replace" => @replace.last(1000),
+			"command" => @command.last(1000),
+			"script" => @script.last(1000),
+			"start_folding" => @start_folding.last(1000),
+			"end_folding" => @end_folding.last(1000)
+		}
+		File.open(@file,"w"){|file|
+			YAML.dump(hists,file)
+		}
+	end
+
+	# Read histories from the file.
+	def read
+		if (@file.nil?) || (!File.exist?(@file))
+			return
+		end
+		hists = YAML.load_file(@file)
+		if !hists
+			return
+		end
+		hists.default = []
+		@search = @search.reverse.concat(hists["search"].reverse).uniq.reverse
+		@replace = @replace.reverse.concat(hists["replace"].reverse).uniq.reverse
+		@command = @command.reverse.concat(hists["command"].reverse).uniq.reverse
+		@script = @script.reverse.concat(hists["script"].reverse).uniq.reverse
+		@start_folding = @start_folding.reverse.concat(hists["start_folding"].reverse).uniq.reverse
+		@end_folding = @end_folding.reverse.concat(hists["end_folding"].reverse).uniq.reverse
+	end
+
+end
 
 
 
@@ -3619,9 +3630,9 @@ $editmode = true
 # define key mapping
 $keymap = KeyMap.new
 
+# Various input histories (search, folding, etc).
+$histories = Histories.new
 
-# parse the command line options
-$hist_file = nil
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
 	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
@@ -3644,7 +3655,7 @@ optparse = OptionParser.new{|opts|
 		$autoindent = false
 	}
 	opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
-		$hist_file = file
+		$histories.file = file
 	}
 	opts.on('-E', '--edit', 'Start in edit mode'){
 		$editmode = false
@@ -3672,14 +3683,6 @@ optparse = OptionParser.new{|opts|
 optparse.parse!
 
 
-# intitialize histories
-$search_hist = []
-$replace_hist = []
-$lineno_hist = []
-$command_hist = []
-$script_hist = []
-$startfolding_hist = []
-$endfolding_hist = []
 
 # start screen
 $screen = Screen.new
