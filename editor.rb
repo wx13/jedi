@@ -1321,8 +1321,8 @@ class FileBuffer
 	# Similar to delete (above).
 	def backspace
 		return if @multimarkmode
-		return if @col == 0
 		if @marked
+			return if @col == 0
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
 				column_delete(mark_row,row,@col-1)
