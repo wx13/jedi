@@ -27,12 +27,16 @@ require 'yaml'
 
 class Screen
 
-	attr_accessor :rows, :cols
+	attr_accessor :rows, :cols, :buffer
 
 	def initialize
 
 		# get and store screen size
 		update_screen_size
+
+		# This is for detecting changes to the displayed text,
+		# so we don't have to redraw as frequently.
+		@buffer = []
 
 		# define keycodes
 		@keycodes = {
@@ -2245,14 +2249,14 @@ class FileBuffer
 
 		# update any rows that have changed
 		text.each_index{|i|
-			if text[i] != $screen_buffer[i]
+			if text[i] != @window.buffer[i]
 				rows_to_update << i
 				@buffer_marks.delete(i+@linefeed)
 			end
 		}
 
 		# screen snapshot for next go-around
-		$screen_buffer = text.dup
+		@window.buffer = text.dup
 
 		# if colfeed changed, must update whole screen
 		if @colfeed != @colfeed_old || refresh || @linefeed != @linefeed_old
@@ -3675,18 +3679,14 @@ optparse.parse!
 
 
 
-# start screen
+# Create an interactive screen environment.
 $screen = Screen.new
 
-# read specified files into buffers of buffer list
+# Read the specified files into buffers list buffers
 $buffers = BuffersList.new(ARGV)
 
-# initialize copy buffer
+# Copy buffer is global, so we can copy from one buffer to another.
 $copy_buffer = ""
-
-# for detecting changes to display,
-# so we don't have to redraw as frequently
-$screen_buffer = []
 
 # catch screen resizes
 trap("WINCH"){
