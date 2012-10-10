@@ -149,6 +149,7 @@ class Screen
 			yield
 		ensure
 			print "\e[2J"   # clear the screen
+			print "\e[0;0H" # put cursor at the top
 			print "\e[?7h"  # enable line wrap
 			system('stty -raw echo')
 		end
@@ -161,6 +162,7 @@ class Screen
 	# Returns nothing.
 	def suspend(buffer)
 		print "\e[2J"
+		print "\e[0;0H"
 		print "\e[?7h"
 		system('stty -raw echo')
 		Process.kill("SIGSTOP",0)
