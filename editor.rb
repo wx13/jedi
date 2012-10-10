@@ -3527,7 +3527,8 @@ end
 # Default configurations
 # -------------------------------------------------------
 
-# color escapes
+# Define ANSI text decorations.
+# These affect both syntax coloring and user interface style.
 $color = {
 	:red   => "\e[31m",
 	:green => "\e[32m",
@@ -3540,6 +3541,8 @@ $color = {
 	:underline => "\e[4m",
 	:bold => "\e[1m"
 }
+
+# Define some meta-colors.
 $color[:comment] = $color[:cyan]
 $color[:string] = $color[:yellow]
 $color[:whitespace] = $color[:red]+$color[:reverse]
@@ -3550,22 +3553,20 @@ $color[:message] = $color[:yellow]
 $color[:status] = $color[:underline]
 
 
-# syntax color defaults
+# Define the default syntax colors.
+# This is just a container class.
 class SyntaxColors
 	attr_accessor :filetypes, :lc, :bc, :regex
 	def initialize
 		@filetypes = {
-			/\.sh$/ => "shell",
-			/\.csh$/ => "shell",
-			/\.rb$/ => "shell",
-			/\.py$/ => "shell",
-			/\.[cCh]$/ => "c",
-			/\.cpp$/ => "c",
+			/\.(sh|csh|rb|py)$/ => "shell",
+			/\.([cCh]|cpp)$/ => "c",
 			"COMMIT_EDITMSG" => "shell",
 			/\.m$/ => "m",
 			/\.pro$/ => "idl",
 			/\.[fF]$/ => "f"
 		}
+		# Define per-language from-here-to-end-of-line comments.
 		@lc = {
 			"shell" => ["#"],
 			"ruby" => ["#"],
@@ -3575,11 +3576,14 @@ class SyntaxColors
 			"idl" => [";"]
 		}
 		@lc.default = []
+		# Define per-language block comments.
 		@bc = {
 			"c" => {"/*"=>"*/"},
 		}
 		@bc.default = {}
+		# Define generic regexp syntax rules.
 		@regex = {
+			# Colorize long lines in fortran.
 			"f" => {/^[^cC][^!]{71,}.*$/=>:magenta}
 		}
 		@regex.default = {}
@@ -3588,15 +3592,14 @@ end
 $syntax_colors = SyntaxColors.new
 
 
-
-
-$tabsize = 4
-$tabchar = "\t"
+# Define some general default parameters.
+$tabsize = 4           # Tab character display width
+$tabchar = "\t"        # What to insert when tab key is pressed
 $autoindent = true
 $linewrap = false
-$cursormode = 'row'
+$cursormode = 'row'    # Default text selection mode
 $syntax_color = true
-$editmode = true
+$editmode = true       # false = start in view mode
 
 # -------------------------------------------------------
 # end of default configuration
@@ -3614,12 +3617,13 @@ $editmode = true
 # -------------------------------------------------------
 
 
-# define key mapping
+# Define the key mapping.
 $keymap = KeyMap.new
 
-# Various input histories (search, folding, etc).
+# Setup storage of various input histories (search, folding, etc).
 $histories = Histories.new
 
+# Parse options.
 optparse = OptionParser.new{|opts|
 	opts.banner = "Usage: editor [options] file1 file2 ..."
 	opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
