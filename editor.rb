@@ -925,11 +925,12 @@ class FileBuffer
 		a = @text.map{|line|line[0].chr if line[0] != nil}
 		@nleadingtabs = a.count("\t")
 		@nleadingspaces = a.count(" ")
-		$screen.write_message([@nleadingtabs,@nleadingspaces].join(", "))
 		if @nleadingtabs < @nleadingspaces
 			@fileindentchar = " "
-		else
+		elsif @nleadingtabs > @nleadingspaces
 			@fileindentchar = "\t"
+		else
+			@fileindentchar = nil
 		end
 	end
 
@@ -1105,6 +1106,7 @@ class FileBuffer
 		end
 
 		update_indentation
+		@indentchar = @fileindentchar
 		@window.write_message("saved to: "+@filename)
 
 	end
@@ -2568,9 +2570,11 @@ class FileBuffer
 		# trailing whitespace
 		aline.gsub!(/\s+$/,$color[:whitespace]+"\\0"+$color[:normal])
 		# leading whitespace
-		q = aline.partition(/\S/)
-		q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+"\\0"+$color[:normal])
-		aline = q.join
+		if @indentchar
+			q = aline.partition(/\S/)
+			q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+"\\0"+$color[:normal])
+			aline = q.join
+		end
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		return(aline)
