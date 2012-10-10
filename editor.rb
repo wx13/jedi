@@ -2627,15 +2627,19 @@ class FileBuffer
 	# -----------------------------------------------
 
 
+
 	#
 	# text folding/hiding
 	#
+
+	# Hide the text from srow to erow.
 	def hide_lines_at(srow,erow)
 		text = @text[srow..erow]  # grab the chosen lines
 		@text[srow] = [text].flatten  # current row = array of marked text
 		@text[(srow+1)..erow] = [] if srow < erow  # technically, can hide a single line, but why?
 		return text.length
 	end
+	# Use marking to figure out which lines to hide.
 	def hide_lines
 		return if !@marked  # need multiple lines for folding
 		return if @cursormode == 'multi'
@@ -2645,6 +2649,8 @@ class FileBuffer
 		@marked = false
 		@row = oldrow
 	end
+	# Ask the user for a start and end search pattern.
+	# Hide all lines between start and end pattern.
 	def hide_by_pattern
 		pstart = @window.ask("start pattern:",$histories.start_folding)
 		pend = @window.ask("end pattern:",$histories.end_folding)
@@ -2695,7 +2701,7 @@ class FileBuffer
 
 
 
-
+	# Launch a menu to choose a command (in case user forgets what key to press).
 	def menu(list,text)
 		cmd = @window.menu(list,text)
 		$buffers.update_screen_size
@@ -2706,17 +2712,27 @@ class FileBuffer
 
 
 
+	# These functions allow a user to pretend the indentaion scheme is
+	# different than it actually is.  For example, if a file is indented with
+	# 4 spaces, and the user likes tabs.
 	def indentation_facade
+
+		# If we have already set up a facade, we must remove it
+		# before continuing.
 		if @fileindentstring != @indentstring
 			ans = @window.ask_yesno("Reset indentation change?")
 			return unless ans == "yes"
 			indentation_real
 		end
+
+		# Grab all the indentation whitespace.
 		a = @text.map{|line|
 			if line != nil
 				line.partition(/\S/)[0]
 			end
 		}.join
+		# If the file contains both spaces and tabs for indentation,
+		# warn the users that this processes will change the file.
 		if a.count(" ")*a.count("\t") != 0
 			ans = @window.ask_yesno("WARNING: tab/space mix => IRREVERSIBLE! ok? ")
 			if ans == "no"
@@ -2724,19 +2740,29 @@ class FileBuffer
 				return
 			end
 		end
+
+		# Ask the user for the indentation strings.
+		# First the current one, then the desired one.
 		@fileindentstring = @window.ask("File indent string:")
 		return if @fileindentstring == "" || @fileindentstring == nil
 		@indentstring = @window.ask("User indent string:")
 		return if @indentstring == "" || @indentstring == nil
 		return if @indentstring == @fileindentstring
+
+		# Replace one indentation with the other.
 		text = @text.join("\n")
 		m = text.gsub!(/^#{@fileindentstring}/,@indentstring)
 		while m!=nil
 			m = text.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
 		end
 		@text = text.split("\n")
+
+		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
+
 	end
+
+	# Remove the indentation facade.
 	def indentation_real
 		return if @indentstring == @fileindentstring
 		text = @text.join("\n")
@@ -2912,12 +2938,16 @@ end
 
 
 # ---------------------------------------------------
-# This is a list of buffers.
+# This class manages a list of buffers.
+# Each buffer resides on a page.  Each page can contain
+# multiple buffers.
 # ---------------------------------------------------
 class BuffersList
 
 	attr_accessor :copy_buffer, :npage, :ipage
 
+	# This subclass contains a set of buffers that reside
+	# on a single page.
 	class Page
 		attr_accessor :buffers, :nbuf, :ibuf, :stack_orientation
 		def initialize(buffers=[])
@@ -2987,23 +3017,22 @@ class BuffersList
 	def initialize(files)
 
 		@pages = []  # big list of buffers (stored per page)
-		@npage = 0     # number of pages
-		@ipage = 0     # current page number
+		@npage = 0   # number of pages
+		@ipage = 0   # current page number
 
-		# for each file on the command line,
-		# put text on its own page
+		# For each file on the command line, put text on its own page
 		for filename in files
 			next if File.directory?(filename)
 			@pages[@npage] = Page.new([FileBuffer.new(filename)])
 			@npage += 1
 		end
-		# if no pages, then open a blank file
+		# If no pages exist, then open a blank file.
 		if @npage == 0
 			@pages[@npage] = Page.new([FileBuffer.new("")])
 			@npage += 1
 		end
-		@ipage = 0  # start on the first buffer
-		# read in histories
+		@ipage = 0  # Start on the first buffer.
+		# Read in histories.
 		$histories.read
 
 	end
@@ -3013,7 +3042,7 @@ class BuffersList
 		@pages[@ipage].refresh_buffers
 	end
 
-	# return next, previous, or current buffer
+	# Return next, previous, or current buffer.
 	def next_page
 		@ipage = (@ipage+1).modulo(@npage)
 		@pages[@ipage].resize_buffers
@@ -3044,12 +3073,12 @@ class BuffersList
 	end
 
 
-	# close a buffer
+	# Close the current buffer.
 	def close
 
 		buf = @pages[@ipage].buffer  # current buffer
 
-		# if modified, ask about saving to file
+		# If modified, ask about saving to file.
 		if buf.modified?
 			ys = $screen.ask_yesno("Save changes?")
 			if ys == "yes"
@@ -3060,11 +3089,10 @@ class BuffersList
 			end
 		end
 
-		# delete current buffer from current page
+		# Delete the current buffer from the current page.
 		@pages[@ipage].delete_buffer
 
-		# if no buffers left on page,
-		# then remove the page
+		# If no buffers left on page, then remove the page.
 		if @pages[@ipage].nbuf == 0
 			@pages.delete_at(@ipage)
 			@npage -= 1
@@ -3072,11 +3100,11 @@ class BuffersList
 		end
 
 
-		# clear message area
+		# Clear the message area.
 		$screen.write_message("")
 
-		# if no pages left, or if only buffer is nil,
-		# then exit the editor
+		# If no pages left, or if only buffer is nil,
+		# then exit the editor.
 		if @npage == 0 || @pages[0].buffer == nil
 			$histories.save
 			exit
@@ -3085,35 +3113,38 @@ class BuffersList
 		@pages[@ipage].resize_buffers
 		@pages[@ipage].refresh_buffers
 
-		# return the (new) current buffer
+		# Return the (new) current buffer.
 		@pages[@ipage].buffer
 
 	end
 
 
-	# open a new file into a new buffer
+	# Open a new file into a new buffer.
 	def open
 
-		# ask for the file to open
+		# Ask for the file to open.
 		ans = $screen.ask("open file: ",[""],false,true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
 			return(@pages[@ipage].buffer)
 		end
 
-		# create a new page at the end of the list
+		# Create a new page at the end of the list.
 		@pages[@npage] = Page.new([FileBuffer.new(ans)])
 		@npage += 1
 		@ipage = @npage-1
 
-		# report that the file has been opened,
-		# and return the new file as the current buffer
+		# Report that the file has been opened,
+		# and return the new file as the current buffer.
 		$screen.write_message("Opened file: "+ans)
 		return(@pages[@ipage].buffer)
 
 	end
 
 
+	# Create a new buffer which shares its text with the current buffer.
+	# This way, we can edit the same file in two (or more) diffrent
+	# views.
 	def duplicate
 		@pages[@npage] = Page.new([@pages[@ipage].buffer.dup])
 		@pages[@npage].buffer.window = @pages[@npage].buffer.window.dup
@@ -3125,8 +3156,8 @@ class BuffersList
 	end
 
 
-	# put all buffers on the same page,
-	# unlesss they already are => then spread them out
+	# Put all the buffers on the same page;
+	# unlesss they already are => then spread them out.
 	def all_on_one_page
 		if @npage == 1
 			while @pages[0].nbuf > 1
@@ -3142,24 +3173,21 @@ class BuffersList
 		@pages[@ipage].ibuf = 0
 	end
 
-	# move buffer to page n
+	# Move current buffer to page n.
 	def move_to_page(n)
 
-		# adjust for zero indexing
+		# Adjust for zero-based indexing.
 		n -= 1
 
-		# if same page, don't do anything
-		if n == @ipage
-			return
-		end
+		# If same page, don't do anything.
+		return if n == @ipage
 
 		buf = @pages[@ipage].buffer
 
-		# delete current buffer from current page
+		# Delete the current buffer from current page.
 		@pages[@ipage].delete_buffer
 
-		# if no buffers left on page,
-		# then remove the page
+		# If no buffers left on page, then remove the page.
 		if @pages[@ipage].nbuf == 0
 			@pages.delete_at(@ipage)
 			if n >= @ipage
@@ -3169,7 +3197,7 @@ class BuffersList
 			@ipage = 0
 		end
 
-		# put on new page
+		# Put the buffer on the new page.
 		if @npage > n
 			@pages[n].add_buffer(buf)
 		else
@@ -3177,6 +3205,7 @@ class BuffersList
 			@npage += 1
 		end
 
+		# Refresh
 		@pages[@ipage].resize_buffers
 		@pages[@ipage].refresh_buffers
 
@@ -3184,6 +3213,7 @@ class BuffersList
 
 	end
 
+	# Shift all buffers on the screen up/down.
 	def screen_up
 		@pages[@ipage].buffers.each{|buf|
 			buf.screen_up
@@ -3213,7 +3243,7 @@ end
 
 
 # -----------------------------------------------------------------
-# This section defines the keymapping.
+# This class defines the keymapping.
 # There are 5 sections:
 #     1. commandlist -- universal keymapping
 #     2. editmode_commandlist -- keymappings when in edit mode
@@ -3679,7 +3709,7 @@ optparse.parse!
 
 
 
-# Create an interactive screen environment.
+# Initialize the interactive screen environment.
 $screen = Screen.new
 
 # Read the specified files into buffers list buffers
@@ -3688,46 +3718,48 @@ $buffers = BuffersList.new(ARGV)
 # Copy buffer is global, so we can copy from one buffer to another.
 $copy_buffer = ""
 
-# catch screen resizes
+# Catch screen resizes.
 trap("WINCH"){
 	$screen.update_screen_size
 	$buffers.update_screen_size
 }
 
-# initialize curses screen and run with it
+# Start the interactive screen session.
 $screen.start_screen_loop do
 
+	# Dump the text to the screen (true => forced update).
 	$buffers.current.dump_to_screen(true)
 
-	# this is the main action loop
+	# This is the main action loop.
 	loop do
 
-		# make sure we are on the current buffer
+		# Make sure we are on the current buffer.
 		buffer = $buffers.current
-		# reduce time proximity for cuts
+
+		# Reduce time proximity for cuts.
+		# Successive line cuts are grouped together, unless
+		# enough time (i.e. keypresses) has elapsed.
 		buffer.cutscore -= 1
 
-		# take a snapshot of the buffer text,
-		# for undo/redo purposes
+		# Take a snapshot of the buffer text for undo/redo purposes.
 		if buffer.buffer_history.text != buffer.text
 			buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
 		end
 
-		# display the current buffer
+		# Display the current buffer.
 		buffer.dump_to_screen
 
-		# wait for a key press
+		# Wait for a valid key press.
 		c = $screen.getch until c!=nil
 
-		# clear old message text
+		# Clear old message text.
 		buffer.window.clear_message_text
 
-		# process key press -- run associated command
+		# Process a key press (run the associated command).
 		if buffer.extramode
 			command = $keymap.extramode_command(c)
 			eval($keymap.extramode_command(c))
 			buffer.extramode = false if ! buffer.sticky_extramode
-			$screen.write_message("")
 		else
 			command = $keymap.command(c,buffer.editmode)
 			if command == nil
@@ -3737,7 +3769,7 @@ $screen.start_screen_loop do
 			end
 		end
 
-		# make sure cursor is in a good place
+		# Make sure cursor is in a good place.
 		buffer.sanitize
 
 	end
