@@ -1051,6 +1051,9 @@ class FileBuffer
 		end
 		text.gsub!(/\r/,"\n")
 		@text = text.split("\n",-1)
+		if @text.empty?
+			@text = [""]
+		end
 		update_indentation
 		@indentchar = @fileindentchar
 	end
