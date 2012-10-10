@@ -1236,30 +1236,14 @@ class FileBuffer
 		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
 	end
-	# backspace a column of text
-	def column_backspace(row1,row2,col)
-		if col == 0 then return end
-		for r in row1..row2
-			next if @text[r].kind_of?(Array)
-			next if @text[r].length < -col
-			c = col
-			if @text[r].length == 0 then next end
-			@text[r] = @text[r].dup
-			c = [c,@text[r].length].min
-			@text[r][c-1] = ""
-		end
-	end
 	# delete a column of text
 	def column_delete(row1,row2,col)
 		for r in row1..row2
-			next if @text[r].kind_of?(Array)
-			next if @text[r].length < -col
-			c = col
-			if c==@text[r].length then next end
+			next if @text[r].kind_of?(Array)  # Skip folded text.
+			next if @text[r].length < -col    # Skip too short lines.
+			next if col >= @text[r].length    # Can't delete past end of line.
 			@text[r] = @text[r].dup
-			c = [c,@text[r].length-1].min
-			next if c < 0
-			@text[r][c] = ""
+			@text[r][col] = ""
 		end
 	end
 
@@ -1306,7 +1290,9 @@ class FileBuffer
 				column_delete(mark_row,row,0)
 			elsif @cursormode == 'loc'
 				n = @text[@row][@col..-1].length
-				column_delete(mark_row,row,-n)
+				if n > 0
+					column_delete(mark_row,row,-n)
+				end
 			else
 				mark_list.each{|row,cols|
 					# Loop over column positions starting from end,
@@ -1335,22 +1321,23 @@ class FileBuffer
 	# Similar to delete (above).
 	def backspace
 		return if @multimarkmode
+		return if @col == 0
 		if @marked
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
-				column_backspace(mark_row,row,@col)
+				column_delete(mark_row,row,@col-1)
 				cursor_left
 			elsif @cursormode == 'row'
-				column_backspace(mark_row,row,1)
+				column_delete(mark_row,row,0)
 				cursor_left
 			elsif @cursormode == 'loc'
-				n = @text[@row][@col..-1].length
-				column_backspace(mark_row,row,-n)
+				n = @text[@row][@col..-1].length + 1
+				column_delete(mark_row,row,-n)
 				cursor_left
 			else
 				mark_list.each{|row,cols|
 					cols.uniq.sort.reverse.each{|col|
-						column_backspace(row,row,col)
+						column_delete(row,row,col-1)
 						@mark_list[row-@row].map!{|x|
 							if (x+@col) > col
 								x-1
