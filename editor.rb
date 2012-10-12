@@ -1393,6 +1393,7 @@ class FileBuffer
 				n = @text[@row][@col..-1].length
 				list = {}
 				for r in mark_row..row
+					next if @text[r].length == 0
 					list[r] = [@text[r].length-n] unless n > @text[r].length
 				end
 			else
