@@ -8,9 +8,9 @@ designed to be portable and hackable.
 Installing and running
 ----------------------
 
-There is not installation; just run
+There is no installation; just run
 
-    "ruby editor.rb".
+    ruby editor.rb [list of files]
 
 Alternatively, create a directory ~/.editor containing the files
 config.rb and history.yaml.  Then create an alias:
@@ -37,12 +37,12 @@ A note about portability
 ------------------------
 
 editor.rb does not use curses or ncurses, but instead reads from
-standard in and writes to standard out.  It uses terminal escape codes
-to format the output.  Some terminals don't seem to support as many
-keycodes and will have reduced functionality.  For example, the mac
-terminal does not report shift/control + arrow keys (accept for
+standard input and writes to standard output.  It uses terminal escape
+codes to format the output.  Some terminals don't seem to support as
+many keycodes and will have reduced functionality.  For example, the
+mac terminal does not report shift/control + arrow keys (accept for
 ctrl-left/right).  I continually test it in xterm on linux, xterm on
-cygwin and gnome terminal on linux, all with ruby 1.6.  I occationally
+cygwin and gnome terminal on linux, all with ruby 1.8.  I occasionally
 test in on a Mac terminal and in ruby 1.9.
 
 
