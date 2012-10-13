@@ -8,11 +8,9 @@
 #	are permitted in any medium without royalty or restriction. This file
 #	is offered as-is, without any warranty.
 #
-$version = "editor.rb 0.0.0"
+$version = "0.0.0"
 
 
-require 'optparse'
-require 'yaml'
 
 
 
@@ -164,7 +162,7 @@ class Screen
 	# buffer - the current buffer, so we can refresh upon return.
 	#
 	# Returns nothing.
-	def suspend(buffer)
+	def suspend(buffers)
 		print "\e[2J"
 		print "\e[0;0H"
 		print "\e[?7h"
@@ -173,8 +171,8 @@ class Screen
 		system('stty raw -echo')
 		print "\e[#{@rows}S"
 		print "\e[?7l"
-		$screen.update_screen_size
-		$buffers.update_screen_size
+		update_screen_size
+		buffers.update_screen_size
 	end
 
 	# Set cursor position.
@@ -561,7 +559,7 @@ class Screen
 						idx += 1
 					else
 						# not a file, so insert literal tab character
-						token.insert(col,$tabchar)
+						token.insert(col,"\t")
 						token0 = token.dup
 						col += 1
 						glob = token
@@ -583,7 +581,7 @@ class Screen
 				shift = 0
 			end
 			write_bottom_line(question+" "+token[shift..-1])
-			$screen.setpos(@rows,(col-shift)+question.length+1)
+			setpos(@rows,(col-shift)+question.length+1)
 
 		end
 		if token == "" && hist[-1] != nil
@@ -607,7 +605,7 @@ class Screen
 		write_bottom_line(question)
 		answer = "cancel"
 		loop do
-			c = $screen.getch until c!=nil
+			c = getch until c!=nil
 			if c == :ctrl_c
 				answer = "cancel"
 				break
@@ -3294,7 +3292,7 @@ class KeyMap
 			:ctrl_g => "buffer.goto_line",
 			:ctrl_o => "buffer.save",
 			:ctrl_f => "buffer = $buffers.open",
-			:ctrl_z => "$screen.suspend(buffer)",
+			:ctrl_z => "$screen.suspend($buffers)",
 			:ctrl_t => "buffer.toggle",
 			:ctrl_6 => "buffer.extramode = true",
 			:ctrl_s => "buffer.enter_command",
@@ -3450,9 +3448,14 @@ end
 
 
 
+# This class stores up various histories,
+# such as search term history, command history,
+# and folding history. It saves and loads histories
+# from the history file.
 
-# Store up various histories.
 class Histories
+
+	require 'yaml'
 
 	attr_accessor :file, :search, :replace, :line_number, \
 	:command, :script, :start_folding, :end_folding
@@ -3506,13 +3509,15 @@ class Histories
 	end
 
 end
+
 # end of Histories class
 # ---------------------------------------------------
 
 
 
-# Define the default syntax colors.
+# This class defines the default syntax colors.
 # This is just a container class.
+
 class SyntaxColors
 	attr_accessor :filetypes, :lc, :bc, :regex
 	def initialize
@@ -3548,11 +3553,18 @@ class SyntaxColors
 	end
 end
 
+# end of SyntaxColors class
+# ---------------------------------------------------
 
 
 
+
+# This class contains a hodgepodge of methods
+# and defines some globals for other classes to use.
 
 class Editor
+
+	require 'optparse'
 
 	def initialize
 
@@ -3790,6 +3802,8 @@ class Editor
 
 end
 
+# end of Editor class
+# ---------------------------------------------------
 
 
 
