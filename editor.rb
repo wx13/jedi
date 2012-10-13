@@ -1094,16 +1094,21 @@ class FileBuffer
 		end
 
 		# Dump the text to the file.
-		File.open(@filename,"w"){|file|
-			text = @text.join(@eol)
-			if @fileindentstring != @indentstring
-				m = text.gsub!(/^#{@indentstring}/,@fileindentstring)
-				while m!=nil
-					m = text.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+		begin
+			File.open(@filename,"w"){|file|
+				text = @text.join(@eol)
+				if @fileindentstring != @indentstring
+					m = text.gsub!(/^#{@indentstring}/,@fileindentstring)
+					while m!=nil
+						m = text.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+					end
 				end
-			end
-			file.write(text)
-		}
+				file.write(text)
+			}
+		rescue
+			@window.write_message($!.to_s)
+			return
+		end
 
 		# Let the undo/redo history know that we have saved,
 		# for revert-to-saved purposes.
