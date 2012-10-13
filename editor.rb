@@ -1022,8 +1022,8 @@ class FileBuffer
 			cmd = $keymap.togglelist[c]
 		end
 		eval(cmd)
-		@window.write_message(cmd)
 		dump_to_screen(true)
+		@window.write_message(cmd)
 	end
 
 	# Go back to edit mode.
