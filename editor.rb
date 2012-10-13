@@ -786,14 +786,14 @@ class Window
 	# and j is the number of this window.
 	def set_window_size(j,k,vh="v")
 		if vh == "v"
-			@pos_row = j*($screen.rows)/k
-			@rows = ($screen.rows)/k - 1
+			@pos_row = j*(($screen.rows+1)/k)
+			@rows = ($screen.rows+1)/k - 1
 			@pos_col = 0
 			@cols = $screen.cols
 		else
 			@pos_row = 0
 			@rows = $screen.rows - 1
-			@pos_col = j*($screen.cols)/k
+			@pos_col = j*(($screen.cols+1)/k)
 			@cols = ($screen.cols)/k - 1
 		end
 	end
