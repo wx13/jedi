@@ -3672,8 +3672,8 @@ optparse = OptionParser.new{|opts|
 		puts opts
 		exit
 	}
-	opts.on('-t', '--tabsize N', 'Set tabsize'){|n|
-		$tabsize = n.to_i
+	opts.on('-t', '--tabsize N', Integer, 'Set tabsize'){|n|
+		$tabsize = n
 	}
 	opts.on('-T', '--tabchar c', 'Set tab character'){|c|
 		$tabchar = c
@@ -3693,9 +3693,9 @@ optparse = OptionParser.new{|opts|
 	opts.on('-e', '--no-edit', 'Start in view mode'){
 		$editmode = false
 	}
-	opts.on('-W', '--linewrap [n]', 'Turn on linewrap'){|n|
+	opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
 		$linewrap = true
-		$linelength = n.to_i if n != nil
+		$linelength = n
 	}
 	opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
 		$linewrap = false
@@ -3711,8 +3711,13 @@ optparse = OptionParser.new{|opts|
 		exit
 	}
 }
-optparse.parse!
-
+begin
+	optparse.parse!
+rescue
+	puts "Error: bad option(s)"
+	puts optparse
+	exit
+end
 
 
 # Initialize the interactive screen environment.
