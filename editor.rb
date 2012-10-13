@@ -853,7 +853,7 @@ class FileBuffer
 		@indentchar = @fileindentchar
 		@fileindentstring = @tabchar  # string the file uses for indentation
 		@indentstring = @fileindentstring  # convert file indents to this
-		@linelength = 0  # 0 means full screen width
+		@linelength = $linelength  # 0 means full screen width
 
 		# read in the file
 		@filename = filename
@@ -3635,6 +3635,7 @@ $linewrap = false
 $cursormode = 'row'    # Default text selection mode
 $syntax_color = true
 $editmode = true       # false = start in view mode
+$linelength = 0        # full width
 
 # -------------------------------------------------------
 # end of default configuration
@@ -3689,8 +3690,9 @@ optparse = OptionParser.new{|opts|
 	opts.on('-e', '--no-edit', 'Start in view mode'){
 		$editmode = false
 	}
-	opts.on('-W', '--linewrap', 'Turn on linewrap'){
+	opts.on('-W', '--linewrap [n]', 'Turn on linewrap'){|n|
 		$linewrap = true
+		$linelength = n.to_i if n != nil
 	}
 	opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
 		$linewrap = false
