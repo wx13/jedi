@@ -3444,6 +3444,12 @@ class KeyMap
 
 end
 
+# end of KeyMap class
+# ---------------------------------------------------
+
+
+
+
 
 # Store up various histories.
 class Histories
@@ -3500,162 +3506,9 @@ class Histories
 	end
 
 end
+# end of Histories class
+# ---------------------------------------------------
 
-
-
-
-
-# ----------------------------------------------------------
-# This is a separate global function which runs an arbitrary
-# ruby script.
-# It can read from a file or from user input.
-#
-# It is global, because we want to be able to call it right
-# at startup. That way a user can modify the editor's behavior
-# before any buffers have been loaded.
-# ----------------------------------------------------------
-def run_script(file=nil)
-	if file == nil
-		file = $screen.ask("run script file: ",[""],false,true)
-		if (file==nil) || (file=="")
-			$screen.write_message("cancelled")
-			return
-		end
-	end
-	if File.directory?(file)
-		list = Dir.glob(file+"/*.rb")
-		list.each{|f|
-			script = File.read(f)
-			eval(script)
-			if $screen != nil
-				$screen.write_message("done")
-			end
-		}
-	elsif File.exist?(file)
-		script = File.read(file)
-		eval(script)
-		if $screen != nil
-			$screen.write_message("done")
-		end
-	else
-		puts "Script file #{file} doesn't exist."
-		puts "Press any key to continue anyway."
-		STDIN.getc
-	end
-rescue
-	if $screen != nil
-		$screen.write_message("Bad script")
-	else
-		puts "Bad script file: #{file}"
-		puts "Press any key to continue anyway."
-		STDIN.getc
-	end
-end
-# --------------------------------------------------------
-
-
-
-
-def parse_options
-	optparse = OptionParser.new{|opts|
-		opts.banner = "Usage: editor [options] file1 file2 ..."
-		opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
-			run_script(file)
-		}
-		opts.on('-h', '--help', 'Display this screen'){
-			puts opts
-			exit
-		}
-		opts.on('-t', '--tabsize N', Integer, 'Set tabsize'){|n|
-			$tabsize = n
-		}
-		opts.on('-T', '--tabchar c', 'Set tab character'){|c|
-			$tabchar = c
-		}
-		opts.on('-A', '--autoindent', 'Turn on autoindent'){
-			$autoindent = true
-		}
-		opts.on('-a', '--no-autoindent', 'Turn off autoindent'){
-			$autoindent = false
-		}
-		opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
-			$histories.file = file
-		}
-		opts.on('-E', '--edit', 'Start in edit mode'){
-			$editmode = false
-		}
-		opts.on('-e', '--no-edit', 'Start in view mode'){
-			$editmode = false
-		}
-		opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
-			$linewrap = true
-			$linelength = n
-		}
-		opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
-			$linewrap = false
-		}
-		opts.on('-C', '--color', 'Turn on syntax coloring'){
-			$syntax_color = true
-		}
-		opts.on('-c', '--no-color', 'Turn off syntax coloring'){
-			$syntax_color = false
-		}
-		opts.on('-v', '--version', 'Print version number'){
-			puts $version
-			exit
-		}
-	}
-	begin
-		optparse.parse!
-	rescue
-		puts "Error: bad option(s)"
-		puts optparse
-		exit
-	end
-end
-
-
-
-
-
-
-# -------------------------------------------------------
-# End of methods and classes definitions.
-# -------------------------------------------------------
-
-
-
-
-
-
-# -------------------------------------------------------
-# Default configurations
-# -------------------------------------------------------
-
-# Define ANSI text decorations.
-# These affect both syntax coloring and user interface style.
-$color = {
-	:red   => "\e[31m",
-	:green => "\e[32m",
-	:blue => "\e[34m",
-	:cyan => "\e[36m",
-	:magenta => "\e[35m",
-	:yellow => "\e[33m",
-	:normal => "\e[0m",
-	:reverse => "\e[7m",
-	:underline => "\e[4m",
-	:bold => "\e[1m"
-}
-
-# Define some meta-colors.
-$color[:comment] = $color[:cyan]
-$color[:string] = $color[:yellow]
-$color[:whitespace] = $color[:red]+$color[:reverse]
-$color[:hiddentext] = $color[:green]
-$color[:regex] = $color[:normal]
-$color[:marked] = $color[:reverse]+$color[:blue]
-$color[:message] = $color[:yellow]
-$color[:status] = $color[:underline]
 
 
 # Define the default syntax colors.
@@ -3694,107 +3547,262 @@ class SyntaxColors
 		@regex.default = {}
 	end
 end
-$syntax_colors = SyntaxColors.new
-
-
-# Define some general default parameters.
-$tabsize = 4           # Tab character display width
-$tabchar = "\t"        # What to insert when tab key is pressed
-$autoindent = true
-$linewrap = false
-$cursormode = 'row'    # Default text selection mode
-$syntax_color = true
-$editmode = true       # false = start in view mode
-$linelength = 0        # full width
-
-# -------------------------------------------------------
-# end of default configuration
-# -------------------------------------------------------
 
 
 
 
 
+class Editor
 
+	def initialize
 
+		# Define some general default parameters.
+		$tabsize = 4           # Tab character display width
+		$tabchar = "\t"        # What to insert when tab key is pressed
+		$autoindent = true
+		$linewrap = false
+		$cursormode = 'row'    # Default text selection mode
+		$syntax_color = true
+		$editmode = true       # false = start in view mode
+		$linelength = 0        # full width
 
-# -------------------------------------------------------
-# Start of directly executed code
-# -------------------------------------------------------
+		# Define the key mapping.
+		$keymap = KeyMap.new
 
+		# Setup storage of various input histories (search, folding, etc).
+		$histories = Histories.new
 
-# Define the key mapping.
-$keymap = KeyMap.new
+		# Setup text decorations
+		define_colors
 
-# Setup storage of various input histories (search, folding, etc).
-$histories = Histories.new
+		# Setup syntax coloring
+		$syntax_colors = SyntaxColors.new
 
-parse_options
+		# Parse input options
+		parse_options
 
-# Initialize the interactive screen environment.
-$screen = Screen.new
+		# Initialize the interactive screen environment.
+		$screen = Screen.new
 
-# Read the specified files into buffers list buffers
-$buffers = BuffersList.new(ARGV)
+		# Read the specified files into buffers list buffers
+		$buffers = BuffersList.new(ARGV)
 
-# Copy buffer is global, so we can copy from one buffer to another.
-$copy_buffer = ""
-
-# Catch screen resizes.
-trap("WINCH"){
-	$screen.update_screen_size
-	$buffers.update_screen_size
-}
-
-# Start the interactive screen session.
-$screen.start_screen_loop do
-
-	# Dump the text to the screen (true => forced update).
-	$buffers.current.dump_to_screen(true)
-
-	# This is the main action loop.
-	loop do
-
-		# Make sure we are on the current buffer.
-		buffer = $buffers.current
-
-		# Reduce time proximity for cuts.
-		# Successive line cuts are grouped together, unless
-		# enough time (i.e. keypresses) has elapsed.
-		buffer.cutscore -= 1
-
-		# Take a snapshot of the buffer text for undo/redo purposes.
-		if buffer.buffer_history.text != buffer.text
-			buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
-		end
-
-		# Display the current buffer.
-		buffer.dump_to_screen
-
-		# Wait for a valid key press.
-		c = $screen.getch until c!=nil
-
-		# Clear old message text.
-		buffer.window.clear_message_text
-
-		# Process a key press (run the associated command).
-		if buffer.extramode
-			command = $keymap.extramode_command(c)
-			eval($keymap.extramode_command(c))
-			buffer.extramode = false if ! buffer.sticky_extramode
-		else
-			command = $keymap.command(c,buffer.editmode)
-			if command == nil
-				buffer.addchar(c) if buffer.editmode && c.is_a?(String)
-			else
-				eval(command)
-			end
-		end
-
-		# Make sure cursor is in a good place.
-		buffer.sanitize
+		# Copy buffer is global, so we can copy from one buffer to another.
+		$copy_buffer = ""
 
 	end
-	# end of main action loop
+
+	# Define universal text decorations
+	def define_colors
+
+		# Color codes.
+		$color = {
+			:red   => "\e[31m",
+			:green => "\e[32m",
+			:blue => "\e[34m",
+			:cyan => "\e[36m",
+			:magenta => "\e[35m",
+			:yellow => "\e[33m",
+			:normal => "\e[0m",
+			:reverse => "\e[7m",
+			:underline => "\e[4m",
+			:bold => "\e[1m"
+		}
+
+		# Define some meta-colors.
+		$color[:comment] = $color[:cyan]
+		$color[:string] = $color[:yellow]
+		$color[:whitespace] = $color[:red]+$color[:reverse]
+		$color[:hiddentext] = $color[:green]
+		$color[:regex] = $color[:normal]
+		$color[:marked] = $color[:reverse]+$color[:blue]
+		$color[:message] = $color[:yellow]
+		$color[:status] = $color[:underline]
+
+	end
+
+	# This is a function which runs an arbitrary ruby script.
+	# It can read from a file or from user input.
+	def run_script(file=nil)
+		if file == nil
+			file = $screen.ask("run script file: ",[""],false,true)
+			if (file==nil) || (file=="")
+				$screen.write_message("cancelled")
+				return
+			end
+		end
+		if File.directory?(file)
+			list = Dir.glob(file+"/*.rb")
+			list.each{|f|
+				script = File.read(f)
+				eval(script)
+				if $screen != nil
+					$screen.write_message("done")
+				end
+			}
+		elsif File.exist?(file)
+			script = File.read(file)
+			eval(script)
+			if $screen != nil
+				$screen.write_message("done")
+			end
+		else
+			puts "Script file #{file} doesn't exist."
+			puts "Press any key to continue anyway."
+			STDIN.getc
+		end
+	rescue
+		if $screen != nil
+			$screen.write_message("Bad script")
+		else
+			puts "Bad script file: #{file}"
+			puts "Press any key to continue anyway."
+			STDIN.getc
+		end
+	end
+	# --------------------------------------------------------
+
+
+
+	# Parse the command line inputs.
+	def parse_options
+		optparse = OptionParser.new{|opts|
+			opts.banner = "Usage: editor [options] file1 file2 ..."
+			opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
+				run_script(file)
+			}
+			opts.on('-h', '--help', 'Display this screen'){
+				puts opts
+				exit
+			}
+			opts.on('-t', '--tabsize N', Integer, 'Set tabsize'){|n|
+				$tabsize = n
+			}
+			opts.on('-T', '--tabchar c', 'Set tab character'){|c|
+				$tabchar = c
+			}
+			opts.on('-A', '--autoindent', 'Turn on autoindent'){
+				$autoindent = true
+			}
+			opts.on('-a', '--no-autoindent', 'Turn off autoindent'){
+				$autoindent = false
+			}
+			opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
+				$histories.file = file
+			}
+			opts.on('-E', '--edit', 'Start in edit mode'){
+				$editmode = false
+			}
+			opts.on('-e', '--no-edit', 'Start in view mode'){
+				$editmode = false
+			}
+			opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
+				$linewrap = true
+				$linelength = n
+			}
+			opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
+				$linewrap = false
+			}
+			opts.on('-C', '--color', 'Turn on syntax coloring'){
+				$syntax_color = true
+			}
+			opts.on('-c', '--no-color', 'Turn off syntax coloring'){
+				$syntax_color = false
+			}
+			opts.on('-v', '--version', 'Print version number'){
+				puts $version
+				exit
+			}
+		}
+		begin
+			optparse.parse!
+		rescue
+			puts "Error: bad option(s)"
+			puts optparse
+			exit
+		end
+	end
+
+
+	# Run with it.
+	def go
+
+		# Catch screen resizes.
+		trap("WINCH"){
+			$screen.update_screen_size
+			$buffers.update_screen_size
+		}
+
+		# Start the interactive screen session.
+		$screen.start_screen_loop do
+
+			# Dump the text to the screen (true => forced update).
+			$buffers.current.dump_to_screen(true)
+
+			# This is the main action loop.
+			loop do
+
+				# Make sure we are on the current buffer.
+				buffer = $buffers.current
+
+				# Reduce time proximity for cuts.
+				# Successive line cuts are grouped together, unless
+				# enough time (i.e. keypresses) has elapsed.
+				buffer.cutscore -= 1
+
+				# Take a snapshot of the buffer text for undo/redo purposes.
+				if buffer.buffer_history.text != buffer.text
+					buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
+				end
+
+				# Display the current buffer.
+				buffer.dump_to_screen
+
+				# Wait for a valid key press.
+				c = $screen.getch until c!=nil
+
+				# Clear old message text.
+				buffer.window.clear_message_text
+
+				# Process a key press (run the associated command).
+				if buffer.extramode
+					command = $keymap.extramode_command(c)
+					eval($keymap.extramode_command(c))
+					buffer.extramode = false if ! buffer.sticky_extramode
+				else
+					command = $keymap.command(c,buffer.editmode)
+					if command == nil
+						buffer.addchar(c) if buffer.editmode && c.is_a?(String)
+					else
+						eval(command)
+					end
+				end
+
+				# Make sure cursor is in a good place.
+				buffer.sanitize
+
+			end
+			# end of main action loop
+
+		end
+
+	end
 
 end
+
+
+
+
+
+
+
+
+
+
+
+# -------------------------------------------------------
+# Run the editor
+# -------------------------------------------------------
+$editor = Editor.new
+$editor.go
+
