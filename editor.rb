@@ -928,7 +928,7 @@ class FileBuffer
 	end
 
 	def update_indentation
-		a = @text.map{|line|line[0].chr if line[0] != nil}
+		a = @text.map{|line|line[0].chr if line[0] != nil && !line[0].is_a?(String)}
 		@nleadingtabs = a.count("\t")
 		@nleadingspaces = a.count(" ")
 		if @nleadingtabs < @nleadingspaces
