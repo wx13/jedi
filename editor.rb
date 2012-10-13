@@ -1486,7 +1486,7 @@ class FileBuffer
 	# If linewrap is false, we justify the marked text (or current line).
 	# If linewrap is true, then we justify the current line, under
 	# asumption that we want to wrap the line when it gets too long.
-	def justify(linewrap=false)
+	def justify(linewrap=false,cursor=true)
 
 		# If the linelength hasn't been specified, let it be the window width.
 		if @linelength == 0 then @linelength = @window.cols end
@@ -1565,19 +1565,17 @@ class FileBuffer
 			else
 				@text[r] = text + " " + @text[r]
 				@row += 1
-				justify(true)
+				justify(true,false)
 				@row -= 1
 			end
 		else
 			insertrow(r,text)
 		end
 
-		@window.write_message("Justified to "+cols.to_s+" columns")
-
 		# If we are line-wrapping, we must be careful to place the cursor
 		# at the correct position.
 		if linewrap
-			if @col >= @text[@row].length+1
+			if cursor && @col >= @text[@row].length+1
 				@col = @col - @text[@row].length - 1
 				@row += 1
 			end
@@ -1586,6 +1584,11 @@ class FileBuffer
 			@col = 0
 		end
 		@marked = false
+
+		if !linewrap
+			@window.write_message("Justified to "+cols.to_s+" columns")
+		end
+
 	end
 
 
