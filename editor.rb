@@ -25,7 +25,7 @@ $version = "0.0.0"
 
 class Screen
 
-	attr_accessor :rows, :cols, :buffer
+	attr_accessor :rows, :cols, :buffer, :color
 
 	def initialize
 
@@ -36,66 +36,99 @@ class Screen
 		# so we don't have to redraw as frequently.
 		@buffer = []
 
-		# define keycodes
-		@keycodes = {
-		:ctrl_a => "\001",
-		:ctrl_b => "\002",
-		:ctrl_c => "\003",
-		:ctrl_d => "\004",
-		:ctrl_e => "\005",
-		:ctrl_f => "\006",
-		:ctrl_g => "\a",
-		:ctrl_h => "\b",
-		:ctrl_j => "\n",
-		:ctrl_k => "\v",
-		:ctrl_l => "\f",
-		:ctrl_m => "\r",
-		:ctrl_n => "\016",
-		:ctrl_o => "\017",
-		:ctrl_p => "\020",
-		:ctrl_q => "\021",
-		:ctrl_r => "\022",
-		:ctrl_s => "\023",
-		:ctrl_t => "\024",
-		:ctrl_u => "\025",
-		:ctrl_v => "\026",
-		:ctrl_w => "\027",
-		:ctrl_x => "\030",
-		:ctrl_y => "\031",
-		:ctrl_z => "\032",
-		:ctrl_6 => "\036",
-		:enter => "\r",
-		:backspace => "\177",
-		:backspace2 => "\037",
-		:tab => "\t",
+		# Define screen-specific color codes.
+		@color = define_colors
 
-		:up => "\e[A",
-		:down => "\e[B",
-		:right => "\e[C",
-		:left => "\e[D",
-		:pagedown => "\e[6~",
-		:pageup => "\e[5~",
-		:home => "\e[H",
-		:home2 => "\eOH",
-		:end => "\e[F",
-		:end2 => "\eOF",
-
-		:shift_left => "\e[2D",
-		:shift_right => "\e[2C",
-		:shift_up => "\e[2A",
-		:shift_down => "\e[2B",
-		:ctrl_left => "\e[5D",
-		:ctrl_right => "\e[5C",
-		:ctrl_up => "\e[5A",
-		:ctrl_down => "\e[5B",
-		:ctrlshift_left => "\e[6D",
-		:ctrlshift_right => "\e[6C",
-		:ctrlshift_up => "\e[6A",
-		:ctrlshift_down => "\e[6B"
-		}
-		@keycodes = @keycodes.invert
+		# Define the screen specific keycodes.
+		@keycodes = define_keycodes
 
 	end
+
+
+	def define_colors
+		color = {
+			:red   => "\e[31m",
+			:green => "\e[32m",
+			:blue => "\e[34m",
+			:cyan => "\e[36m",
+			:magenta => "\e[35m",
+			:yellow => "\e[33m",
+			:normal => "\e[0m",
+			:reverse => "\e[7m",
+			:underline => "\e[4m",
+			:bold => "\e[1m"
+		}
+		$color.each{|k,v|
+			color[k] = ""
+			[v].flatten.each{|c|
+				color[k] += color[c]
+			}
+		}
+		return color
+	end
+
+
+	def define_keycodes
+		# define keycodes
+		keycodes = {
+			"\001" => :ctrl_a,
+			"\002" => :ctrl_b,
+			"\003" => :ctrl_c,
+			"\004" => :ctrl_d,
+			"\005" => :ctrl_e,
+			"\006" => :ctrl_f,
+			"\a"   => :ctrl_g,
+			"\b"   => :ctrl_h,
+			"\n"   => :ctrl_j,
+			"\v"   => :ctrl_k,
+			"\f"   => :ctrl_l,
+			"\r"   => :ctrl_m,
+			"\016" => :ctrl_n,
+			"\017" => :ctrl_o,
+			"\020" => :ctrl_p,
+			"\021" => :ctrl_q,
+			"\022" => :ctrl_r,
+			"\023" => :ctrl_s,
+			"\024" => :ctrl_t,
+			"\025" => :ctrl_u,
+			"\026" => :ctrl_v,
+			"\027" => :ctrl_w,
+			"\030" => :ctrl_x,
+			"\031" => :ctrl_y,
+			"\032" => :ctrl_z,
+			"\036" => :ctrl_6,
+			"\r"   => :enter,
+			"\177" => :backspace,
+			"\037" => :backspace2,
+			"\t"   => :tab,
+
+			"\e[A"  => :up,
+			"\e[B"  => :down,
+			"\e[C"  => :right,
+			"\e[D"  => :left,
+			"\e[6~" => :pagedown,
+			"\e[5~" => :pageup,
+			"\e[H"  => :home,
+			"\eOH"  => :home2,
+			"\e[F"  => :end,
+			"\eOF"  => :end2,
+
+			"\e[2D" => :shift_left,
+			"\e[2C" => :shift_right,
+			"\e[2A" => :shift_up,
+			"\e[2B" => :shift_down,
+			"\e[5D" => :ctrl_left,
+			"\e[5C" => :ctrl_right,
+			"\e[5A" => :ctrl_up,
+			"\e[5B" => :ctrl_down,
+			"\e[6D" => :ctrlshift_left,
+			"\e[6C" => :ctrlshift_right,
+			"\e[6A" => :ctrlshift_up,
+			"\e[6B" => :ctrlshift_down,
+		}
+		return keycodes
+	end
+
 
 	# Read a character from stdin. Handle escape codes.
 	#
@@ -215,11 +248,11 @@ class Screen
 	# Returns nothing.
 	def write_string_reversed(row,col,text)
 		setpos(row,col)
-		addstr($color[:reverse]+text+$color[:normal])
+		addstr(@color[:reverse]+text+@color[:normal])
 	end
 	def write_string_colored(row,col,text,color)
 		setpos(row,col)
-		addstr($color[color]+text+$color[:normal])
+		addstr(@color[color]+text+@color[:normal])
 	end
 
 	# Clear an entrire line on the screen.
@@ -678,8 +711,8 @@ class Screen
 				r += 1
 				break if r > (margin+1+nr)
 				if j==selected
-					pre = $color[:reverse]
-					post = $color[:normal]
+					pre = @color[:reverse]
+					post = @color[:normal]
 				else
 					pre = ""
 					post = ""
@@ -3585,7 +3618,7 @@ class Editor
 		$histories = Histories.new
 
 		# Setup text decorations
-		define_colors
+		$color = define_colors
 
 		# Setup syntax coloring
 		$syntax_colors = SyntaxColors.new
@@ -3595,6 +3628,7 @@ class Editor
 
 		# Initialize the interactive screen environment.
 		$screen = Screen.new
+		$color = $screen.color
 
 		# Read the specified files into buffers list buffers
 		$buffers = BuffersList.new(ARGV)
@@ -3607,29 +3641,18 @@ class Editor
 	# Define universal text decorations
 	def define_colors
 
-		# Color codes.
-		$color = {
-			:red   => "\e[31m",
-			:green => "\e[32m",
-			:blue => "\e[34m",
-			:cyan => "\e[36m",
-			:magenta => "\e[35m",
-			:yellow => "\e[33m",
-			:normal => "\e[0m",
-			:reverse => "\e[7m",
-			:underline => "\e[4m",
-			:bold => "\e[1m"
-		}
-
 		# Define some meta-colors.
-		$color[:comment] = $color[:cyan]
-		$color[:string] = $color[:yellow]
-		$color[:whitespace] = $color[:red]+$color[:reverse]
-		$color[:hiddentext] = $color[:green]
-		$color[:regex] = $color[:normal]
-		$color[:marked] = $color[:reverse]+$color[:blue]
-		$color[:message] = $color[:yellow]
-		$color[:status] = $color[:underline]
+		color = {
+			:comment => :cyan,
+			:string => :yellow,
+			:whitespace => [:red,:reverse],
+			:hiddentext => :green,
+			:regex => :normal,
+			:marked => [:reverse,:blue],
+			:message => :yellow,
+			:status => :underline,
+		}
+		return color
 
 	end
 

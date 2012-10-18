@@ -17,13 +17,13 @@ $cursormode = 'row'
 
 # enable syntax coloring & choose colors
 $syntax_color = true
-$color[:comment] = $color[:cyan]
-$color[:string] = $color[:yellow]
-$color[:whitespace] = $color[:red]+$color[:reverse]
-$color[:hiddentext] = $color[:green]
-$color[:message] = $color[:yellow]
-$color[:status] = $color[:underline]
-$color[:regex] = $color[:normal]
+$color[:comment] = :cyan
+$color[:string] = :yellow
+$color[:whitespace] = [:red,:reverse]
+$color[:hiddentext] = :green
+$color[:message] = :yellow
+$color[:status] = :underline
+$color[:regex] = :normal
 
 
 #
