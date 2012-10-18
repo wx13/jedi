@@ -3086,8 +3086,6 @@ class BuffersList
 			@npage += 1
 		end
 		@ipage = 0  # Start on the first buffer.
-		# Read in histories.
-		$histories.read
 
 	end
 
@@ -3513,7 +3511,7 @@ class Histories
 	:command, :script, :start_folding, :end_folding
 
 	def initialize
-		@file = nil
+		@file = $file
 		@search = []
 		@replace = []
 		@line_number = []
@@ -3521,6 +3519,7 @@ class Histories
 		@command = []
 		@start_folding = []
 		@end_folding = []
+		read
 	end
 
 	# Save histories to the file.
@@ -3754,7 +3753,7 @@ class Editor
 				$autoindent = false
 			}
 			opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
-				$histories.file = file
+				$histories_file = file
 			}
 			opts.on('-E', '--edit', 'Start in edit mode'){
 				$editmode = false
