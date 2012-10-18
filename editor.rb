@@ -1012,7 +1012,7 @@ class FileBuffer
 	# Toggle one of many states.
 	def toggle
 		# get answer and execute the code
-		c = $screen.getch until c!=nil
+		c = @window.getch until c!=nil
 		if c == :tab
 			cmd = @window.menu($keymap.togglelist,"Toggle")
 			dump_to_screen(true)
