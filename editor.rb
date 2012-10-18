@@ -14,14 +14,14 @@ $version = "0.0.0"
 
 
 
-#------------------------------------------------------------
+#---------------------------------------------------------------------
 # The Screen class manages the screen output and input.
 # It includes all the user interface stuff, such as:
 #   - write text to a position on the screen
 #   - write status line
 #   - ask user a question
 # It does not deal with text buffer management or the like.
-#------------------------------------------------------------
+#---------------------------------------------------------------------
 
 class Screen
 
@@ -753,7 +753,7 @@ end
 
 
 # end of Screen class
-#----------------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
@@ -766,13 +766,13 @@ end
 
 
 
-# ---------------------------------------------------------
+#---------------------------------------------------------------------
 # Window class
 #
 # This is a virtual window that fits inside of the screen.
 # Each buffer has a window that it writes to, and each
 # window keeps track of its position and size.
-# ---------------------------------------------------------
+#---------------------------------------------------------------------
 
 class Window
 
@@ -851,7 +851,7 @@ class Window
 end
 
 # end of Window class
-#----------------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
@@ -863,11 +863,15 @@ end
 
 
 
-# ---------------------------------------------------------
-# This is the big main class, which handles a file
-# buffer.  Does everything from screen dumps to
-# searching etc.
-#----------------------------------------------------------
+#---------------------------------------------------------------------
+# FileBuffer class
+#
+# This class manages everything about a single file buffer. It takes
+# on input a filename and reads that file in. It keeps track of
+# positions etc, and hosts all the methods for navigation and editing.
+# It is a very big class, because the hosts most of the main
+# functionality of the text editor.
+#---------------------------------------------------------------------
 
 class FileBuffer
 
@@ -2818,7 +2822,7 @@ class FileBuffer
 end
 
 # end of big buffer class
-# ---------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
@@ -2827,12 +2831,15 @@ end
 
 
 
-# ---------------------------------------------------
-# Linked list of buffer text states for undo/redo
+#---------------------------------------------------------------------
+# BufferHistory class
 #
-# Whole thing is a wrapper around a linked list of Node objects,
-# which are defined inside this BufferHistory class.
-# ---------------------------------------------------
+# This class manages a linked list of buffer text states for
+# undo/redo purposes.  The whole thing is a wrapper around a
+# linked list of Node objects, which are defined inside this
+# BufferHistory class.
+#---------------------------------------------------------------------
+
 class BufferHistory
 
 	attr_accessor :tree
@@ -2969,7 +2976,7 @@ class BufferHistory
 end
 
 # end of BufferHistory class
-# ---------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
@@ -2977,11 +2984,18 @@ end
 
 
 
-# ---------------------------------------------------
-# This class manages a list of buffers.
+#---------------------------------------------------------------------
+# BufferList class
+#
+# This class manages a list of buffers (each buffer is a file).
 # Each buffer resides on a page.  Each page can contain
-# multiple buffers.
-# ---------------------------------------------------
+# multiple buffers. Pages are handled by the page class, which
+# is defined within this class.
+#
+# Methods include opening and closing buffers, toggling
+# the view among pages, moving buffers between pages, etc.
+#---------------------------------------------------------------------
+
 class BuffersList
 
 	attr_accessor :copy_buffer, :npage, :ipage
@@ -3269,8 +3283,8 @@ class BuffersList
 
 end
 
-# end of buffers list class
-#----------------------------------------------------------
+# end of BuffersList class
+#---------------------------------------------------------------------
 
 
 
@@ -3282,7 +3296,9 @@ end
 
 
 
-# -----------------------------------------------------------------
+#---------------------------------------------------------------------
+# KeyMap class
+#
 # This class defines the keymapping.
 # There are 5 sections:
 #     1. commandlist -- universal keymapping
@@ -3291,7 +3307,7 @@ end
 #     4. extra_commandlist -- ones that don't fit
 #     5. togglelist -- for toggling states on/off
 #     	 These get run when buffer.toggle is run.
-# -----------------------------------------------------------------
+#---------------------------------------------------------------------
 
 class KeyMap
 
@@ -3476,15 +3492,18 @@ class KeyMap
 end
 
 # end of KeyMap class
-# ---------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
 
-# This class stores up various histories,
-# such as search term history, command history,
-# and folding history. It saves and loads histories
+#---------------------------------------------------------------------
+# Histories class
+#
+# This class stores up various histories, such as search term history,
+# command history, and folding history. It saves and loads histories
 # from the history file.
+#---------------------------------------------------------------------
 
 class Histories
 
@@ -3544,12 +3563,16 @@ class Histories
 end
 
 # end of Histories class
-# ---------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
+#---------------------------------------------------------------------
+# SyntaxColors class
+#
 # This class defines the default syntax colors.
 # This is just a container class.
+#---------------------------------------------------------------------
 
 class SyntaxColors
 	attr_accessor :filetypes, :lc, :bc, :regex
@@ -3587,13 +3610,18 @@ class SyntaxColors
 end
 
 # end of SyntaxColors class
-# ---------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
 
-# This class contains a hodgepodge of methods
-# and defines some globals for other classes to use.
+#---------------------------------------------------------------------
+# Editor class
+#
+# This is the main class which runs the text editor. It contains a
+# hodgepodge of methods and defines some globals for other classes to
+# use.  Its main job is to orchestrate everything.
+#---------------------------------------------------------------------
 
 class Editor
 
@@ -3601,7 +3629,9 @@ class Editor
 
 	def initialize
 
-		# Define some general default parameters.
+		# Define some general default parameters. These are set as
+		# global variables because they are used all over the place,
+		# and because it makes it easier to reset them on the fly.
 		$tabsize = 4           # Tab character display width
 		$tabchar = "\t"        # What to insert when tab key is pressed
 		$autoindent = true
@@ -3609,39 +3639,37 @@ class Editor
 		$cursormode = 'row'    # Default text selection mode
 		$syntax_color = true
 		$editmode = true       # false = start in view mode
-		$linelength = 0        # full width
+		$linelength = 0        # 0 = terminal width
 
-		# Define the key mapping.
+		# Define the key mapping and colors up front, so that they
+		# can be modified by config files and start-up scripts.
 		$keymap = KeyMap.new
-
-		# Setup storage of various input histories (search, folding, etc).
-		$histories = Histories.new
-
-		# Setup text decorations
 		$color = define_colors
-
-		# Setup syntax coloring
 		$syntax_colors = SyntaxColors.new
 
-		# Parse input options
+		# Parse input options after keymap and colors are defined, but before
+		# we initialize any of the big classes.  This way, a user script can
+		# modify the screen/buffer/etc classes on start-up.
 		parse_options
 
-		# Initialize the interactive screen environment.
+		# Initialize the interactive screen environment, and set the color
+		# global to point to the one that screen defines.  This will keep
+		# everything in the same place, but allow easy on-the-fly color changes.
 		$screen = Screen.new
 		$color = $screen.color
 
-		# Read the specified files into buffers list buffers
+		# Read the specified files into the list of buffers.
 		$buffers = BuffersList.new(ARGV)
 
-		# Copy buffer is global, so we can copy from one buffer to another.
+		# Copy buffer and histories are global, so we can copy from one
+		# buffer to another.
 		$copy_buffer = ""
+		$histories = Histories.new
 
 	end
 
 	# Define universal text decorations
 	def define_colors
-
-		# Define some meta-colors.
 		color = {
 			:comment => :cyan,
 			:string => :yellow,
@@ -3653,12 +3681,12 @@ class Editor
 			:status => :underline,
 		}
 		return color
-
 	end
 
 	# This is a function which runs an arbitrary ruby script.
 	# It can read from a file or from user input.
 	def run_script(file=nil)
+		# If not file is specified, ask the user for one.
 		if file == nil
 			file = $screen.ask("run script file: ",[""],false,true)
 			if (file==nil) || (file=="")
@@ -3666,6 +3694,7 @@ class Editor
 				return
 			end
 		end
+		# If file is a directory, run all *.rb files in the directory.
 		if File.directory?(file)
 			list = Dir.glob(file+"/*.rb")
 			list.each{|f|
@@ -3675,12 +3704,14 @@ class Editor
 					$screen.write_message("done")
 				end
 			}
+		# If the file exists, run it.
 		elsif File.exist?(file)
 			script = File.read(file)
 			eval(script)
 			if $screen != nil
 				$screen.write_message("done")
 			end
+		# Complain if the file doesn't exist.
 		else
 			puts "Script file #{file} doesn't exist."
 			puts "Press any key to continue anyway."
@@ -3826,7 +3857,7 @@ class Editor
 end
 
 # end of Editor class
-# ---------------------------------------------------
+#---------------------------------------------------------------------
 
 
 
@@ -3837,9 +3868,9 @@ end
 
 
 
-# -------------------------------------------------------
+#---------------------------------------------------------------------
 # Run the editor
-# -------------------------------------------------------
+#---------------------------------------------------------------------
 $editor = Editor.new
 $editor.go
 
