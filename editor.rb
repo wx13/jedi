@@ -3511,7 +3511,7 @@ class Histories
 	:command, :script, :start_folding, :end_folding
 
 	def initialize
-		@file = $file
+		@file = $histories_file
 		@search = []
 		@replace = []
 		@line_number = []
