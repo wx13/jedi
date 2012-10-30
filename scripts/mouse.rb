@@ -69,6 +69,7 @@ class Screen
 			yield
 		ensure
 			print "\e[2J"   # clear the screen
+			print "\e[0;0H" # put cursor at the top
 			print "\e[?7h"  # enable line wrap
 			toggle_mouse(false)  # disable mouse
 			system('stty -raw echo')
