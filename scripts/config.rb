@@ -38,11 +38,11 @@ $syntax_colors.filetypes[/\.awk$/] = "shell"
 $syntax_colors.filetypes[/\.html$/] = "html"
 $syntax_colors.bc["html"] = {"<!--"=>"-->"}
 
+
 #
 # keybindings
 #
 
-# swap ctrl_x and ctrl_q
 $keymap.commandlist[:ctrl_q] = "buffer = $buffers.close"
 $keymap.commandlist[:ctrl_x] = "buffer.mark"
 
