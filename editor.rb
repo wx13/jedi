@@ -316,7 +316,7 @@ class Screen
 			line = line[j..-1]
 			colfeed -= j
 			j = line.index("m")
-			code = line[0..j]
+			code += line[0..j]
 			line = line[j+1..-1]
 		end
 		print code
