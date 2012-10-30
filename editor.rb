@@ -3698,7 +3698,7 @@ class Editor
 			list = Dir.glob(file+"/*.rb")
 			list.each{|f|
 				script = File.read(f)
-				eval(script)
+				eval(script,TOPLEVEL_BINDING)
 				if $screen != nil
 					$screen.write_message("done")
 				end
@@ -3706,7 +3706,7 @@ class Editor
 		# If the file exists, run it.
 		elsif File.exist?(file)
 			script = File.read(file)
-			eval(script)
+			eval(script,TOPLEVEL_BINDING)
 			if $screen != nil
 				$screen.write_message("done")
 			end
