@@ -3104,20 +3104,20 @@ class BuffersList
 	# Return next, previous, or current buffer.
 	def next_page
 		@ipage = (@ipage+1).modulo(@npage)
-		@pages[@ipage].resize_buffers
 		@pages[@ipage].refresh_buffers
 		@pages[@ipage].buffer
 	end
 	def prev_page
 		@ipage = (@ipage-1).modulo(@npage)
-		@pages[@ipage].resize_buffers
 		@pages[@ipage].refresh_buffers
 		@pages[@ipage].buffer
 	end
 	def next_buffer
+		@pages[@ipage].refresh_buffers
 		@pages[@ipage].next_buffer
 	end
 	def prev_buffer
+		@pages[@ipage].refresh_buffers
 		@pages[@ipage].prev_buffer
 	end
 	def current
