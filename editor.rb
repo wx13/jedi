@@ -964,6 +964,7 @@ class FileBuffer
 	def enter_command
 		answer = @window.ask("command:",$histories.command)
 		eval(answer)
+		dump_to_screen(true)
 		@window.write_message("done")
 	rescue
 		@window.write_message("Unknown command")
