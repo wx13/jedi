@@ -2183,7 +2183,14 @@ class FileBuffer
 			else
 				text[-1] += @text[@row][@col..-1]
 			end
-			@text = text + @text[(@row+1)..-1]
+
+			# Copy new text to @text, but do so in a way
+			# which keeps the pointer the same. This is in case
+			# we are editing the file in multiple windows.
+			@text.shift(@row+1)
+			text.reverse.each{|line|
+				@text.unshift(line)
+			}
 
 		else  # single line paste
 			if $copy_buffer[0].kind_of?(String)
