@@ -1181,14 +1181,17 @@ class FileBuffer
 	def reload
 		if modified?
 			ans = @window.ask_yesno("Buffer has been modified. Continue anyway?")
-			return if ans != 'yes'
+			return unless ans == 'yes'
 		end
-		old_text = @text
+		old_text = @text.dup
 		read_file
 		if @text != old_text
 			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
 			if ans != 'yes'
-				@text = old_text
+				@text.slice!(1..-1)
+				old_text.each_index{|k|
+					@text[k] = old_text[k]
+				}
 			end
 		end
 	end
