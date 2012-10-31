@@ -664,7 +664,7 @@ class Screen
 	#
 	# Returns nothing.
 	def draw_vertical_line(i,n)
-		c = i*@cols/n - 1
+		c = i*(@cols+1)/n - 1
 		for r in 0..(@rows-1)
 			write_string(r,c,"|")
 		end
@@ -825,7 +825,7 @@ class Window
 			@pos_row = 0
 			@rows = $screen.rows - 1
 			@pos_col = j*(($screen.cols+1)/k)
-			@cols = ($screen.cols)/k - 1
+			@cols = ($screen.cols+1)/k - 1
 		end
 	end
 
