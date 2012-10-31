@@ -881,14 +881,21 @@ class FileBuffer
 
 	def initialize(filename)
 
-		# set some parameters
-		@tabsize = $tabsize  # display width of a tab chracter
-		@tabchar = $tabchar  # what to insert when tab key is pressed
-		@fileindentchar = @tabchar[0].chr  # char the file uses for indentation
+		# displayed width of a literal tab chracter
+		@tabsize = $tabsize
+		# what to insert when tab key is pressed
+		@tabchar = $tabchar
+		# char the file uses for indentation
+		@fileindentchar = @tabchar[0].chr
+		# char the editor uses for indentation
 		@indentchar = @fileindentchar
-		@fileindentstring = @tabchar  # string the file uses for indentation
-		@indentstring = @fileindentstring  # convert file indents to this
-		@linelength = $linelength  # 0 means full screen width
+		# full indentation string (could be multiple indentation chars)
+		@fileindentstring = @tabchar
+		@indentstring = @fileindentstring
+
+		# for text justify
+		# 0 means full screen width
+		@linelength = $linelength
 
 		# read in the file
 		@filename = filename
@@ -2777,14 +2784,14 @@ class FileBuffer
 		end
 
 		# Grab all the indentation whitespace.
-		a = @text.map{|line|
+		iws = @text.map{|line|
 			if line != nil
 				line.partition(/\S/)[0]
 			end
 		}.join
 		# If the file contains both spaces and tabs for indentation,
 		# warn the users that this processes will change the file.
-		if a.count(" ")*a.count("\t") != 0
+		if iws.count(" ")*iws.count("\t") != 0
 			ans = @window.ask_yesno("WARNING: tab/space mix => IRREVERSIBLE! ok? ")
 			if ans == "no"
 				@window.write_message("Cancelled.")
@@ -2794,13 +2801,19 @@ class FileBuffer
 
 		# Ask the user for the indentation strings.
 		# First the current one, then the desired one.
-		@fileindentstring = @window.ask("File indent string:")
-		return if @fileindentstring == "" || @fileindentstring == nil
-		@indentstring = @window.ask("User indent string:")
-		return if @indentstring == "" || @indentstring == nil
-		return if @indentstring == @fileindentstring
+		fileindentstring = @window.ask("File indent string:")
+		return if fileindentstring == "" || fileindentstring == nil
+		if fileindentstring[0] != @fileindentchar[0]
+			ans = @window.ask("That seems wrong. Continue at your own risk?")
+			return unless ans == "yes"
+		end
+		indentstring = @window.ask("User indent string:")
+		return if indentstring == "" || indentstring == nil
+		return if indentstring == fileindentstring
 
 		# Replace one indentation with the other.
+		@fileindentstring = fileindentstring
+		@indentstring = indentstring
 		@text.map{|line|
 			m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
 			while m!=nil
@@ -2810,6 +2823,7 @@ class FileBuffer
 
 		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
+		@tabchar = @indentstring
 
 		dump_to_screen(true)
 		@window.write_message("Indentation facade enabled")
@@ -2825,7 +2839,9 @@ class FileBuffer
 				m = line.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
 			end
 		}
-		@indentchar = @fileindentstring[0].chr
+		@indentchar = @fileindentchar
+		@indentstring = @fileindentstring
+		@tabchar = @fileindentstring
 		dump_to_screen(true)
 		@window.write_message("Indentation facade disabled")
 	end
