@@ -886,7 +886,7 @@ class FileBuffer
 		# what to insert when tab key is pressed
 		@tabchar = $tabchar
 		# char the file uses for indentation
-		@fileindentchar = @tabchar[0].chr
+		@fileindentchar = nil
 		# char the editor uses for indentation
 		@indentchar = @fileindentchar
 		# full indentation string (could be multiple indentation chars)
@@ -973,9 +973,9 @@ class FileBuffer
 		a = @text.map{|line|line[0].chr if line[0] != nil && !line[0].is_a?(String)}
 		@nleadingtabs = a.count("\t")
 		@nleadingspaces = a.count(" ")
-		if @nleadingtabs < @nleadingspaces
+		if @nleadingtabs < (@nleadingspaces-4)
 			@fileindentchar = " "
-		elsif @nleadingtabs > @nleadingspaces
+		elsif @nleadingtabs > (@nleadingspaces+4)
 			@fileindentchar = "\t"
 		else
 			@fileindentchar = nil
@@ -2803,7 +2803,7 @@ class FileBuffer
 		# First the current one, then the desired one.
 		fileindentstring = @window.ask("File indent string:")
 		return if fileindentstring == "" || fileindentstring == nil
-		if fileindentstring[0] != @fileindentchar[0]
+		if @fileindentchar != nil && fileindentstring[0] != @fileindentchar[0]
 			ans = @window.ask("That seems wrong. Continue at your own risk?")
 			return unless ans == "yes"
 		end
