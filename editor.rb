@@ -2801,28 +2801,33 @@ class FileBuffer
 		return if @indentstring == @fileindentstring
 
 		# Replace one indentation with the other.
-		text = @text.join("\n")
-		m = text.gsub!(/^#{@fileindentstring}/,@indentstring)
-		while m!=nil
-			m = text.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
-		end
-		@text = text.split("\n")
+		@text.map{|line|
+			m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
+			while m!=nil
+				m = line.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
+			end
+		}
 
 		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
+
+		dump_to_screen(true)
+		@window.write_message("Indentation facade enabled")
 
 	end
 
 	# Remove the indentation facade.
 	def indentation_real
 		return if @indentstring == @fileindentstring
-		text = @text.join("\n")
-		m = text.gsub!(/^#{@indentstring}/,@fileindentstring)
-		while m!=nil
-			m = text.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
-		end
-		@text = text.split("\n")
+		@text.map{|line|
+			m = line.gsub!(/^#{@indentstring}/,@fileindentstring)
+			while m!=nil
+				m = line.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+			end
+		}
 		@indentchar = @fileindentstring[0].chr
+		dump_to_screen(true)
+		@window.write_message("Indentation facade disabled")
 	end
 
 
