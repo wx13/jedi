@@ -899,6 +899,7 @@ class FileBuffer
 
 		# read in the file
 		@filename = filename
+		@text = [""]
 		read_file
 		# file type for syntax coloring
 		set_filetype(@filename)
@@ -971,7 +972,11 @@ class FileBuffer
 	end
 
 	def update_indentation
-		a = @text.map{|line|line[0].chr if line[0] != nil && !line[0].is_a?(String)}
+		a = @text.map{|line|
+			if line[0] != nil && !line[0].is_a?(String)
+				line[0].chr
+			end
+		}
 		@nleadingtabs = a.count("\t")
 		@nleadingspaces = a.count(" ")
 		if @nleadingtabs < (@nleadingspaces-4)
@@ -1081,13 +1086,15 @@ class FileBuffer
 	# this directly.
 	def read_file
 		if @filename == ""
-			@text = [""]
+			@text.slice!(1..-1)
+			@text[0] = ""
 			return
 		else
 			if File.exists? @filename
 				text = File.open(@filename,"rb"){|f| f.read}
 			else
-				@text = [""]
+				@text.slice!(1..-1)
+				@text[0] = ""
 				return
 			end
 		end
@@ -1099,9 +1106,13 @@ class FileBuffer
 			@eol = "\r\n"
 		end
 		text.gsub!(/\r/,"\n")
-		@text = text.split("\n",-1)
+		text = text.split("\n",-1)
+		@text.slice!(1..-1)
+		text.each_index{|k|
+			@text[k] = text[k]
+		}
 		if @text.empty?
-			@text = [""]
+			@text[0] = ""
 		end
 		update_indentation
 		@indentchar = @fileindentchar
