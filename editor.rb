@@ -1199,7 +1199,7 @@ class FileBuffer
 	# make sure file position is valid
 	def sanitize
 		if @text.length == 0
-			@text = [""]
+			@text[0] = ""
 			@row = 0
 			@col = 0
 			return
