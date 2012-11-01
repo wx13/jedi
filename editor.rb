@@ -990,7 +990,7 @@ class FileBuffer
 
 	# run a script file of ruby commands
 	def run_script
-		file = @window.ask("run script file: ",$histories.script,false,true)
+		file = @window.ask("run script file:",$histories.script,false,true)
 		if (file==nil) || (file=="")
 			@window.write_message("cancelled")
 			return
@@ -1124,7 +1124,7 @@ class FileBuffer
 
 		# Ask the user for a file.
 		# Defaults to current file.
-		ans = @window.ask("save to: ",[@filename],true,true)
+		ans = @window.ask("save to:",[@filename],true,true)
 		if ans == nil
 			@window.write_message("Cancelled")
 			return
@@ -1138,7 +1138,7 @@ class FileBuffer
 		# If name is different from current file name,
 		# ask for verification.
 		if ans != @filename
-			yn = @window.ask_yesno("save to different file: "+ans+" ? [y/n]")
+			yn = @window.ask_yesno("save to different file:"+ans+" ? [y/n]")
 			if yn == "yes"
 				@filename = ans
 				set_filetype(@filename)
@@ -1563,7 +1563,7 @@ class FileBuffer
 		else
 			# Ask for desired line length.
 			# nil means cancel, empty means screen width
-			ans = @window.ask("Justify width: ",[@linelength.to_s],true)
+			ans = @window.ask("Justify width:",[@linelength.to_s],true)
 			if ans == nil
 				@window.write_message("Cancelled")
 				return
@@ -3219,7 +3219,7 @@ class BuffersList
 	def open
 
 		# Ask for the file to open.
-		ans = $screen.ask("open file: ",[""],false,true)
+		ans = $screen.ask("open file:",[""],false,true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
 			return(@pages[@ipage].buffer)
@@ -3731,7 +3731,7 @@ class Editor
 	def run_script(file=nil)
 		# If not file is specified, ask the user for one.
 		if file == nil
-			file = $screen.ask("run script file: ",[""],false,true)
+			file = $screen.ask("run script file:",[""],false,true)
 			if (file==nil) || (file=="")
 				$screen.write_message("cancelled")
 				return
