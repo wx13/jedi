@@ -68,3 +68,14 @@ Put any number of buffers on the same screen, with either vertial or
 horizontal layout. You can even edit the same file in two different
 screens.  This is useful for working on different parts of a file at
 the same time.
+
+
+Indentation facade
+------------------
+
+Say you like to use tabs to indent your code, but the code you are
+working with uses spaces (or any other scenario).  Indentation facade
+converts one indentation string to another, sets the tab key to insert
+the new indentation string, and silently keeps track of the facade for
+saving and diffing.
+
