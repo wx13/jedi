@@ -2814,7 +2814,7 @@ class FileBuffer
 
 		# Grab all the indentation whitespace.
 		iws = @text.map{|line|
-			if line != nil
+			if line != nil && line.is_a?(String)
 				line.partition(/\S/)[0]
 			end
 		}.join
@@ -2844,6 +2844,7 @@ class FileBuffer
 		@fileindentstring = fileindentstring
 		@indentstring = indentstring
 		@text.map{|line|
+			next if line.is_a?(Array)
 			m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
 			while m!=nil
 				m = line.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
@@ -2863,6 +2864,7 @@ class FileBuffer
 	def indentation_real
 		return if @indentstring == @fileindentstring
 		@text.map{|line|
+			next if line.is_a?(Array)
 			m = line.gsub!(/^#{@indentstring}/,@fileindentstring)
 			while m!=nil
 				m = line.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
