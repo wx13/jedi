@@ -1166,10 +1166,12 @@ class FileBuffer
 			File.open(@filename,"w"){|file|
 				text = @text.join(@eol)
 				if @fileindentstring != @indentstring
-					m = text.gsub!(/^#{@indentstring}/,@fileindentstring)
-					while m!=nil
-						m = text.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
-					end
+					after = line.split(/^(#{@indentstring})+/).last
+					next if after.nil?
+					ni = (line.length - after.length)/(@indentstring.length)
+					line.slice!(0..-1)
+					line << @fileindentstring * ni
+					line << after
 				end
 				file.write(text)
 			}
@@ -2845,17 +2847,21 @@ class FileBuffer
 		@indentstring = indentstring
 		@text.map{|line|
 			if line.is_a?(Array)
-				line.map{|aline|
-					m = aline.gsub!(/^#{@fileindentstring}/,@indentstring)
-					while m!=nil
-						m = aline.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
-					end
+				line.map{|sline|
+					after = sline.split(/^(#{@fileindentstring})+/).last
+					next if after.nil?
+					ni = (sline.length - after.length)/(@fileindentstring.length)
+					sline.slice!(0..-1)
+					sline << @indentstring * ni
+					sline << after
 				}
 			else
-				m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
-				while m!=nil
-					m = line.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
-				end
+				after = line.split(/^(#{@fileindentstring})+/).last
+				next if after.nil?
+				ni = (line.length - after.length)/(@fileindentstring.length)
+				line.slice!(0..-1)
+				line << @indentstring * ni
+				line << after
 			end
 		}
 
@@ -2875,16 +2881,20 @@ class FileBuffer
 		@text.map{|line|
 			if line.is_a?(Array)
 				line.map{|sline|
-					m = sline.gsub!(/^#{@indentstring}/,@fileindentstring)
-					while m!=nil
-						m = sline.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
-					end
+					after = sline.split(/^(#{@indentstring})+/).last
+					next if after.nil?
+					ni = (sline.length - after.length)/(@indentstring.length)
+					sline.slice!(0..-1)
+					sline << @fileindentstring * ni
+					sline << after
 				}
 			else
-				m = line.gsub!(/^#{@indentstring}/,@fileindentstring)
-				while m!=nil
-					m = line.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
-				end
+				after = line.split(/^(#{@indentstring})+/).last
+				next if after.nil?
+				ni = (line.length - after.length)/(@indentstring.length)
+				line.slice!(0..-1)
+				line << @fileindentstring * ni
+				line << after
 			end
 		}
 		@indentchar = @fileindentchar
