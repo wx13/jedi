@@ -2844,10 +2844,18 @@ class FileBuffer
 		@fileindentstring = fileindentstring
 		@indentstring = indentstring
 		@text.map{|line|
-			next if line.is_a?(Array)
-			m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
-			while m!=nil
-				m = line.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
+			if line.is_a?(Array)
+				line.map{|aline|
+					m = aline.gsub!(/^#{@fileindentstring}/,@indentstring)
+					while m!=nil
+						m = aline.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
+					end
+				}
+			else
+				m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
+				while m!=nil
+					m = line.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
+				end
 			end
 		}
 
@@ -2860,14 +2868,23 @@ class FileBuffer
 
 	end
 
+
 	# Remove the indentation facade.
 	def indentation_real
 		return if @indentstring == @fileindentstring
 		@text.map{|line|
-			next if line.is_a?(Array)
-			m = line.gsub!(/^#{@indentstring}/,@fileindentstring)
-			while m!=nil
-				m = line.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+			if line.is_a?(Array)
+				line.map{|sline|
+					m = sline.gsub!(/^#{@indentstring}/,@fileindentstring)
+					while m!=nil
+						m = sline.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+					end
+				}
+			else
+				m = line.gsub!(/^#{@indentstring}/,@fileindentstring)
+				while m!=nil
+					m = line.gsub!(/^(#{@fileindentstring}*)(#{@indentstring})/,"\\1"+@fileindentstring)
+				end
 			end
 		}
 		@indentchar = @fileindentchar

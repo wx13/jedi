@@ -15,6 +15,7 @@ Bugs
 	+ how hard would it be to unfold & then refold?
 		- would have to keep track of a lot of things
 		- maybe instead, a second loop through folded text.
+	+ Took the second-loop approach: seems to be working
 
 
 Features
