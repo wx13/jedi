@@ -140,3 +140,21 @@ on one screen, this will spread them out onto their own screens).
 number from 1-9. It is possible to have more than 9 screens (it is
 unlimited, actually), but only 1-9 are available for this operation.
 
+
+Indentation facade
+------------------
+
+If you like to use a different indentation character/string than is
+used the file, but you don't want to change every line of the file,
+then indentation facade is what you are looking for.  Type `^6i` and
+you will be prompted for the file indentation string. This is the
+string the file currently uses for indentation.  Next it will prompt
+you for the desired indentation string.
+
+From then on, the text will appear to use the desired indentation
+string, but silently convert behind the scenes.
+
+
+Cursor modes
+------------
+
