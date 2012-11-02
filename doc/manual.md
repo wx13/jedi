@@ -159,6 +159,10 @@ on one screen, this will spread them out onto their own screens).
 number from 1-9. It is possible to have more than 9 screens (it is
 unlimited, actually), but only 1-9 are available for this operation.
 
+Typing `^t-` will set vertical stacking (buffers aligned above one
+another) and `^t|` will set horizontal stacking (side-by-side buffers).
+To scroll only the current buffer up/down, use shift-up/down.  To
+scroll all the buffers on the current screen up/down, use ctrl-up/down.
 
 Indentation facade
 ------------------
@@ -174,6 +178,19 @@ From then on, the text will appear to use the desired indentation
 string, but silently convert behind the scenes.
 
 
-Cursor modes
+Marking modes
 ------------
 
+There are four cusor modes for marked text.  In 'row' mode, the text is
+marked row-wise from the mark to the current position.  In 'col' mode,
+the text is marked in a vertical column from the current position to
+the start row.  In this mode, the marked column acts like a long
+cursor, where you can insert, delete, or backspace along the vertical
+bar.  Type `^tr` to toggle row mode, and `^tc` to toggle column mode.
+
+The third mode is 'loc' (backwards 'col').  It is exactly the same as
+'col', but position is relative to the end of the line.  Type
+`^tC` to toggle nmuloc mode.  Finally, there is multicursor mode.  Type
+`^6x` to start marking the cursors.  Each time you hit `^x` a new
+cursor appears.  Type `^6x` again to exit cursor selection mode.  Now
+you will have a set of cursors which act as one.
