@@ -42,6 +42,9 @@ class Screen
 		# Define the screen specific keycodes.
 		@keycodes = define_keycodes
 
+		# Set cursor color if desired.
+		set_cursor_color($cursor_color) if $cursor_color != nil
+
 	end
 
 
@@ -127,6 +130,16 @@ class Screen
 			"\e[6B" => :ctrlshift_down,
 		}
 		return keycodes
+	end
+
+
+	def set_cursor_color(color=nil)
+		if color.nil?
+			color = ask("color:")
+		end
+		return if color.nil? || color==""
+		print "\e]12;#{color}\007"
+		write_message("set cursor to #{color}")
 	end
 
 
@@ -3430,6 +3443,7 @@ class KeyMap
 			"i" => "buffer.indentation_facade",
 			"I" => "buffer.indentation_real",
 			"x" => "buffer.multimark",
+			"C" => "$screen.set_cursor_color",
 			:up => "buffer.cursor_up(1)",
 			:down => "buffer.cursor_down(1)",
 			:right => "buffer.cursor_right",
@@ -3689,6 +3703,7 @@ class Editor
 		$keymap = KeyMap.new
 		$color = define_colors
 		$syntax_colors = SyntaxColors.new
+		$cursor_color = nil
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can

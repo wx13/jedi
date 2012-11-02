@@ -95,6 +95,25 @@ variable. The width of a literal tab character is set by `-t`,
 `$tabsize`, or `@tabsize` respectively.
 
 
+Cursor color
+------------
+
+On some terminals (notably gnome-terminal), the cursor is set to be the
+the reverse of the text. This can cause problems when the text in the
+editor is reversed, because the cursor can get hidden.  Some terminals
+support dynamic setting of the cursor color.  The configuration
+parameter `$cursor_color` can be set in the configuration file.  Or
+else `^6C` will prompt you for a color.
+
+Note that this will change the cursor color for the terminal, and will
+remain in effect even after exiting the editor.  To change back, either
+use the same command within the editor, or type
+
+	echo -e "\e]12;${color}\007"
+
+where color is the desired cursor color.
+
+
 Editing
 =======
 

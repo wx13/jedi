@@ -3,8 +3,15 @@
 #
 # All lines are optional (and currenlty set to the default values).
 
-# set the tab size
+# set the tab width
 $tabsize = 4
+
+# What gets inserted when the tab key is pressed
+$tabchar = "\t"
+
+# Cursor color
+# Comment out to keep terminal default.
+# $cursor_color = "green"
 
 # do autoindent
 $autoindent = true
@@ -12,8 +19,12 @@ $autoindent = true
 # don't wrap lines
 $linewrap = false
 
+# Line length for text wrapping.
+# 0 means use the terminal width.
+$linelength = 72
+
 # start in column-mode for marking/selecting text
-$cursormode = 'row'
+$cursormode = 'col'
 
 # enable syntax coloring & choose colors
 $syntax_color = true
