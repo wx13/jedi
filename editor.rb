@@ -2766,8 +2766,12 @@ class FileBuffer
 					j += 1
 					line = @text[j]
 					next if line.kind_of?(Array)
-					if line =~ pend
-						x = hide_lines_at(i,j)
+					if ((pend==//) && !(line=~pstart)) || ((pend!=//) && (line =~ pend))
+						if pend == //
+							x = hide_lines_at(i,j-1)
+						else
+							x = hide_lines_at(i,j)
+						end
 						i = j - x
 						break
 					end
