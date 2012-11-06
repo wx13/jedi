@@ -2747,12 +2747,12 @@ class FileBuffer
 		if pstart[0,1] == '/'
 			pstart = eval(pstart)
 		else
-			pstart = Regex.new(pstart)
+			pstart = Regexp.new(pstart)
 		end
 		if pend[0,1] == '/'
 			pend = eval(pend)
 		else
-			pend = Regex.new(pend)
+			pend = Regexp.new(pend)
 		end
 		i = -1
 		n = @text.length
