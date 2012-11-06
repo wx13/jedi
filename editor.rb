@@ -677,7 +677,7 @@ class Screen
 	#
 	# Returns nothing.
 	def draw_vertical_line(i,n)
-		c = i*(@cols+1)/n - 1
+		c = i*((@cols+1)/n) - 1
 		for r in 0..(@rows-1)
 			write_string(r,c,"|")
 		end
