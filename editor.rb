@@ -3095,6 +3095,7 @@ class BuffersList
 			@nbuf = @buffers.length
 			@ibuf = 0
 			@stack_orientation = "v"
+			resize_buffers
 		end
 		def delete_buffer(n=@ibuf)
 			@buffers.delete_at(n)
@@ -3107,6 +3108,7 @@ class BuffersList
 			@buffers += [buffer]
 			@nbuf = @buffers.length
 			@ibuf = @nbuf - 1
+			resize_buffers
 		end
 		def buffer
 			@buffers[@ibuf]
