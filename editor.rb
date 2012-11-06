@@ -476,7 +476,7 @@ class Screen
 	# file        = true/false (should we do tab-completion on files?)
 	#
 	# Returns the users answer as a string.
-	def ask(question,hist=[],last_answer=false,file=false)
+	def ask(question,hist=[],last_answer=true,file=false)
 
 		# if last_answer is set, then set the current token to the last answer.
 		# Otherwise, set token to empty string
@@ -630,7 +630,7 @@ class Screen
 			setpos(@rows,(col-shift)+question.length+1)
 
 		end
-		if token == "" && hist[-1] != nil
+		if token == "" && hist[-1] != nil && last_answer
 			token = hist[-1].dup
 		end
 		if token != hist[-1]
@@ -1578,7 +1578,7 @@ class FileBuffer
 		else
 			# Ask for desired line length.
 			# nil means cancel, empty means screen width
-			ans = @window.ask("Justify width:",[@linelength.to_s],true)
+			ans = @window.ask("Justify width:",[@linelength.to_s])
 			if ans == nil
 				@window.write_message("Cancelled")
 				return
@@ -2742,7 +2742,7 @@ class FileBuffer
 	# Hide all lines between start and end pattern.
 	def hide_by_pattern
 		pstart = @window.ask("start pattern:",$histories.start_folding)
-		pend = @window.ask("end pattern:",$histories.end_folding)
+		pend = @window.ask("end pattern:",$histories.end_folding,false)
 		return if pstart == nil || pend == nil
 		pstart = Regexp.new(pstart)
 		pend = Regexp.new(pend)
@@ -2832,7 +2832,7 @@ class FileBuffer
 		fileindentstring = @window.ask("File indent string:")
 		return if fileindentstring == "" || fileindentstring == nil
 		if @fileindentchar != nil && fileindentstring[0] != @fileindentchar[0]
-			ans = @window.ask("That seems wrong. Continue at your own risk?")
+			ans = @window.ask_yesno("That seems wrong. Continue at your own risk?")
 			return unless ans == "yes"
 		end
 		indentstring = @window.ask("User indent string:")
