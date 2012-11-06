@@ -2744,16 +2744,8 @@ class FileBuffer
 		pstart = @window.ask("start pattern:",$histories.start_folding)
 		pend = @window.ask("end pattern:",$histories.end_folding)
 		return if pstart == nil || pend == nil
-		if pstart[0,1] == '/'
-			pstart = eval(pstart)
-		else
-			pstart = Regexp.new(pstart)
-		end
-		if pend[0,1] == '/'
-			pend = eval(pend)
-		else
-			pend = Regexp.new(pend)
-		end
+		pstart = Regexp.new(pstart)
+		pend = Regexp.new(pend)
 		i = -1
 		n = @text.length
 		while i < n
@@ -2778,6 +2770,7 @@ class FileBuffer
 				end
 			end
 		end
+		@window.write_message("done")
 	end
 	def unhide_lines
 		hidden_text = @text[@row]
