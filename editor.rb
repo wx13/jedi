@@ -476,7 +476,7 @@ class Screen
 	# file        = true/false (should we do tab-completion on files?)
 	#
 	# Returns the users answer as a string.
-	def ask(question,hist=[],last_answer=true,file=false)
+	def ask(question,hist=[],last_answer=false,file=false)
 
 		# if last_answer is set, then set the current token to the last answer.
 		# Otherwise, set token to empty string
