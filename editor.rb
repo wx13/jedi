@@ -630,7 +630,7 @@ class Screen
 			setpos(@rows,(col-shift)+question.length+1)
 
 		end
-		if token == "" && hist[-1] != nil && last_answer
+		if token == "" && hist[-1] != nil
 			token = hist[-1].dup
 		end
 		if token != hist[-1]
