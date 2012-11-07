@@ -1578,7 +1578,7 @@ class FileBuffer
 		else
 			# Ask for desired line length.
 			# nil means cancel, empty means screen width
-			ans = @window.ask("Justify width:",[@linelength.to_s])
+			ans = @window.ask("Justify width:",[@linelength.to_s],true)
 			if ans == nil
 				@window.write_message("Cancelled")
 				return
@@ -2742,7 +2742,7 @@ class FileBuffer
 	# Hide all lines between start and end pattern.
 	def hide_by_pattern
 		pstart = @window.ask("start pattern:",$histories.start_folding)
-		pend = @window.ask("end pattern:",$histories.end_folding,false)
+		pend = @window.ask("end pattern:",$histories.end_folding)
 		return if pstart == nil || pend == nil
 		pstart = Regexp.new(pstart)
 		pend = Regexp.new(pend)
@@ -3850,7 +3850,11 @@ class Editor
 			}
 			opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
 				$linewrap = true
-				$linelength = n
+				if n.nil?
+					$linelength = 0
+				else
+					$linelength = n
+				end
 			}
 			opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
 				$linewrap = false
