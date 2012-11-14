@@ -79,7 +79,12 @@ Fold some text
 Unfold with `^6u`. To fold all the classes in a ruby file
 
 1. type `^6H`
-2. enter the start pattern: /^class/
-3. enter the end patter: /^end/
+2. enter the start pattern: `^class`  (literal carat, not control)
+3. enter the end pattern: `^end`  (literal carat, not control)
 
-To unfold all folded lines, type `^6U`.
+To unfold all folded lines, type `^6U`. To fold all comments
+
+1. type `^6H`
+2. enter the start pattern `^\s*#`
+3. enter the end pattern `^n`  (control-n)
+

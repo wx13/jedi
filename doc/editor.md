@@ -56,9 +56,9 @@ Text folding/hiding
 
 Can fold any contiguous lines of text, and can move, cut, copy folded
 lines just like regular lines.  Additionally, the editor can fold all
-blocks of text that match a start and end pattern. This is useful for
-folding all functions or classes, so that  you can focus on editing
-just one or two of them.
+blocks of text that match a start and end pattern, or all contiguous
+lines matching a pattern. This is useful for folding all functions or
+classes, so that you can focus on editing just one or two of them.
 
 
 Split-screen mode

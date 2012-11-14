@@ -5,18 +5,21 @@ editor.rb is a text editor writen in ruby for the unix console,
 designed to be portable and hackable.  No installation is required, and
 it does not use external libraries or gems.  The editor can be extended
 or modified with external ruby scripts, and ruby commands can be run
-within the editor to perform complex editing tasks.
+within the editor to perform complex editing tasks.  Features include:
+undo/redo, multiple cursor modes, folding, split screen mode,
+"indentation facade", and more.  See the doc/ directory for details
+
 
 
 Installing and running
 ----------------------
 
-There is no installation; just run
+There is no installation required; just run
 
-    ruby editor.rb [list of files]
+    ruby editor.rb [options] [files]
 
-Alternatively, create a directory ~/.editor containing the file
-config.rb.  Then run:
+To use a configuration file and store history, create a directory
+~/.editor containing the file config.rb.  Then run:
 
     ruby editor.rb -s ~/.editor -y ~/.editor/history.yaml
 
@@ -40,12 +43,6 @@ test in on a Mac terminal and in ruby 1.9. Other than modified arrow
 keys, it should run on any unix-compatible terminal emulator.  If you
 type `echo -e "\e[2J"` and it clears the screen, then you should be
 fine.
-
-
-More information
-----------------
-
-See the doc/ folder for more details.
 
 
 License
