@@ -8,7 +8,7 @@
 #	are permitted in any medium without royalty or restriction. This file
 #	is offered as-is, without any warranty.
 #
-$version = "0.0.0"
+$version = "0.1.0"
 
 
 
