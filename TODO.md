@@ -17,3 +17,4 @@ Desired features
 * Better navigation an search in menu
 
 * Restrict search/replace to a range of rows
+	- Done.

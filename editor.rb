@@ -826,6 +826,10 @@ class Screen
 					selected = [selected+nr/2,items.length-1].min
 				when :pageup
 					selected = [selected-nr/2,0].max
+				when 'g'
+					selected = 0
+				when 'G'
+					selected = items.length-1
 				when :enter,:ctrl_m,:ctrl_j
 					break
 				when :ctrl_c
