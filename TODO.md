@@ -15,3 +15,5 @@ Desired features
 	indentation string, etc.
 
 * Better navigation an search in menu
+
+* Restrict search/replace to a range of rows

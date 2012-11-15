@@ -1,55 +1,35 @@
 #!/usr/bin/ruby
 #
-#	editor.rb
+# editor.rb
 #
-#	Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
+# Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
 #
-#	Copying and distribution of this file, with or without modification,
-#	are permitted in any medium without royalty or restriction. This file
-#	is offered as-is, without any warranty.
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty or restriction. This file
+# is offered as-is, without any warranty.
 #
 $version = "0.1.0"
 
 
 
 
-
 #---------------------------------------------------------------------
-# The Screen class manages the screen output and input.
-# It includes all the user interface stuff, such as:
-#   - write text to a position on the screen
-#   - write status line
-#   - ask user a question
-# It does not deal with text buffer management or the like.
+# Terminal class defines the API for interacting with the terminal.
+# Everything terminal specific belongs in here.  In theory, to change
+# from ANSI to curses to tk, would require only changing this class.
 #---------------------------------------------------------------------
+class Terminal
 
-class Screen
-
-	attr_accessor :rows, :cols, :buffer, :color
+	attr_accessor :colors, :keycodes, :escape
 
 	def initialize
-
-		# get and store screen size
-		update_screen_size
-
-		# This is for detecting changes to the displayed text,
-		# so we don't have to redraw as frequently.
-		@buffer = []
-
-		# Define screen-specific color codes.
-		@color = define_colors
-
-		# Define the screen specific keycodes.
-		@keycodes = define_keycodes
-
-		# Set cursor color if desired.
-		set_cursor_color($cursor_color) if $cursor_color != nil
-
+		define_colors
+		define_keycodes
+		@escape = ["\e","m"]
 	end
 
-
 	def define_colors
-		color = {
+		@colors = {
 			:red   => "\e[31m",
 			:green => "\e[32m",
 			:blue => "\e[34m",
@@ -61,19 +41,11 @@ class Screen
 			:underline => "\e[4m",
 			:bold => "\e[1m"
 		}
-		$color.each{|k,v|
-			color[k] = ""
-			[v].flatten.each{|c|
-				color[k] += color[c]
-			}
-		}
-		return color
 	end
 
-
 	def define_keycodes
-		# define keycodes
-		keycodes = {
+		@keycodes =
+		{
 			"\001" => :ctrl_a,
 			"\002" => :ctrl_b,
 			"\003" => :ctrl_c,
@@ -129,19 +101,11 @@ class Screen
 			"\e[6A" => :ctrlshift_up,
 			"\e[6B" => :ctrlshift_down,
 		}
-		return keycodes
 	end
 
-
-	def set_cursor_color(color=nil)
-		if color.nil?
-			color = ask("color:")
-		end
-		return if color.nil? || color==""
+	def set_cursor_color
 		print "\e]12;#{color}\007"
-		write_message("set cursor to #{color}")
 	end
-
 
 	# Read a character from stdin. Handle escape codes.
 	#
@@ -168,6 +132,126 @@ class Screen
 		return(d)
 	end
 
+
+	def get_screen_size
+		@rows,@cols = `stty size`.split
+		return @rows,@cols
+	end
+
+
+	def set_raw
+		system('stty raw -echo')
+	end
+	def unset_raw
+		system('stty -raw echo')
+	end
+	def roll_screen_up(r)
+		print "\e[#{r}S"
+	end
+	def clear_screen
+		print "\e[2J"
+	end
+	def disable_linewrap
+		print "\e[?7l"
+	end
+	def enable_linewrap
+		print "\e[?7h"
+	end
+	def cursor(r,c)
+		print "\e[#{r};#{c}H"
+	end
+
+	def write(text)
+		print text
+	end
+
+	def clear_line
+		print "\e[2K"
+	end
+
+	def hide_cursor
+		print "\e[?25l"
+	end
+	def show_cursor
+		puts "\e[?25h"
+	end
+	def save_cursor
+		print "\e[s"
+	end
+	def restore_cursor
+		print "\e[u"
+	end
+
+end
+
+# end of Terminal class
+#---------------------------------------------------------------------
+
+
+
+
+
+
+#---------------------------------------------------------------------
+# The Screen class manages the screen output and input.
+# It sits in between the Terminal and the Windows.  Each window knows
+# only about itself (position, width, etc).  The screen knows nothing
+# about the buffers or windows; it only knows how to write and read
+# from the terminal.  The Terminal class is the API for the terminal,
+# which could be ANSI, curses, ncurses, etc.
+#---------------------------------------------------------------------
+
+class Screen
+
+	attr_accessor :rows, :cols, :buffer, :color
+
+	def initialize
+
+		@terminal = Terminal.new
+
+		# get and store screen size
+		update_screen_size
+
+		# This is for detecting changes to the displayed text,
+		# so we don't have to redraw as frequently.
+		@buffer = []
+
+		# Define screen-specific color codes.
+		@color = define_colors
+
+		# Set cursor color if desired.
+		set_cursor_color($cursor_color) if $cursor_color != nil
+
+	end
+
+
+	def define_colors
+		color = @terminal.colors
+		$color.each{|k,v|
+			color[k] = ""
+			[v].flatten.each{|c|
+				color[k] += color[c]
+			}
+		}
+		return color
+	end
+
+
+	def set_cursor_color(color=nil)
+		if color.nil?
+			color = ask("color:")
+		end
+		return if color.nil? || color==""
+		@terminal.set_cursor_color(color)
+		write_message("set cursor to #{color}")
+	end
+
+
+	def getch
+		return @terminal.getch
+	end
+
+
 	# Call to stty utility for screen size update, and set
 	# @rows and @cols.
 	#
@@ -175,7 +259,7 @@ class Screen
 	def update_screen_size
 		cols_old = @cols
 		rows_old = @rows
-		@rows,@cols = `stty size`.split
+		@rows,@cols = @terminal.get_screen_size
 		@rows = @rows.to_i-1
 		@cols = @cols.to_i
 		if cols_old!=@cols || rows_old!=@rows
@@ -189,17 +273,17 @@ class Screen
 	# When this exits, return screen to normal.
 	#
 	# Returns nothing.
-	def start_screen_loop
-		system('stty raw -echo')
-		print "\e[#{@rows}S"  # roll screen up (clear, but preserve)
-		print "\e[?7l"  # disable line wrap
+	def start_screen
+		@terminal.set_raw
+		@terminal.roll_screen_up(@rows)
+		@terminal.disable_linewrap
 		begin
 			yield
 		ensure
-			print "\e[2J"   # clear the screen
-			print "\e[0;0H" # put cursor at the top
-			print "\e[?7h"  # enable line wrap
-			system('stty -raw echo')
+			@terminal.unset_raw
+			@terminal.cursor(0,0)
+			@terminal.enable_linewrap
+			@terminal.clear_screen
 		end
 	end
 
@@ -209,14 +293,14 @@ class Screen
 	#
 	# Returns nothing.
 	def suspend(buffers)
-		print "\e[2J"
-		print "\e[0;0H"
-		print "\e[?7h"
-		system('stty -raw echo')
+		@terminal.clear_screen
+		@terminal.cursor(0,0)
+		@terminal.unset_raw
+		@terminal.enable_linewrap
 		Process.kill("SIGSTOP",0)
-		system('stty raw -echo')
-		print "\e[#{@rows}S"
-		print "\e[?7l"
+		@terminal.set_raw
+		@terminal.roll_screen_up(@rows)
+		@terminal.disable_linewrap
 		update_screen_size
 		buffers.update_screen_size
 	end
@@ -228,7 +312,7 @@ class Screen
 	#
 	# Returns nothing.
 	def setpos(row,col)
-		print "\e[#{row+1};#{col+1}H"
+		@terminal.cursor(row+1,col+1)
 	end
 
 	# Write a string at the current cursor position.
@@ -238,7 +322,7 @@ class Screen
 	#
 	# Returns nothing.
 	def addstr(text)
-		print text
+		@terminal.write(text)
 	end
 
 	# Write a string at a specified position.
@@ -252,17 +336,14 @@ class Screen
 		setpos(row,col)
 		addstr(text)
 	end
-	# Write a reverse-text string at a specified position.
+	# Write a colored string at a specified position.
 	#
 	# row - screen row
 	# col - screen column
 	# text - string to be printed
+	# color
 	#
 	# Returns nothing.
-	def write_string_reversed(row,col,text)
-		setpos(row,col)
-		addstr(@color[:reverse]+text+@color[:normal])
-	end
 	def write_string_colored(row,col,text,color)
 		setpos(row,col)
 		addstr(@color[color]+text+@color[:normal])
@@ -275,7 +356,7 @@ class Screen
 	# Returns nothing.
 	def clear_line(row)
 		setpos(row,0)
-		print "\e[2K"
+		@terminal.clear_line
 	end
 	def clear_message_text
 		clear_line(@rows)
@@ -319,8 +400,9 @@ class Screen
 		#     (including multibyte escape codes)
 		#   - apply chopped-off escape codes (color codes) to the line
 		code = ""
+		esc = @terminal.escape
 		while colfeed > 0
-			j = line.index("\e")
+			j = line.index(esc[0])
 			break if j==nil
 			if j > colfeed
 				line = line[colfeed..-1]
@@ -328,12 +410,12 @@ class Screen
 			end
 			line = line[j..-1]
 			colfeed -= j
-			j = line.index("m")
+			j = line.index(esc[1])
 			code += line[0..j]
 			line = line[j+1..-1]
 		end
 		print code
-		words = line.split("\e")
+		words = line.split(esc[0])
 		return if words.length == 0
 		word = words[0]
 		write_string(row,col,word[0,width])
@@ -343,9 +425,9 @@ class Screen
 		flag = false if width <= 0
 		return if words.length <= 1  # in case file contains control characters
 		words[1..-1].each{|word|
-			j = word.index("m")
+			j = word.index(esc[1])
 			next if j.nil?
-			print "\e" + word[0..j]
+			print esc[0] + word[0..j]
 			write_string(row,col,word[j+1,width]) if flag
 			col += word[j+1..-1].length
 			width -= word[j+1..-1].length
@@ -392,11 +474,11 @@ class Screen
 	#
 	# Returns nothing.
 	def write_message(message)
-		print "\e[s"  # save cursor position
+		@terminal.save_cursor
 		xpos = (@cols - message.length)/2
 		clear_line(@rows)
 		write_string_colored(@rows,xpos,message,:message)
-		print "\e[u"  # restore cursor position
+		@terminal.restore_cursor
 	end
 
 
@@ -688,8 +770,7 @@ class Screen
 	# Allow the use to choose from a menu of choices.
 	def menu(items,header)
 
-		# hide the cursor
-		print "\e[?25l"
+		@terminal.hide_cursor
 
 		# how many rows should the menu take up (less than 1 screen)
 		margin = 2
@@ -756,8 +837,7 @@ class Screen
 
 	ensure
 
-		# show the cursor
-		puts "\e[?25h"
+		@terminal.show_cursor
 
 	end
 
@@ -815,9 +895,6 @@ class Window
 	end
 	def write_string(row,col,str)
 		$screen.write_string(@pos_row+row,@pos_col+col,str)
-	end
-	def write_string_reversed(row,col,str)
-		$screen.write_string_reversed(@pos_row+row,@pos_col+col,str)
 	end
 	def write_string_colored(row,col,str,color)
 		$screen.write_string_colored(@pos_row+row,@pos_col+col,str,color)
@@ -3894,7 +3971,7 @@ class Editor
 		}
 
 		# Start the interactive screen session.
-		$screen.start_screen_loop do
+		$screen.start_screen do
 
 			# Dump the text to the screen (true => forced update).
 			$buffers.current.dump_to_screen(true)
