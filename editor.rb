@@ -2040,10 +2040,20 @@ class FileBuffer
 		end
 
 		# Start at current position.
-		row = @row
-		col = @col
-		sr = @row
-		sc = @col
+		if @marked
+			row,sr = @mark_row,@row
+			col,sc = @mark_col,@col
+			@marked = false
+			if row == sr
+				search_and_replace_single_line(token,replacement,row,col,sc)
+				return
+			end
+		else
+			row = @row
+			col = @col
+			sr = @row
+			sc = @col
+		end
 		loop do
 			nlines = @text.length
 			a = search_and_replace_single_line(token,replacement,row,col)
@@ -2057,12 +2067,13 @@ class FileBuffer
 			end
 			col = 0
 		end
+	ensure
 		@row = row0
 		@col = col0
 		@linefeed = @linefeed0
 		@colfeed = @colfeed0
 		dump_to_screen(true)
-		@window.write_message("No more matches")
+		@window.write_message("Done.")
 	end
 
 
