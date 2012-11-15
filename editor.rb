@@ -1934,70 +1934,50 @@ class FileBuffer
 			center_screen(@row)
 		end
 	end
+
+
 	def search_and_replace
-		# get starting point, so we can return
+
+		# Get the current position, so we can return when we're done.
 		row0 = @row
 		col0 = @col
 		@linefeed0 = @linefeed
 		@colfeed0 = @colfeed
-		# get search string from user
+
+		# Get the search string from the user.
 		token = @window.ask("Search:",$histories.search)
 		if token == nil
 			@window.write_message("Cancelled")
 			return
 		end
-		# is it a regexp
+		# Is it a regexp?
 		if token.match(/^\/.*\/$/) != nil
 			token = eval(token)
 		end
-		# get replace string from user
+
+		# Get the replace string from the user.
 		replacement = @window.ask("Replace:",$histories.replace)
 		if replacement == nil
 			@window.write_message("Cancelled")
 			return
 		end
+
+		# Start at current position.
 		row = @row
 		col = @col
 		sr = @row
 		sc = @col
 		loop do
 			nlines = @text.length
-			idx = @text[row].index(token,col) if @text[row].kind_of?(String)
-			while(idx!=nil)
-				str = @text[row][idx..-1].scan(token)[0]
-				@row = row
-				@col = idx
-				# recenter sreen, when we have gone off page
-				if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
-					center_screen(@row)
-				end
-				dump_to_screen(true)
-				highlight(row,idx,idx+str.length-1)
-				yn = @window.ask_yesno("Replace this occurance?")
-				l = str.length
-				if yn == "yes"
-					temp = @text[row].dup
-					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
-					col = idx+replacement.length
-				elsif yn == "cancel"
-					dump_to_screen(true)
-					@window.write_message("Cancelled")
-					@row = row0
-					@col = col0
-					@linefeed = @linefeed0
-					@colfeed = @colfeed0
-					return
-				else
-					col = idx+replacement.length
-				end
-				if col > @text[row].length
-					break
-				end
-				idx = @text[row].index(token,col)
-			end
+			search_and_replace_single_line(token,replacement,row,col)
 			row = (row+1).modulo(nlines)
+			if row == sr
+				# When we return to the original line, do the start of the
+				# line (which we missed the first time around).
+				search_and_replace_single_line(token,replacement,row,col,sc)
+				break
+			end
 			col = 0
-			if row == sr then break end
 		end
 		@row = row0
 		@col = col0
@@ -2007,6 +1987,46 @@ class FileBuffer
 		@window.write_message("No more matches")
 	end
 
+
+
+	# Execute a search and replace on a single line.
+	def search_and_replace_single_line(token,replacement,row,col,endcol=nil)
+		return if @text[row].kind_of?(Array)
+		idx = @text[row].index(token,col)
+		while(idx!=nil)
+			return if endcol!=nil && idx >= endcol
+			str = @text[row][idx..-1].scan(token)[0]
+			@row = row
+			@col = idx
+			# recenter sreen, when we have gone off page
+			if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
+				center_screen(@row)
+			end
+			dump_to_screen(true)
+			highlight(row,idx,idx+str.length-1)
+			yn = @window.ask_yesno("Replace this occurance?")
+			l = str.length
+			if yn == "yes"
+				temp = @text[row].dup
+				@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
+				col = idx+replacement.length
+			elsif yn == "cancel"
+				dump_to_screen(true)
+				@window.write_message("Cancelled")
+				@row = row0
+				@col = col0
+				@linefeed = @linefeed0
+				@colfeed = @colfeed0
+				return
+			else
+				col = idx+replacement.length
+			end
+			if col > @text[row].length
+				break
+			end
+			idx = @text[row].index(token,col)
+		end
+	end
 
 
 
