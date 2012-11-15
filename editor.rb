@@ -2046,7 +2046,8 @@ class FileBuffer
 		sc = @col
 		loop do
 			nlines = @text.length
-			search_and_replace_single_line(token,replacement,row,col)
+			a = search_and_replace_single_line(token,replacement,row,col)
+			break if a==-1
 			row = (row+1).modulo(nlines)
 			if row == sr
 				# When we return to the original line, do the start of the
@@ -2088,13 +2089,7 @@ class FileBuffer
 				@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
 				col = idx+replacement.length
 			elsif yn == "cancel"
-				dump_to_screen(true)
-				@window.write_message("Cancelled")
-				@row = row0
-				@col = col0
-				@linefeed = @linefeed0
-				@colfeed = @colfeed0
-				return
+				return -1
 			else
 				col = idx+replacement.length
 			end
