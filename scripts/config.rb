@@ -4,30 +4,41 @@
 # All lines are optional (and currenlty set to the default values).
 
 # set the tab width
-$tabsize = 4
+$tabsize = Hash.new(4)
 
 # What gets inserted when the tab key is pressed
-$tabchar = "\t"
+$tabchar = Hash.new("\t")
+$tabchar[:yaml] = "  "
+$tabchar[:fortran] = "  "
 
 # Cursor color
 # Comment out to keep terminal default.
 # $cursor_color = "green"
 
 # do autoindent
-$autoindent = true
+$autoindent = Hash.new(true)
+$autoindent[:text] = false
+$autoindent[:markdown] = false
 
 # don't wrap lines
-$linewrap = false
+$linewrap = Hash.new(false)
+$linewrap[:text] = true
+$linewrap[:markdown] = true
+$linewrap[:git] = true
 
 # Line length for text wrapping.
 # 0 means use the terminal width.
-$linelength = 72
+$linelength = Hash.new(72)
 
 # start in column-mode for marking/selecting text
-$cursormode = 'col'
+$cursormode = Hash.new('col')
+$cursormode[:text] = 'row'
+$cursormode[:markdown] = 'row'
 
 # enable syntax coloring & choose colors
-$syntax_color = true
+$syntax_color = Hash.new(true)
+$syntax_color[:text] = false
+$syntax_color[:markdown] = false
 $color[:comment] = :cyan
 $color[:string] = :yellow
 $color[:whitespace] = [:red,:reverse]
@@ -36,18 +47,6 @@ $color[:message] = :yellow
 $color[:status] = :underline
 $color[:regex] = :normal
 
-
-#
-# Define new syntax coloring schemes
-#
-
-# let perl and awk files be colored like shell scripts
-$syntax_colors.filetypes[/\.pl$/] = "shell"
-$syntax_colors.filetypes[/\.awk$/] = "shell"
-
-# configure html highlighting
-$syntax_colors.filetypes[/\.html$/] = "html"
-$syntax_colors.bc["html"] = {"<!--"=>"-->"}
 
 
 #

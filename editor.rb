@@ -975,28 +975,16 @@ class FileBuffer
 
 	def initialize(filename)
 
-		# displayed width of a literal tab chracter
-		@tabsize = $tabsize
-		# what to insert when tab key is pressed
-		@tabchar = $tabchar
-		# char the file uses for indentation
-		@fileindentchar = nil
-		# char the editor uses for indentation
-		@indentchar = @fileindentchar
-		# full indentation string (could be multiple indentation chars)
-		@fileindentstring = @tabchar
-		@indentstring = @fileindentstring
-
-		# for text justify
-		# 0 means full screen width
-		@linelength = $linelength
-
 		# read in the file
 		@filename = filename
 		@text = [""]
 		read_file
 		# file type for syntax coloring
 		set_filetype(@filename)
+		# set up syntax coloring
+		@syntax_color_lc = $syntax_colors.lc[@filetype]
+		@syntax_color_bc = $syntax_colors.bc[@filetype]
+		@syntax_color_regex = $syntax_colors.regex[@filetype]
 
 		# position of cursor in buffer
 		@row = 0
@@ -1017,15 +1005,33 @@ class FileBuffer
 		@mark_list = {}
 		@multimarkmode = false
 
+
+		# displayed width of a literal tab chracter
+		@tabsize = $tabsize[@filetype]
+		# what to insert when tab key is pressed
+		@tabchar = $tabchar[@filetype]
+		# char the file uses for indentation
+		@fileindentchar = nil
+		# char the editor uses for indentation
+		@indentchar = @fileindentchar
+		# full indentation string (could be multiple indentation chars)
+		@fileindentstring = @tabchar
+		@indentstring = @fileindentstring
+
+		# for text justify
+		# 0 means full screen width
+		@linelength = $linelength[@filetype]
+
+
 		# flags
-		@autoindent = $autoindent
-		@editmode = $editmode
+		@autoindent = $autoindent[@filetype]
+		@editmode = $editmode[@filetype]
 		@extramode = false
 		@sticky_extramode = false
 		@insertmode = true
-		@linewrap = $linewrap
-		@cursormode = $cursormode
-		@syntax_color = $syntax_color
+		@linewrap = $linewrap[@filetype]
+		@cursormode = $cursormode[@filetype]
+		@syntax_color = $syntax_color[@filetype]
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text,@row,@col)
@@ -1110,15 +1116,11 @@ class FileBuffer
 
 	# set the file type from the filename
 	def set_filetype(filename)
-		$syntax_colors.filetypes.each{|k,v|
+		$filetypes.each{|k,v|
 			if filename.match(k) != nil
 				@filetype = v
 			end
 		}
-		# set up syntax coloring
-		@syntax_color_lc = $syntax_colors.lc[@filetype]
-		@syntax_color_bc = $syntax_colors.bc[@filetype]
-		@syntax_color_regex = $syntax_colors.regex[@filetype]
 	end
 
 
@@ -3771,35 +3773,27 @@ end
 #---------------------------------------------------------------------
 
 class SyntaxColors
-	attr_accessor :filetypes, :lc, :bc, :regex
+	attr_accessor :lc, :bc, :regex
 	def initialize
-		@filetypes = {
-			/\.(sh|csh|rb|py)$/ => "shell",
-			/\.([cCh]|cpp)$/ => "c",
-			"COMMIT_EDITMSG" => "shell",
-			/\.m$/ => "m",
-			/\.pro$/ => "idl",
-			/\.[fF]$/ => "f"
-		}
 		# Define per-language from-here-to-end-of-line comments.
 		@lc = {
-			"shell" => ["#"],
-			"ruby" => ["#"],
-			"c" => ["//"],
-			"f" => ["!",/^c/],
-			"m" => ["#","%"],
-			"idl" => [";"]
+			:shell => ["#"],
+			:ruby => ["#"],
+			:c => ["//"],
+			:f => ["!",/^c/],
+			:m => ["#","%"],
+			:idl => [";"]
 		}
 		@lc.default = []
 		# Define per-language block comments.
 		@bc = {
-			"c" => {"/*"=>"*/"},
+			:c => {"/*"=>"*/"},
 		}
 		@bc.default = {}
 		# Define generic regexp syntax rules.
 		@regex = {
 			# Colorize long lines in fortran.
-			"f" => {/^[^cC][^!]{71,}.*$/=>:magenta}
+			:f => {/^[^cC][^!]{71,}.*$/=>:magenta}
 		}
 		@regex.default = {}
 	end
@@ -3828,14 +3822,14 @@ class Editor
 		# Define some general default parameters. These are set as
 		# global variables because they are used all over the place,
 		# and because it makes it easier to reset them on the fly.
-		$tabsize = 4           # Tab character display width
-		$tabchar = "\t"        # What to insert when tab key is pressed
-		$autoindent = true
-		$linewrap = false
-		$cursormode = 'row'    # Default text selection mode
-		$syntax_color = true
-		$editmode = true       # false = start in view mode
-		$linelength = 0        # 0 = terminal width
+		$tabsize = Hash.new(4)           # Tab character display width
+		$tabchar = Hash.new("\t")        # What to insert when tab key is pressed
+		$autoindent = Hash.new(true)
+		$linewrap = Hash.new(false)
+		$cursormode = Hash.new('col')    # Default text selection mode
+		$syntax_color = Hash.new(true)
+		$editmode = Hash.new(true)       # false = start in view mode
+		$linelength = Hash.new(0)        # 0 = terminal width
 
 		# Define the key mapping and colors up front, so that they
 		# can be modified by config files and start-up scripts.
@@ -3843,6 +3837,7 @@ class Editor
 		$color = define_colors
 		$syntax_colors = SyntaxColors.new
 		$cursor_color = nil
+		$filetypes = define_filetypes
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
@@ -3879,6 +3874,25 @@ class Editor
 		}
 		return color
 	end
+
+	def define_filetypes
+		filetypes = {
+			/\.(sh|csh)$/ => :shell,
+			/\.(rb)$/ => :ruby,
+			/\.(py)$/ => :python,
+			/\.([cCh]|cpp)$/ => :c,
+			"COMMIT_EDITMSG" => :git,
+			/\.m$/ => :matlab,
+			/\.pro$/ => :idl,
+			/\.[fF]$/ => :fortran,
+			/\.yaml$/ => :yaml,
+			/\.md$/ => :markdown,
+			/\.txt$/ => :text,
+			/\.pl$/ => :perl,
+		}
+		return filetypes
+	end
+
 
 	# This is a function which runs an arbitrary ruby script.
 	# It can read from a file or from user input.
@@ -3939,42 +3953,42 @@ class Editor
 				exit
 			}
 			opts.on('-t', '--tabsize N', Integer, 'Set tabsize'){|n|
-				$tabsize = n
+				$tabsize = Hash.new(n)
 			}
 			opts.on('-T', '--tabchar c', 'Set tab character'){|c|
-				$tabchar = c
+				$tabchar = Hash.new(c)
 			}
 			opts.on('-A', '--autoindent', 'Turn on autoindent'){
-				$autoindent = true
+				$autoindent = Hash.new(true)
 			}
 			opts.on('-a', '--no-autoindent', 'Turn off autoindent'){
-				$autoindent = false
+				$autoindent = Hash.new(false)
 			}
 			opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
 				$histories_file = file
 			}
 			opts.on('-E', '--edit', 'Start in edit mode'){
-				$editmode = false
+				$editmode = Hash.new(false)
 			}
 			opts.on('-e', '--no-edit', 'Start in view mode'){
-				$editmode = false
+				$editmode = Hash.new(false)
 			}
 			opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
-				$linewrap = true
+				$linewrap = Hash.new(true)
 				if n.nil?
-					$linelength = 0
+					$linelength = Hash.new(0)
 				else
-					$linelength = n
+					$linelength = Hash.new(n)
 				end
 			}
 			opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
-				$linewrap = false
+				$linewrap = Hash.new(false)
 			}
 			opts.on('-C', '--color', 'Turn on syntax coloring'){
-				$syntax_color = true
+				$syntax_color = Hash.new(true)
 			}
 			opts.on('-c', '--no-color', 'Turn off syntax coloring'){
-				$syntax_color = false
+				$syntax_color = Hash.new(false)
 			}
 			opts.on('-v', '--version', 'Print version number'){
 				puts $version
