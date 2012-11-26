@@ -293,10 +293,10 @@ class Screen
 	#
 	# Returns nothing.
 	def suspend(buffers)
+		@terminal.enable_linewrap
 		@terminal.clear_screen
 		@terminal.cursor(0,0)
 		@terminal.unset_raw
-		@terminal.enable_linewrap
 		Process.kill("SIGSTOP",0)
 		@terminal.set_raw
 		@terminal.roll_screen_up(@rows)
