@@ -3778,10 +3778,13 @@ class SyntaxColors
 		# Define per-language from-here-to-end-of-line comments.
 		@lc = {
 			:shell => ["#"],
+			:git => ["#"],
 			:ruby => ["#"],
+			:perl => ["#"],
+			:python => ["#"],
 			:c => ["//"],
-			:f => ["!",/^c/],
-			:m => ["#","%"],
+			:fortran => ["!",/^c/],
+			:matlab => ["#","%"],
 			:idl => [";"]
 		}
 		@lc.default = []
