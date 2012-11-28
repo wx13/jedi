@@ -224,6 +224,9 @@ class Screen
 		# Define screen-specific color codes.
 		@color = @terminal.colors
 
+		# Define status and message colors
+		add_colors({:status=>:underline,:message=>:yellow})
+
 	end
 
 
@@ -888,7 +891,6 @@ class Window
 		# if size is unset, set it to screen size minus 1 (top bar)
 		@rows = @screen.rows - 1 if @rows <= 0
 		@cols = @screen.cols if @cols <= 0
-		@stack = "v"  # vertical ("v") or horizontal ("h")
 	end
 
 	# These all translate window position to screen position,
