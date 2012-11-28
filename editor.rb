@@ -13,6 +13,11 @@ $version = "0.1.0"
 
 
 
+# Wrap Terminal, Screen, and Window in a module, for use in other
+# projects.
+module Antsy
+VERSION = "0.0.0"
+
 #---------------------------------------------------------------------
 # Terminal class defines the API for interacting with the terminal.
 # Everything terminal specific belongs in here.  In theory, to change
@@ -207,7 +212,7 @@ class Screen
 
 	def initialize
 
-		@terminal = Terminal.new
+		@terminal = Antsy::Terminal.new
 
 		# get and store screen size
 		update_screen_size
@@ -946,6 +951,9 @@ end
 
 
 
+end
+# End of module wrapper to Terminal, Screen, and Window
+
 
 
 
@@ -1041,7 +1049,7 @@ class FileBuffer
 		@bookmarks_hist = [""]
 
 		# grab a window to write to
-		@window = Window.new($screen)
+		@window = Antsy::Window.new($screen)
 
 		# for marked text highlighting
 		@buffer_marks = {}
@@ -3847,7 +3855,7 @@ class Editor
 		# Initialize the interactive screen environment, and set the color
 		# global to point to the one that screen defines.  This will keep
 		# everything in the same place, but allow easy on-the-fly color changes.
-		$screen = Screen.new
+		$screen = Antsy::Screen.new
 		$color = $screen.add_colors($color)
 		$screen.set_cursor_color($cursor_color)
 
