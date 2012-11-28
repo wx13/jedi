@@ -217,7 +217,7 @@ class Screen
 		@buffer = []
 
 		# Define screen-specific color codes.
-		@color = define_colors
+		@color = @terminal.colors
 
 		# Set cursor color if desired.
 		set_cursor_color($cursor_color) if $cursor_color != nil
@@ -225,15 +225,14 @@ class Screen
 	end
 
 
-	def define_colors
-		color = @terminal.colors
-		$color.each{|k,v|
-			color[k] = ""
+	def add_colors(new_colors)
+		new_colors.each{|k,v|
+			@color[k] = ""
 			[v].flatten.each{|c|
-				color[k] += color[c]
+				@color[k] += @color[c]
 			}
 		}
-		return color
+		return @color
 	end
 
 
@@ -3851,7 +3850,7 @@ class Editor
 		# global to point to the one that screen defines.  This will keep
 		# everything in the same place, but allow easy on-the-fly color changes.
 		$screen = Screen.new
-		$color = $screen.color
+		$color = $screen.add_colors($color)
 
 		# Read the specified files into the list of buffers.
 		$buffers = BuffersList.new(ARGV)
