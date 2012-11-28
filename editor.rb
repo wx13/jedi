@@ -219,9 +219,6 @@ class Screen
 		# Define screen-specific color codes.
 		@color = @terminal.colors
 
-		# Set cursor color if desired.
-		set_cursor_color($cursor_color) if $cursor_color != nil
-
 	end
 
 
@@ -3838,7 +3835,7 @@ class Editor
 		$keymap = KeyMap.new
 		$color = define_colors
 		$syntax_colors = SyntaxColors.new
-		$cursor_color = nil
+		$cursor_color = ''
 		$filetypes = define_filetypes
 
 		# Parse input options after keymap and colors are defined, but before
@@ -3851,6 +3848,7 @@ class Editor
 		# everything in the same place, but allow easy on-the-fly color changes.
 		$screen = Screen.new
 		$color = $screen.add_colors($color)
+		$screen.set_cursor_color($cursor_color)
 
 		# Read the specified files into the list of buffers.
 		$buffers = BuffersList.new(ARGV)
