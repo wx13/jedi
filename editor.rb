@@ -850,6 +850,11 @@ class Screen
 	end
 
 
+	# pass-through to terminal class
+	def method_missing(method,*args,&block)
+		@terminal.send method, *args, &block
+	end
+
 end
 
 
