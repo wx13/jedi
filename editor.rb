@@ -108,6 +108,10 @@ class Terminal
 
 			"\e[M32" => :left_click,
 			"\e[M33" => :middle_click,
+			"\e[M96" => :scroll_down,
+			"\e[M97" => :scroll_up,
+			"\e[M112" => :ctrl_scroll_down,
+			"\e[M113" => :ctrl_scroll_up,
 		}
 	end
 
@@ -3500,15 +3504,15 @@ class BuffersList
 	end
 
 	# Shift all buffers on the screen up/down.
-	def screen_up
+	def screen_up(n=1)
 		@pages[@ipage].buffers.each{|buf|
-			buf.screen_up
+			buf.screen_up(n)
 		}
 		@pages[@ipage].refresh_buffers
 	end
-	def screen_down
+	def screen_down(n=1)
 		@pages[@ipage].buffers.each{|buf|
-			buf.screen_down
+			buf.screen_down(n)
 		}
 		@pages[@ipage].refresh_buffers
 	end
@@ -3618,6 +3622,10 @@ class KeyMap
 			:ctrlshift_right => "buffer.unrevert_to_saved",
 			:left_click => "$buffers.mouse_select",
 			:middle_click => "$buffers.mouse_mark",
+			:scroll_up => "buffer.screen_up(4)",
+			:scroll_down => "buffer.screen_down(4)",
+			:ctrl_scroll_up => "$buffers.screen_up(4)",
+			:ctrl_scroll_down => "$buffers.screen_down(4)",
 		}
 		@commandlist.default = ""
 		@extramode_commandlist = {
