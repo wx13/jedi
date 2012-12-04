@@ -25,7 +25,7 @@ VERSION = "0.0.0"
 #---------------------------------------------------------------------
 class Terminal
 
-	attr_accessor :colors, :keycodes, :escape
+	attr_accessor :colors, :keycodes, :escape, :mouse_x, :mouse_y
 
 	def initialize
 		define_colors
@@ -105,6 +105,9 @@ class Terminal
 			"\e[6C" => :ctrlshift_right,
 			"\e[6A" => :ctrlshift_up,
 			"\e[6B" => :ctrlshift_down,
+
+			"\e[M32" => :left_click,
+			"\e[M33" => :middle_click,
 		}
 	end
 
@@ -120,6 +123,12 @@ class Terminal
 		c = STDIN.getc.chr
 		if c=="\e"
 			2.times{c += STDIN.getc.chr}
+		end
+		# Mouse
+		if c[2,1] == "M"
+			c += STDIN.getc.to_s
+			@mouse_x = STDIN.getc - 33
+			@mouse_y = STDIN.getc - 33
 		end
 		if c == "\e[5" || c == "\e[6"
 			c += STDIN.getc.chr
@@ -185,6 +194,15 @@ class Terminal
 	end
 	def restore_cursor
 		print "\e[u"
+	end
+
+	# Allow the user to toggle mouse support on/off.
+	def toggle_mouse(mouse)
+		if mouse
+			print "\e[?9h"
+		else
+			print "\e[?9l"
+		end
 	end
 
 end
@@ -288,6 +306,7 @@ class Screen
 			@terminal.cursor(0,0)
 			@terminal.enable_linewrap
 			@terminal.clear_screen
+			@terminal.toggle_mouse(false)
 		end
 	end
 
@@ -2823,6 +2842,11 @@ class FileBuffer
 		}
 		return(bc)
 	end
+	# Convert screen row/col to buffer row/col.
+	def src2brc(sr,sc)
+		@row = sr - @window.pos_row - 1 + @linefeed
+		@col = sc2bc(@row,sc-@window.pos_col) + @colfeed
+	end
 	def tabs2spaces(line)
 		return line if line == nil || line.length == 0
 		a = line.split("\t",-1)
@@ -3489,6 +3513,34 @@ class BuffersList
 		@pages[@ipage].refresh_buffers
 	end
 
+	# Use the mouse position to select a buffer.
+	def mouse_select
+		# find out the screen position
+		sr = $screen.mouse_y
+		sc = $screen.mouse_x
+		# find window
+		@pages[@ipage].buffers.each_index{|i|
+			r0 = @pages[@ipage].buffers[i].window.pos_row
+			c0 = @pages[@ipage].buffers[i].window.pos_col
+			r1 = @pages[@ipage].buffers[i].window.rows + r0
+			c1 = @pages[@ipage].buffers[i].window.cols + c0
+			if sr.between?(r0,r1) && sc.between?(c0,c1)
+				@pages[@ipage].ibuf = i
+				break
+			end
+		}
+		# find position in window
+		buffer = current
+		buffer.src2brc(sr,sc)
+	end
+
+	# Set marked text mark at current mouse position.
+	def mouse_mark
+		mouse_select
+		buffer = current
+		buffer.mark
+	end
+
 end
 
 # end of BuffersList class
@@ -3563,7 +3615,9 @@ class KeyMap
 			:ctrl_left => "buffer.undo",
 			:ctrl_right => "buffer.redo",
 			:ctrlshift_left => "buffer.revert_to_saved",
-			:ctrlshift_right => "buffer.unrevert_to_saved"
+			:ctrlshift_right => "buffer.unrevert_to_saved",
+			:left_click => "$buffers.mouse_select",
+			:middle_click => "$buffers.mouse_mark",
 		}
 		@commandlist.default = ""
 		@extramode_commandlist = {
@@ -3670,7 +3724,9 @@ class KeyMap
 			"S" => "@syntax_color = true",
 			"s" => "@syntax_color = false",
 			"-" => "$buffers.vstack",
-			"|" => "$buffers.hstack"
+			"|" => "$buffers.hstack",
+			"M" => "$screen.toggle_mouse(true)",
+			"m" => "$screen.toggle_mouse(false)",
 		}
 		@togglelist.default = ""
 
@@ -3853,6 +3909,7 @@ class Editor
 		$syntax_colors = SyntaxColors.new
 		$cursor_color = ''
 		$filetypes = define_filetypes
+		$mouse = false
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
@@ -3865,6 +3922,7 @@ class Editor
 		$screen = Antsy::Screen.new
 		$color = $screen.add_colors($color)
 		$screen.set_cursor_color($cursor_color)
+		$screen.toggle_mouse($mouse)
 
 		# Read the specified files into the list of buffers.
 		$buffers = BuffersList.new(ARGV)
@@ -4005,6 +4063,12 @@ class Editor
 			}
 			opts.on('-c', '--no-color', 'Turn off syntax coloring'){
 				$syntax_color = Hash.new(false)
+			}
+			opts.on('-m', '--no-mouse', 'Disable mouse support'){
+				$mouse = false
+			}
+			opts.on('-M', '--mouse', 'Enable mouse interaction'){
+				$mouse = true
 			}
 			opts.on('-v', '--version', 'Print version number'){
 				puts $version
