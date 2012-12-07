@@ -1,8 +1,8 @@
 editor.rb is a text editor writen in ruby for the unix console. The
 project is hosted on [github](https://github.com/wx13/editor).
 
-Why another text editor? Because I couldn't find any that satisfy the
-all of the following:
+Primary objectives:
+
 1. Zero install
 2. Easy to hack
 3. Text UI

@@ -48,6 +48,32 @@ Or to completely change all of them:
 To see all the default keybindings, search for `/^class KeyMap/` in the file.
 
 
+###Mouse wheel###
+
+When mouse mode is enabled, scrolling the wheel should scroll the
+screen.  This does not work in an xterm, because xterm does not use the
+standard mouse wheel key codes.  Putting the following code into your
+.Xdefaults file:
+
+	xterm*VT100.translations: #override <Key>F1: keymap(x)
+	xterm*VT100.xKeymap.translations: \
+	  <Key>F1: keymap(y) \n\
+	  <Btn4Down>,<Btn4Up>: string("0x1B") string("[M`11") \n\
+	  <Btn5Down>,<Btn5Up>: string("0x1B") string("[Ma11") \n\
+	  Ctrl<Btn4Down>,<Btn4Up>: string("0x1B") string("[Mp11") \n\
+	  Ctrl<Btn5Down>,<Btn5Up>: string("0x1B") string("[Mq11")
+	xterm*VT100.yKeymap.translations: \
+	  <Key>F1: keymap(x) \n\
+	  <Btn4Down>,<Btn4Up>: scroll-back(4,line) \n\
+	  <Btn5Down>,<Btn5Up>: scroll-forw(4,line) \n\
+	  Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage) \n\
+	  Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)
+
+will let you toggle between xterm scrolling and editor.rb scrolling by
+hitting the F1 key.  Enable mouse mode with the -M flag or by hitting
+`^TM`.  Then hit F1 to scroll the editor.rb screen.  Hit F1 again to
+scroll the xterm window. And hit F1 to go back to editor.rb scrolling.
+
 Syntax Coloring
 ---------------
 
