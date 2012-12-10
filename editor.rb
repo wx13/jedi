@@ -1281,20 +1281,20 @@ class FileBuffer
 
 		# Dump the text to the file.
 		begin
+			text = @text.join(@eol)
+			if @fileindentstring != @indentstring
+				text = text.split(@eol,-1)
+				text.each{|line|
+					after = line.split(/^(#{@indentstring})+/).last
+					next if after.nil?
+					ni = (line.length - after.length)/(@indentstring.length)
+					line.slice!(0..-1)
+					line << @fileindentstring * ni
+					line << after
+				}
+				text = text.join(@eol)
+			end
 			File.open(@filename,"w"){|file|
-				text = @text.join(@eol)
-				if @fileindentstring != @indentstring
-					text = text.split(@eol,-1)
-					text.each{|line|
-						after = line.split(/^(#{@indentstring})+/).last
-						next if after.nil?
-						ni = (line.length - after.length)/(@indentstring.length)
-						line.slice!(0..-1)
-						line << @fileindentstring * ni
-						line << after
-					}
-					text = text.join(@eol)
-				end
 				file.write(text)
 			}
 		rescue
