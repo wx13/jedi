@@ -1284,7 +1284,7 @@ class FileBuffer
 			File.open(@filename,"w"){|file|
 				text = @text.join(@eol)
 				if @fileindentstring != @indentstring
-					text = text.split(@eol)
+					text = text.split(@eol,-1)
 					text.each{|line|
 						after = line.split(/^(#{@indentstring})+/).last
 						next if after.nil?
