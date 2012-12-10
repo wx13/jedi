@@ -1285,7 +1285,8 @@ class FileBuffer
 			if @fileindentstring != @indentstring
 				text = text.split(@eol,-1)
 				text.each{|line|
-					after = line.split(/^(#{@indentstring})+/).last
+					@eis = Regexp.escape(@indentstring)
+					after = line.split(/^(#{@eis})+/).last
 					next if after.nil?
 					ni = (line.length - after.length)/(@indentstring.length)
 					line.slice!(0..-1)
@@ -2998,7 +2999,8 @@ class FileBuffer
 		@text.map{|line|
 			if line.is_a?(Array)
 				line.map{|sline|
-					after = sline.split(/^(#{@fileindentstring})+/).last
+					efis = Regexp.escape(@fileindentstring)
+					after = sline.split(/^(#{efis})+/).last
 					next if after.nil?
 					ni = (sline.length - after.length)/(@fileindentstring.length)
 					sline.slice!(0..-1)
@@ -3006,7 +3008,8 @@ class FileBuffer
 					sline << after
 				}
 			else
-				after = line.split(/^(#{@fileindentstring})+/).last
+				efis = Regexp.escape(@fileindentstring)
+				after = line.split(/^(#{efis})+/).last
 				next if after.nil?
 				ni = (line.length - after.length)/(@fileindentstring.length)
 				line.slice!(0..-1)
@@ -3031,7 +3034,8 @@ class FileBuffer
 		@text.map{|line|
 			if line.is_a?(Array)
 				line.map{|sline|
-					after = sline.split(/^(#{@indentstring})+/).last
+					eis = Regexp.escape(@indentstring)
+					after = sline.split(/^(#{eis})+/).last
 					next if after.nil?
 					ni = (sline.length - after.length)/(@indentstring.length)
 					sline.slice!(0..-1)
@@ -3039,7 +3043,8 @@ class FileBuffer
 					sline << after
 				}
 			else
-				after = line.split(/^(#{@indentstring})+/).last
+				eis = Regexp.escape(@indentstring)
+				after = line.split(/^(#{eis})+/).last
 				next if after.nil?
 				ni = (line.length - after.length)/(@indentstring.length)
 				line.slice!(0..-1)
