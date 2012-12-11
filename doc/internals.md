@@ -216,12 +216,15 @@ pretend as if it is indented by tabs.  Most of the work is in checking
 that things are sane (e.g. no mixing of indentation strings) and
 getting input from the user.  The real work is done with
 
-    @text.map{|line|
-        m = line.gsub!(/^#{@fileindentstring}/,@indentstring)
-        while m!=nil
-            m = line.gsub!(/^(#{@indentstring}*)(#{@fileindentstring})/,"\\1"+@indentstring)
-        end
-    }
+	@text.map{|line|
+		efis = Regexp.escape(@fileindentstring)
+		after = line.split(/^(#{efis})+/).last
+		next if after.nil?
+		ni = (line.length - after.length)/(@fileindentstring.length)
+		line.slice!(0..-1)
+		line << @indentstring * ni
+		line << after
+	}
 
 This simply swaps out one indentation string for another in the buffer
 text.  Notice that this violates the rule of not modifying the text
