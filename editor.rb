@@ -310,6 +310,7 @@ class Screen
 			@terminal.cursor(0,0)
 			@terminal.enable_linewrap
 			@terminal.clear_screen
+			@terminal.show_cursor
 			@terminal.toggle_mouse(false)
 		end
 	end
@@ -322,6 +323,7 @@ class Screen
 	def suspend(buffers)
 		@terminal.enable_linewrap
 		@terminal.clear_screen
+		@terminal.show_cursor
 		@terminal.cursor(0,0)
 		@terminal.unset_raw
 		Process.kill("SIGSTOP",0)
