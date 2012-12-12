@@ -320,7 +320,7 @@ class Screen
 	# buffer - the current buffer, so we can refresh upon return.
 	#
 	# Returns nothing.
-	def suspend(buffers)
+	def suspend
 		@terminal.enable_linewrap
 		@terminal.clear_screen
 		@terminal.show_cursor
@@ -331,7 +331,6 @@ class Screen
 		@terminal.roll_screen_up(@rows)
 		@terminal.disable_linewrap
 		update_screen_size
-		buffers.update_screen_size
 	end
 
 	# Set cursor position.
@@ -3339,6 +3338,11 @@ class BuffersList
 		@pages[@ipage].refresh_buffers
 	end
 
+	def suspend
+		$screen.suspend
+		update_screen_size
+	end
+
 	# Return next, previous, or current buffer.
 	def next_page
 		@ipage = (@ipage+1).modulo(@npage)
@@ -3612,7 +3616,7 @@ class KeyMap
 			:ctrl_g => "buffer.goto_line",
 			:ctrl_o => "buffer.save",
 			:ctrl_f => "buffer = $buffers.open",
-			:ctrl_z => "$screen.suspend($buffers)",
+			:ctrl_z => "$buffers.suspend",
 			:ctrl_t => "buffer.toggle",
 			:ctrl_6 => "buffer.extramode = true",
 			:ctrl_s => "buffer.enter_command",
