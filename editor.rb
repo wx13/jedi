@@ -1209,7 +1209,7 @@ class FileBuffer
 
 	# Go back to edit mode.
 	def toggle_editmode
-		@editmode = true
+		@editmode = :edit
 		@window.write_message("Edit mode")
 	end
 
@@ -2441,9 +2441,7 @@ class FileBuffer
 		else
 			status = ""
 		end
-		if !@editmode
-			status = status + "  VIEW"
-		end
+		status += "  " + @editmode.to_s
 		# report on number of open buffers
 		if $buffers.npage <= 1
 			lstr = @filename
@@ -3728,8 +3726,8 @@ class KeyMap
 
 
 		@togglelist = {
-			"E" => "@editmode = true",
-			"e" => "@editmode = false",
+			"E" => "@editmode = :edit",
+			"e" => "@editmode = :view",
 			"A" => "@autoindent = true",
 			"a" => "@autoindent = false",
 			"I" => "@insertmode = true",
@@ -3760,10 +3758,9 @@ class KeyMap
 	def command(keycode, editmode)
 		cmd = @commandlist[keycode]
 		if cmd == ""
-			if editmode
-				cmd = @editmode_commandlist[keycode]
-			else
-				cmd = @viewmode_commandlist[keycode]
+			case editmode
+				when :edit then cmd = @editmode_commandlist[keycode]
+				when :view then cmd = @viewmode_commandlist[keycode]
 			end
 		end
 		if cmd == ""
@@ -3918,7 +3915,7 @@ class Editor
 		$linewrap = Hash.new(false)
 		$cursormode = Hash.new('col')    # Default text selection mode
 		$syntax_color = Hash.new(true)
-		$editmode = Hash.new(true)       # false = start in view mode
+		$editmode = Hash.new(:edit)      # false = start in view mode
 		$linelength = Hash.new(0)        # 0 = terminal width
 
 		# Define the key mapping and colors up front, so that they
@@ -4061,10 +4058,10 @@ class Editor
 				$histories_file = file
 			}
 			opts.on('-E', '--edit', 'Start in edit mode'){
-				$editmode = Hash.new(false)
+				$editmode = Hash.new(:edit)
 			}
 			opts.on('-e', '--no-edit', 'Start in view mode'){
-				$editmode = Hash.new(false)
+				$editmode = Hash.new(:view)
 			}
 			opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
 				$linewrap = Hash.new(true)
