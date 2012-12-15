@@ -555,7 +555,7 @@ class Screen
 					else
 						return 0
 					end
-				when :up, :down
+				when :up, :down, :left, :right
 					# up/down treated same as enter
 					if hist.length > 0
 						return hist.length - ih
