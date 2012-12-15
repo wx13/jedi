@@ -286,7 +286,7 @@ class Screen
 		cols_old = @cols
 		rows_old = @rows
 		@rows,@cols = @terminal.get_screen_size
-		@rows = @rows.to_i-1
+		@rows = [@rows.to_i-1,1].max
 		@cols = @cols.to_i
 		if cols_old!=@cols || rows_old!=@rows
 			return true
