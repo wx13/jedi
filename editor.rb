@@ -865,7 +865,7 @@ class Screen
 			end
 		end
 
-		return(selected_item)
+		return([selected,selected_item])
 
 	ensure
 
@@ -1197,7 +1197,7 @@ class FileBuffer
 		@window.write_message("Toggle")
 		c = @window.getch until c!=nil
 		if c == :tab
-			cmd = @window.menu($keymap.togglelist,"Toggle")
+			cmd = @window.menu($keymap.togglelist,"Toggle").last
 			dump_to_screen(true)
 		else
 			cmd = $keymap.togglelist[c]
@@ -3554,6 +3554,27 @@ class BuffersList
 		buffer.mark
 	end
 
+	def menu
+		list = []
+		ipage = 0
+		@pages.each{|page|
+			ibuf = 0
+			page.buffers.each{|buffer|
+				number = [ipage,ibuf].join('.')
+				name = buffer.filename
+				list << [number,name]
+				ibuf += 1
+			}
+			ipage += 1
+		}
+		ans = $screen.menu(list,"buffers").first
+		ipage,ibuf = list[ans][0].split('.')
+		@ipage = ipage.to_i
+		@ibuf = ibuf.to_i
+		buffer = @pages[@ipage].buffers[@ibuf]
+		@pages[@ipage].refresh_buffers
+	end
+
 end
 
 # end of BuffersList class
@@ -3668,6 +3689,7 @@ class KeyMap
 			"I" => "buffer.indentation_real",
 			"x" => "buffer.multimark",
 			"C" => "$screen.set_cursor_color",
+			:ctrl_n => "$buffers.menu",
 			:up => "buffer.cursor_up(1)",
 			:down => "buffer.cursor_down(1)",
 			:right => "buffer.cursor_right",
@@ -3680,7 +3702,7 @@ class KeyMap
 			:end2 => "buffer.goto_line(-1)",
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
-			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
+			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode').last)"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
