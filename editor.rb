@@ -2731,7 +2731,8 @@ class FileBuffer
 			lccs.each{|str|
 				if cline.index(str)==0
 					bline += $color[:comment]
-					bline += cline
+					# remove any other colors inside of the comment
+					bline += cline.gsub(/\e\[.*?m/,'')
 					bline += $color[:normal]
 					flag = true
 					break
@@ -2746,7 +2747,8 @@ class FileBuffer
 					b,c = syntax_find_match(cline,ec,bline)
 					if b != nil
 						bline += $color[:comment]
-						bline += b
+						# remove any other colors inside of the comment
+						bline += b.gsub(/\e\[.*?m/,'')
 						bline += $color[:normal]
 						cline = c
 						flag = true
@@ -2761,7 +2763,8 @@ class FileBuffer
 				b,c = syntax_find_match(cline,cqc,bline)
 				if b != nil
 					bline += $color[:string]
-					bline += b
+					# remove any other colors inside of the comment
+					bline += b.gsub(/\e\[.*?m/,'')
 					bline += $color[:normal]
 					cline = c
 					next
@@ -2774,7 +2777,8 @@ class FileBuffer
 				b,c = syntax_find_match(cline,cqc,bline)
 				if b != nil
 					bline += $color[:regex]
-					bline += b
+					# remove any other colors inside of the comment
+					bline += b.gsub(/\e\[.*?m/,'')
 					bline += $color[:normal]
 					cline = c
 					next
@@ -2798,8 +2802,6 @@ class FileBuffer
 		@syntax_color_regex.each{|k,v|
 			aline.gsub!(k,$color[v]+"\\0"+$color[:normal])
 		}
-		# trailing whitespace
-		aline.gsub!(/\s+$/,$color[:whitespace]+"\\0"+$color[:normal])
 		# leading whitespace
 		if @indentchar
 			q = aline.partition(/\S/)
@@ -2808,6 +2810,8 @@ class FileBuffer
 		end
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
+		# trailing whitespace
+		aline.gsub!(/\s+(\e\[0m)+$/,$color[:whitespace]+"\\0"+$color[:normal])
 		return(aline)
 	end
 
@@ -3891,7 +3895,8 @@ class SyntaxColors
 			:c => ["//"],
 			:fortran => ["!",/^c/],
 			:matlab => ["#","%"],
-			:idl => [";"]
+			:idl => [";"],
+			:latex => ["%"],
 		}
 		@lc.default = []
 		# Define per-language block comments.
@@ -3902,7 +3907,8 @@ class SyntaxColors
 		# Define generic regexp syntax rules.
 		@regex = {
 			# Colorize long lines in fortran.
-			:f => {/^[^cC][^!]{71,}.*$/=>:magenta}
+			:fortran => {/^[^cC][^!]{71,}.*$/=>:magenta},
+			:latex => {/\\[^\s\{\\\[]*/ => :green},
 		}
 		@regex.default = {}
 	end
@@ -4001,6 +4007,7 @@ class Editor
 			/\.md$/ => :markdown,
 			/\.txt$/ => :text,
 			/\.pl$/ => :perl,
+			/\.tex$/ => :latex,
 		}
 		return filetypes
 	end
