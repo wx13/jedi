@@ -3100,7 +3100,7 @@ class BufferHistory
 		# These are for (un)reverting to saved copy.
 		@saved = [@current]
 		@saved_idx = 0
-		@last_saved_idx = 0
+		@last_saved = @current
 	end
 
 
@@ -3120,12 +3120,12 @@ class BufferHistory
 		end
 	end
 
-	# add a new snapshot
+	# Add a new snapshot.
 	def add(text,row,col)
 
 		@length += 1
 
-		# create a new node and set navigation pointers
+		# Create a new node and set navigation pointers.
 		old = @current
 		@current = Node.new(text,row,col)
 		@current.next = old.next
@@ -3136,8 +3136,8 @@ class BufferHistory
 		old.next = @current
 
 		# Prune the tree, so it doesn't get too big.
-		# Start by going back.
 		if @length > 1200
+			# Start by going back.
 			n=0
 			x = @current
 			while x != nil
@@ -3169,7 +3169,7 @@ class BufferHistory
 		end
 	end
 
-	# get the current text state
+	# Return the current text state.
 	def text
 		@current.text
 	end
@@ -3180,10 +3180,11 @@ class BufferHistory
 		@current.col
 	end
 
-	# Shallow copy
+	# Make a shallow copy of the text.
 	def copy
 		return(@current.text.dup)
 	end
+
 	def prev
 		if @current.prev == nil
 			return(@current)
@@ -3191,6 +3192,7 @@ class BufferHistory
 			return(@current.prev)
 		end
 	end
+
 	def next
 		if @current.next == nil
 			return(@current)
@@ -3198,6 +3200,7 @@ class BufferHistory
 			return(@current.next)
 		end
 	end
+
 	def delete
 		if (@current.next==nil)&&(@current.prev==nil)
 			return(@current)
@@ -3212,15 +3215,20 @@ class BufferHistory
 		end
 	end
 
+	# This should get called only when the file is saved.
+	# This makes a "saved" snapshot of the history,
+	# *and* sets the "last_saved" state, which should track
+	# the contents of the saved-to-disk file (assuming nobody
+	# else has changed it).
 	def save
 		@saved = @saved[0..@saved_idx] + [@current] + @saved[@saved_idx+1..-1]
 		@saved_idx += 1
-		@last_saved_idx = @saved_idx
+		@last_saved = @current
 	end
 
 	# Is the text modified from the saved version.
 	def modified?
-		@saved[@last_saved_idx].text.flatten != @current.text.flatten
+		@last_saved.text.flatten != @current.text.flatten
 	end
 
 	def undo
@@ -3241,18 +3249,22 @@ class BufferHistory
 		end
 	end
 
+	# These bumps along the "saved" states of the buffer history.
 	def revert_to_saved
-		@saved << @current if @saved[@saved_idx] != @current
-		@saved_idx = [@saved_idx-1,0].max
+		if @saved[@saved_idx] != @current
+			@saved = @saved[0..@saved_idx] + [@current] + @saved[@saved_idx+1..-1]
+		else
+			@saved_idx = [@saved_idx-1,0].max
+		end
 		@current = @saved[@saved_idx]
 		return(copy)
 	end
-
 	def unrevert_to_saved
 		@saved_idx = [@saved_idx+1,@saved.length-1].min
 		@current = @saved[@saved_idx]
 		return(copy)
 	end
+
 end
 
 # end of BufferHistory class
