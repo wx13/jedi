@@ -1356,10 +1356,17 @@ class FileBuffer
 	end
 
 
+	# Has the buffer been modified from the saved version?
 	def modified?
 		@buffer_history.modified?
 	end
 
+	# If changed, take a snapshot of the new buffer.
+	def snapshot
+		if @buffer_history.text != @text
+			@buffer_history.add(@text,@row,@col)
+		end
+	end
 
 
 
@@ -1818,20 +1825,16 @@ class FileBuffer
 		end
 	end
 	def undo
-		if @buffer_history.prev != nil
-			@buffer_history.tree = @buffer_history.prev  # set pointer back
-			@text.delete_if{|x|true}
-			@text.concat(@buffer_history.copy)
-			@row = @buffer_history.next.row
-			@col = @buffer_history.next.col
+		if @buffer_history.undo
+			@text = @buffer_history.copy
+			@row = @buffer_history.row
+			@col = @buffer_history.col
 			better_cursor_position
 		end
 	end
 	def redo
-		if @buffer_history.next != nil
-			@buffer_history.tree = @buffer_history.next
-			@text.delete_if{|x|true}
-			@text.concat(@buffer_history.copy)
+		if @buffer_history.redo
+			@text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
 			better_cursor_position
@@ -3086,18 +3089,22 @@ end
 
 class BufferHistory
 
-	attr_accessor :tree
+	attr_accessor :current
 
 	def initialize(text,row,col)
-		# create a root node, with no neighbors
-		@tree = Node.new(text,row,col)
-		@tree.next = nil
-		@tree.prev = nil
-		# these are for (un)reverting to saved copy
-		@saved = @tree
-		@old = @tree
+		# Create a root node, with no neighbors.
+		@current = Node.new(text,row,col)
+		@current.next = nil
+		@current.prev = nil
+		@length = 1
+		# These are for (un)reverting to saved copy.
+		@saved = [@current]
+		@saved_idx = 0
+		@last_saved_idx = 0
 	end
 
+
+	# Define a linked list node for text buffer state.
 	class Node
 		attr_accessor :next, :prev, :text, :row, :col
 		def initialize(text,row,col)
@@ -3116,105 +3123,134 @@ class BufferHistory
 	# add a new snapshot
 	def add(text,row,col)
 
+		@length += 1
+
 		# create a new node and set navigation pointers
-		@old = @tree
-		@tree = Node.new(text,row,col)
-		@tree.next = @old.next
-		if @old.next != nil
-			@old.next.prev = @tree
+		old = @current
+		@current = Node.new(text,row,col)
+		@current.next = old.next
+		if old.next != nil
+			old.next.prev = @current
 		end
-		@tree.prev = @old
-		@old.next = @tree
+		@current.prev = old
+		old.next = @current
 
 		# Prune the tree, so it doesn't get too big.
 		# Start by going back.
-		n=0
-		x = @tree
-		while x != nil
-			n += 1
-			x0 = x
-			x = x.prev
-		end
-		x = x0
-		while n > 500
-			n -= 1
-			break if x == @saved
-			x = x.next
-			x.prev.delete
-		end
-		# now forward
-		n=0
-		x = @tree
-		while x != nil
-			n += 1
-			x0 = x
-			x = x.next
-		end
-		x = x0
-		while n > 500
-			n -= 1
-			break if x == @saved
-			x = x.prev
-			x.next.delete
+		if @length > 1200
+			n=0
+			x = @current
+			while x != nil
+				n += 1
+				x0 = x
+				x = x.prev
+			end
+			x = x0
+			while n > 500
+				n -= 1
+				x = x.next
+				x.prev.delete
+			end
+			# now forward
+			n=0
+			x = @current
+			while x != nil
+				n += 1
+				x0 = x
+				x = x.next
+			end
+			x = x0
+			while n > 500
+				n -= 1
+				break if x == @saved
+				x = x.prev
+				x.next.delete
+			end
 		end
 	end
 
 	# get the current text state
 	def text
-		@tree.text
+		@current.text
 	end
 	def row
-		@tree.row
+		@current.row
 	end
 	def col
-		@tree.col
+		@current.col
 	end
 
 	# Shallow copy
 	def copy
-		atext = []
-		atext = @tree.text.dup
-		return(atext)
+		return(@current.text.dup)
 	end
 	def prev
-		if @tree.prev == nil
-			return(@tree)
+		if @current.prev == nil
+			return(@current)
 		else
-			return(@tree.prev)
+			return(@current.prev)
 		end
 	end
 	def next
-		if @tree.next == nil
-			return(@tree)
+		if @current.next == nil
+			return(@current)
 		else
-			return(@tree.next)
+			return(@current.next)
 		end
 	end
 	def delete
-		if (@tree.next==nil)&&(@tree.prev==nil)
-			return(@tree)
+		if (@current.next==nil)&&(@current.prev==nil)
+			return(@current)
 		else
-			@tree.delete
-			if @tree.next == nil
-				return(@tree.prev)
+			@current.delete
+			@length -= 1
+			if @current.next == nil
+				return(@current.prev)
 			else
-				return(@tree.next)
+				return(@current.next)
 			end
 		end
 	end
+
 	def save
-		@saved = @tree
+		@saved = @saved[0..@saved_idx] + [@current] + @saved[@saved_idx+1..-1]
+		@saved_idx += 1
+		@last_saved_idx = @saved_idx
 	end
+
+	# Is the text modified from the saved version.
 	def modified?
-		@saved.text.flatten != @tree.text.flatten
+		@saved[@last_saved_idx].text.flatten != @current.text.flatten
 	end
+
+	def undo
+		if @current.prev != nil
+			@current = @current.prev
+			return(true)
+		else
+			return(false)
+		end
+	end
+
+	def redo
+		if @current.next != nil
+			@current = @current.next
+			return(true)
+		else
+			return(false)
+		end
+	end
+
 	def revert_to_saved
-		@old = @tree
-		@tree = @saved
+		@saved << @current if @saved[@saved_idx] != @current
+		@saved_idx = [@saved_idx-1,0].max
+		@current = @saved[@saved_idx]
 		return(copy)
 	end
+
 	def unrevert_to_saved
-		@tree = @old
+		@saved_idx = [@saved_idx+1,@saved.length-1].min
+		@current = @saved[@saved_idx]
 		return(copy)
 	end
 end
@@ -4157,9 +4193,7 @@ class Editor
 				buffer.cutscore -= 1
 
 				# Take a snapshot of the buffer text for undo/redo purposes.
-				if buffer.buffer_history.text != buffer.text
-					buffer.buffer_history.add(buffer.text,buffer.row,buffer.col)
-				end
+				buffer.snapshot
 
 				# Display the current buffer.
 				buffer.dump_to_screen
