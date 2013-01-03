@@ -1498,7 +1498,8 @@ class FileBuffer
 		if @marked
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
-				column_delete(mark_row,row,@col)
+				c = (mark_row==row)?(0):(@col)
+				column_delete(mark_row,row,c)
 			elsif @cursormode == 'row'
 				column_delete(mark_row,row,0)
 			elsif @cursormode == 'loc'
@@ -1538,7 +1539,8 @@ class FileBuffer
 			return if @col == 0
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
-				column_delete(mark_row,row,@col-1)
+				c = (mark_row==row)?(0):(@col-1)
+				column_delete(mark_row,row,c)
 				cursor_left
 			elsif @cursormode == 'row'
 				column_delete(mark_row,row,0)
@@ -1593,7 +1595,7 @@ class FileBuffer
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'multi'
 				list = mark_list
-			elsif @cursormode == 'col'
+			elsif @cursormode == 'col' && mark_row != row
 				list = {}
 				for r in mark_row..row
 					list[r] = [@col] unless @col > @text[r].length
@@ -2238,7 +2240,7 @@ class FileBuffer
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
-			return if @cursormode == 'col' || @cursormode == 'loc'
+			return if ((@cursormode=='col')&&(@mark_row!=@row)) || @cursormode == 'loc'
 			$copy_buffer = []
 			@marked = false
 		else
@@ -2513,7 +2515,7 @@ class FileBuffer
 		if @marked
 			mark_row,row = @mark_row,@row
 			mark_row,row = row,mark_row if mark_row > row
-			if @cursormode == 'col'
+			if @cursormode == 'col' && mark_row != row
 				for j in mark_row..row
 					buffer_marks[j] = [[@col,@col]] unless j==@row
 				end
@@ -2523,7 +2525,7 @@ class FileBuffer
 					m = @text[j].length - n
 					buffer_marks[j] = [[m,m]] unless j==@row
 				end
-			elsif @cursormode == 'row'
+			elsif @cursormode == 'row' || ((@cursormode=='col')&&(mark_row==row))
 				# Start with 'internal' rows (not first nor last.
 				# Easy: do the whole row.
 				for j in (mark_row+1)..(row-1)
