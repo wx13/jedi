@@ -586,20 +586,55 @@ class Screen
 	# file        = true/false (should we do tab-completion on files?)
 	#
 	# Returns the users answer as a string.
+	class AskHist
+		def initialize(hist,last_answer)
+			@hist = hist
+			@idx = 0
+			if last_answer && @hist.length > 0
+				@idx = 1
+			else
+				@idx = 0
+			end
+		end
+		def token(default='')
+			if @idx == 0
+				return(default)
+			else
+				token = @hist[-@idx]
+				if token.nil?
+					return(default)
+				else
+					return(@hist[-@idx])
+				end
+			end
+		end
+		def scroll(n)
+			if @hist.length == 0
+				@idx = 0
+			else
+				@idx = [[@idx+n,0].max,@hist.length].min
+			end
+			return(token)
+		end
+		def reverse_i(parent)
+			idx = parent.reverse_incremental(@hist)
+			if idx != nil && idx > 0
+				@idx = idx
+			end
+			return(token)
+		end
+		def add(token)
+			if token != @hist[-1] && token != "" && token != nil
+				@hist << token
+			end
+		end
+	end
 	def ask(question,hist=[],last_answer=false,file=false)
 
-		# if last_answer is set, then set the current token to the last answer.
-		# Otherwise, set token to empty string
-		if last_answer && hist.length > 0
-			token = hist[-1].dup
-		else
-			token = ''
-		end
-
-		# history index
-		ih = 0
+		ask_hist = AskHist.new(hist,last_answer)
 
 		# remember typed string, even if we move away
+		token = ask_hist.token
 		token0 = token.dup
 
 		# put cursor at end of string
@@ -626,81 +661,41 @@ class Screen
 
 				# cursor up scrolls through history
 				when :up
-					if hist.length == 0
-						token = ''
-					else
-						ih += 1
-						if ih > hist.length
-							ih = hist.length
-						end
-						token = hist[-ih].dup
-					end
-					glob = token
+					token = ask_hist.scroll(1)
 					col = token.length
 				when :down
-					if hist.length == 0
-						token = ''
-					else
-						ih -= 1
-						if ih < 0
-							ih = 0
-						end
-						if ih == 0
-							token = token0
-						else
-							token = hist[-ih].dup
-						end
-					end
-					glob = token
+					token = ask_hist.scroll(-1)
 					col = token.length
 				when :ctrl_r
-					ih = reverse_incremental(hist)
-					if ih == nil then ih = 0 end
-					if ih == 0
-						token = token0
-					else
-						token = hist[-ih].dup
-					end
-					glob = token
+					token = ask_hist.reverse_i(self)
 					col = token.length
 				when :left
-					col -= 1
-					if col<0 then col=0 end
-					glob = token
+					col = [col-1,0].max
 				when :right
-					col += 1
-					if col>token.length then col = token.length end
-					glob = token
+					col = [col+1,token.length].min
 				when :ctrl_e
 					col = token.length
-					glob = token
 				when :ctrl_a
 					col = 0
-					glob = token
 				when :ctrl_u
 					# cut to start-of-line
 					token = token[col..-1]
-					glob = token
 					col = 0
 				when :ctrl_k
 					# cut to end-of-line
 					token = token[0,col]
-					glob = token
 				when :ctrl_d
 					# delete character at cursor
 					if col < token.length
 						token[col] = ""
 					end
-					token0 = token.dup
-					glob = token
-				when :ctrl_m, :enter, :ctrl_j then break
+				when :ctrl_m, :enter, :ctrl_j
+					break
 				when :backspace, :backspace2, :ctrl_h
 					if col > 0
 						token[col-1] = ""
 						col -= 1
 					end
-					token0 = token.dup
-					glob = token
 				when :tab
 					if file
 						# find files that match typed string
@@ -716,19 +711,16 @@ class Screen
 					else
 						# not a file, so insert literal tab character
 						token.insert(col,"\t")
-						token0 = token.dup
 						col += 1
-						glob = token
 					end
 				else
 					# regular character
 					if c.is_a?(String)
 						token.insert(col,c)
-						token0 = token.dup
 						col += 1
 					end
-					glob = token
 			end
+			glob = token
 
 			# display the answer so far
 			if (col+question.length+2) > @cols
@@ -740,12 +732,10 @@ class Screen
 			setpos(@rows,(col-shift)+question.length+1)
 
 		end
-		if token == "" && hist[-1] != nil
-			token = hist[-1].dup
+		if token == ""
+			token = ask_hist.scroll(1)
 		end
-		if token != hist[-1]
-			hist << token
-		end
+		ask_hist.add(token)
 		return(token)
 	end
 
