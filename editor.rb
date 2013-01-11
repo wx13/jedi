@@ -604,7 +604,7 @@ class Screen
 				if token.nil?
 					return(default)
 				else
-					return(@hist[-@idx])
+					return(@hist[-@idx].dup)
 				end
 			end
 		end
