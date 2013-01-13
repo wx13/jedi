@@ -1956,7 +1956,7 @@ class FileBuffer
 		@row = num.to_i
 		@col = 0
 		if @row < 0
-			@row = @text.length + @row
+			@row = [@text.length+@row,0].max
 		end
 		if @row >= @text.length
 			@row = @text.length - 1
