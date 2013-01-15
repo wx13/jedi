@@ -2231,11 +2231,11 @@ class FileBuffer
 		# then we add to the copy buffer
 		if @marked
 			return if ((@cursormode=='col')&&(@mark_row!=@row)) || @cursormode == 'loc'
-			$copy_buffer.text = []
+			$copy_buffer.clear
 			@marked = false
 		else
 			if @row!=(@cutrow+1-cut) || @cutscore <= 0
-				$copy_buffer.text = []
+				$copy_buffer.clear
 			else
 				$copy_buffer.text.pop  # remove the newline
 			end
@@ -3959,12 +3959,24 @@ end
 
 
 
+#---------------------------------------------------------------------
+# CopyBuffer class
+#
+# Store up a history of copy/paste buffers.
+#---------------------------------------------------------------------
 class CopyBuffer
 	attr_accessor :text
 	def initialize
 		@text = []
+		@hist = []
+	end
+	def clear
+		@hist << @text.dup
+		@text = []
 	end
 end
+# end of CopyBuffer class
+#---------------------------------------------------------------------
 
 
 
