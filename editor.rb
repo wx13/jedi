@@ -2231,13 +2231,13 @@ class FileBuffer
 		# then we add to the copy buffer
 		if @marked
 			return if ((@cursormode=='col')&&(@mark_row!=@row)) || @cursormode == 'loc'
-			$copy_buffer = []
+			$copy_buffer.text = []
 			@marked = false
 		else
 			if @row!=(@cutrow+1-cut) || @cutscore <= 0
-				$copy_buffer = []
+				$copy_buffer.text = []
 			else
-				$copy_buffer.pop  # remove the newline
+				$copy_buffer.text.pop  # remove the newline
 			end
 			@cutrow = @row
 			@cutscore = 25
@@ -2268,7 +2268,7 @@ class FileBuffer
 			line = @text[@row] # the line of interest
 
 			if line.kind_of?(Array)  # folded text
-				$copy_buffer += [line] + ['']
+				$copy_buffer.text += [line] + ['']
 				if cut == 1
 					@text[@row] = ''
 					mergerows(@row,@row+1)
@@ -2277,10 +2277,10 @@ class FileBuffer
 				@text[@row] = line[0,@mark_col] if cut == 1
 				if @col < line.length
 					@text[@mark_row] += line[@col+1..-1] if cut == 1
-					$copy_buffer += [line[@mark_col..@col]]
+					$copy_buffer.text += [line[@mark_col..@col]]
 				else
 					# include line ending in cut/copy
-					$copy_buffer += [line[@mark_col..@col]] + ['']
+					$copy_buffer.text += [line[@mark_col..@col]] + ['']
 					mergerows(@row,@row+1) if cut == 1
 				end
 			end
@@ -2291,19 +2291,19 @@ class FileBuffer
 
 			firstline = @text[@mark_row]
 			if firstline.kind_of?(Array)
-				$copy_buffer += [firstline]
+				$copy_buffer.text += [firstline]
 				@text[@mark_row] = '' if cut == 1
 			else
-				$copy_buffer += [firstline[@mark_col..-1]]
+				$copy_buffer.text += [firstline[@mark_col..-1]]
 				@text[@mark_row] = firstline[0,@mark_col] if cut == 1
 			end
-			$copy_buffer += @text[@mark_row+1..@row-1]
+			$copy_buffer.text += @text[@mark_row+1..@row-1]
 			lastline = @text[@row]
 			if lastline.kind_of?(Array)
-				$copy_buffer += [lastline]
+				$copy_buffer.text += [lastline]
 				@text[@mark_row] += '' if cut == 1
 			else
-				$copy_buffer += [lastline[0..@col]]
+				$copy_buffer.text += [lastline[0..@col]]
 				tail = lastline[@col+1..-1]
 				@text[@mark_row] += tail if cut == 1 && tail != nil
 			end
@@ -2333,9 +2333,9 @@ class FileBuffer
 		@cutscore = 0
 
 		return if @text[@row].kind_of?(Array)
-		return if $copy_buffer.empty?
+		return if $copy_buffer.text.empty?
 
-		if $copy_buffer.length > 1  # multi-line paste
+		if $copy_buffer.text.length > 1  # multi-line paste
 
 			# text up to cursor
 			text = @text[0,@row]
@@ -2346,7 +2346,7 @@ class FileBuffer
 			end
 
 			# inserted text
-			firstline = $copy_buffer[0]
+			firstline = $copy_buffer.text[0]
 			if firstline.kind_of?(Array)
 				if text[-1] == ''
 					text[-1] = firstline
@@ -2356,8 +2356,8 @@ class FileBuffer
 			else
 				text[-1] += firstline
 			end
-			text += $copy_buffer[1..-2] if $copy_buffer.length > 2
-			lastline = $copy_buffer[-1]
+			text += $copy_buffer.text[1..-2] if $copy_buffer.text.length > 2
+			lastline = $copy_buffer.text[-1]
 			text += [lastline]
 
 			# text from cursor on
@@ -2376,15 +2376,15 @@ class FileBuffer
 			}
 
 		else  # single line paste
-			if $copy_buffer[0].kind_of?(String)
-				@text[@row] = @text[@row][0,@col] + $copy_buffer[0] + @text[@row][@col..-1]
+			if $copy_buffer.text[0].kind_of?(String)
+				@text[@row] = @text[@row][0,@col] + $copy_buffer.text[0] + @text[@row][@col..-1]
 			else
-				@text.insert(@row,$copy_buffer)
+				@text.insert(@row,$copy_buffer.text)
 			end
 		end
 
-		@row += $copy_buffer.length - 1
-		@col += $copy_buffer[-1].length
+		@row += $copy_buffer.text.length - 1
+		@col += $copy_buffer.text[-1].length
 
 	end
 
@@ -3282,7 +3282,7 @@ end
 
 class BuffersList
 
-	attr_accessor :copy_buffer, :npage, :ipage
+	attr_accessor :npage, :ipage
 
 	# This subclass contains a set of buffers that reside
 	# on a single page.
@@ -3959,6 +3959,15 @@ end
 
 
 
+class CopyBuffer
+	attr_accessor :text
+	def initialize
+		@text = []
+	end
+end
+
+
+
 
 #---------------------------------------------------------------------
 # Editor class
@@ -4013,7 +4022,7 @@ class Editor
 
 		# Copy buffer and histories are global, so we can copy from one
 		# buffer to another.
-		$copy_buffer = ""
+		$copy_buffer = CopyBuffer.new
 		$histories = Histories.new
 
 	end
