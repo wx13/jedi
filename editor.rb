@@ -818,6 +818,8 @@ class Screen
 			j = -1
 			items.each{|k,v|
 
+				v = '' if v.nil?
+
 				j += 1
 				next if j < shift
 				r += 1
@@ -851,7 +853,7 @@ class Screen
 				when :enter,:ctrl_m,:ctrl_j
 					break
 				when :ctrl_c
-					return('')
+					return([nil,''])
 			end
 		end
 
@@ -3974,14 +3976,20 @@ class CopyBuffer
 	def clear
 		@hist << @text.dup
 		@hist.slice!(0..-50)
+		@hist.delete_if{|x|x.empty?}
+		@hist.uniq!
 		@text = []
 	end
 	def menu
 		selection = @hist.map{|x|
-			[x.join("\n"),'']
+			x.join("; ")
 		}
-		text = $screen.menu(selection,"CopyBuffer")
+		selection << @text.join("; ")
+		k,v = $screen.menu(selection,"CopyBuffer")
 		$buffers.update_screen_size
+		return if k.nil?
+		text = @hist[k]
+		text = @text if text.nil?
 		if text != nil
 			clear
 			@text = text
