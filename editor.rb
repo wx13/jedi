@@ -3746,6 +3746,7 @@ class KeyMap
 			:end2 => "buffer.goto_line(-1)",
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
+			:ctrl_u => "$copy_buffer.menu",
 			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode').last)"
 		}
 		@extramode_commandlist.default = ""
@@ -3972,7 +3973,20 @@ class CopyBuffer
 	end
 	def clear
 		@hist << @text.dup
+		@hist.slice!(0..-50)
 		@text = []
+	end
+	def menu
+		selection = @hist.map{|x|
+			[x.join("\n"),'']
+		}
+		text = $screen.menu(selection,"CopyBuffer")
+		$buffers.update_screen_size
+		if text != nil
+			clear
+			@text = text
+			$buffers.current.paste
+		end
 	end
 end
 # end of CopyBuffer class
