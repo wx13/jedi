@@ -3974,8 +3974,8 @@ class CopyBuffer
 		@hist = []
 	end
 	def clear
-		@hist << @text.dup
-		@hist.slice!(0..-50)
+		@hist.unshift @text.dup
+		@hist.slice!(-50..-1)
 		@hist.delete_if{|x|x.empty?}
 		@hist.uniq!
 		@text = []
@@ -3984,12 +3984,16 @@ class CopyBuffer
 		selection = @hist.map{|x|
 			x.join("; ")
 		}
-		selection << @text.join("; ")
+		selection.unshift @text.join("; ")
 		k,v = $screen.menu(selection,"CopyBuffer")
 		$buffers.update_screen_size
 		return if k.nil?
-		text = @hist[k]
-		text = @text if text.nil?
+		k -= 1
+		if k < 0
+			text = @text if text.nil?
+		else
+			text = @hist[k]
+		end
 		if text != nil
 			clear
 			@text = text
