@@ -1,3 +1,11 @@
+0.2.1
+-----
+
+Bug fixes:
+
+  + Improved syntax coloring algorithm
+  + Handle large negative line numbers (go-to)
+
 0.2.0
 -----
 
