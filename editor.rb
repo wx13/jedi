@@ -790,6 +790,8 @@ class Screen
 
 		@terminal.hide_cursor
 
+		choices = items.to_a
+
 		# how many rows should the menu take up (less than 1 screen)
 		margin = 2
 		nr = [rows-3*margin,items.length-1].min
@@ -803,53 +805,44 @@ class Screen
 		write_string(margin+nr+2,margin+1,'-'*(cols-2))
 
 		# write out menu choices and interact
-		selected = 0
-		shift = 0
-		selected_item = ''
 		write_message(header)
+		idx = 0
+		shift = 0
 		while true
 
 			# shift menu if need be
-			shift = selected-nr if selected-shift > nr
-			shift = selected if selected < shift
+			shift = idx-nr if idx-shift > nr
+			shift = idx if idx < shift
 
 			# loop over menu choices
-			r = margin
-			j = -1
-			items.each{|k,v|
+			s = choices[shift..(nr+shift)]
+			s.each_index{|j|
 
-				v = '' if v.nil?
-
-				j += 1
-				next if j < shift
-				r += 1
-				break if r > (margin+1+nr)
-				if j==selected
+				if j==idx-shift
 					pre = @color[:reverse]
 					post = @color[:normal]
 				else
 					pre = ""
 					post = ""
 				end
-				selected_item = v if j == selected
+				r = margin + j + 1
 				write_string(r,margin+2,pre+' '*(cols-3))
-				write_string(r,margin+2,k)
-				write_string(r,margin+15,v+post)
+				write_string(r,margin+2,s[j].join('  ')+post)
 			}
 			c = getch
 			case c
 				when :up
-					selected = [selected-1,0].max
+					idx = [idx-1,0].max
 				when :down
-					selected = [selected+1,items.length-1].min
+					idx = [idx+1,choices.length-1].min
 				when :pagedown
-					selected = [selected+nr/2,items.length-1].min
+					idx = [idx+nr/2,choices.length-1].min
 				when :pageup
-					selected = [selected-nr/2,0].max
+					idx = [idx-nr/2,0].max
 				when 'g'
-					selected = 0
+					idx = 0
 				when 'G'
-					selected = items.length-1
+					idx = choices.length-1
 				when :enter,:ctrl_m,:ctrl_j
 					break
 				when :ctrl_c
@@ -857,7 +850,7 @@ class Screen
 			end
 		end
 
-		return([selected,selected_item])
+		return(choices[idx])
 
 	ensure
 
@@ -2943,7 +2936,7 @@ class FileBuffer
 
 	# Launch a menu to choose a command (in case user forgets what key to press).
 	def menu(list,text)
-		cmd = @window.menu(list,text)
+		cmd = @window.menu(list,text).last
 		$buffers.update_screen_size
 		cmd = '' if cmd == nil
 		return(cmd)
@@ -3613,8 +3606,8 @@ class BuffersList
 			}
 			ipage += 1
 		}
-		ans = $screen.menu(list,"buffers").first
-		ipage,ibuf = list[ans][0].split('.')
+		ans = $screen.menu(list,"buffers")
+		ipage,ibuf = ans[0].split('.')
 		@ipage = ipage.to_i
 		@ibuf = ibuf.to_i
 		buffer = @pages[@ipage].buffers[@ibuf]
@@ -3749,7 +3742,7 @@ class KeyMap
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
 			:ctrl_u => "$copy_buffer.menu",
-			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode').last)"
+			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
@@ -3985,7 +3978,7 @@ class CopyBuffer
 			x.join("; ")
 		}
 		selection.unshift @text.join("; ")
-		k,v = $screen.menu(selection,"CopyBuffer")
+		k = $screen.menu(selection,"CopyBuffer")
 		$buffers.update_screen_size
 		return if k.nil?
 		k -= 1
