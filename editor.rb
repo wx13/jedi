@@ -846,7 +846,7 @@ class Screen
 				when :enter,:ctrl_m,:ctrl_j
 					break
 				when :ctrl_c
-					return([nil,''])
+					return([''])
 			end
 		end
 
@@ -2936,7 +2936,7 @@ class FileBuffer
 
 	# Launch a menu to choose a command (in case user forgets what key to press).
 	def menu(list,text)
-		cmd = @window.menu(list,text).last
+		cmd = @window.menu(list,text)
 		$buffers.update_screen_size
 		cmd = '' if cmd == nil
 		return(cmd)
@@ -3742,7 +3742,7 @@ class KeyMap
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
 			:ctrl_u => "$copy_buffer.menu",
-			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode'))"
+			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode').last)"
 		}
 		@extramode_commandlist.default = ""
 		@editmode_commandlist = {
@@ -3974,24 +3974,13 @@ class CopyBuffer
 		@text = []
 	end
 	def menu
-		selection = @hist.map{|x|
-			x.join("; ")
-		}
-		selection.unshift @text.join("; ")
-		k = $screen.menu(selection,"CopyBuffer")
+		selection = @hist.dup
+		selection.unshift @text.dup
+		text = $screen.menu(selection,"CopyBuffer")
 		$buffers.update_screen_size
-		return if k.nil?
-		k -= 1
-		if k < 0
-			text = @text if text.nil?
-		else
-			text = @hist[k]
-		end
-		if text != nil
-			clear
-			@text = text
-			$buffers.current.paste
-		end
+		clear
+		@text = text
+		$buffers.current.paste
 	end
 end
 # end of CopyBuffer class
