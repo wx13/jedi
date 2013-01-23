@@ -1857,8 +1857,8 @@ class FileBuffer
 	def revert_to_saved
 		@text.delete_if{|x|true}
 		@text.concat(@buffer_history.revert_to_saved)
-		@row = @buffer_history.next.row
-		@col = @buffer_history.next.col
+		@row = @buffer_history.row
+		@col = @buffer_history.col
 		better_cursor_position
 	end
 	def unrevert_to_saved
@@ -3090,143 +3090,120 @@ end
 
 
 
-
-
 #---------------------------------------------------------------------
 # BufferHistory class
 #
-# This class manages a linked list of buffer text states for
+# This class manages a list of buffer text states for
 # undo/redo purposes.  The whole thing is a wrapper around a
-# linked list of Node objects, which are defined inside this
+# list of Node objects, which are defined inside this
 # BufferHistory class.
 #---------------------------------------------------------------------
 
 class BufferHistory
 
-	attr_accessor :current
-
 	def initialize(text,row,col)
-		# Create a root node, with no neighbors.
-		@current = Node.new(text,row,col)
-		@current.next = nil
-		@current.prev = nil
-		@length = 1
+		@hist = [State.new(text,row,col)]
+		@idx = 0
 		# These are for (un)reverting to saved copy.
-		@saved = [@current]
+		@saved = [@idx]
 		@saved_idx = 0
-		@last_saved = @current
+		@last_saved = @hist[@idx]
+		@maxlength = 1000
 	end
 
+	def current
+		@hist[@idx]
+	end
 
-	# Define a linked list node for text buffer state.
-	class Node
-		attr_accessor :next, :prev, :text, :row, :col
+	# Define a buffer state.
+	class State
+		attr_accessor :text, :row, :col
 		def initialize(text,row,col)
 			@text = []
 			@text = text.dup
 			@row = row
 			@col = col
 		end
-		def delete
-			@text = nil
-			if @next != nil then @next.prev = @prev end
-			if @prev != nil then @prev.next = @next end
+	end
+
+
+	# Keep the history from getting too long.
+	def prune
+
+		# First prune the saved buffer history.
+		if @saved.length > @maxlength/4
+			n0 = @saved_idx/2
+			n1 = (@saved.length-@saved_idx)/2
+			@saved.slice!(-n1..-1) if n1 > 0
+			@saved.slice!(0..(n0-1))
+			@saved_idx -= n0
 		end
+
+
+		# Now prune the full buffer history.
+		if @hist.length > @maxlength
+			n0 = @idx/2
+			n1 = (@hist.length-@idx)/2
+			@idx -= n0
+
+			# Grab the saved buffer history states which would get
+			# pruned.  We want to add those on to the ends of the
+			# buffer history.
+			pre_idx = @saved.select{|j|j<n0}
+			post_idx = @saved.select{|j|j>(@saved.length-n1)}
+			pre = pre_idx.map{|j|@hist[j]}
+			post = post_idx.map{|j|@hist[j]}
+
+			@hist.slice!(-n1..-1) if n1 > 0
+			@hist.slice!(0..(n0-1))
+
+			# Adjust the indexing of the saved states list,
+			# because we have just chopped up the buffer history list.
+			@saved.each_index{|j|
+				if j < pre.length
+					@saved[j] = j
+				elsif j < (pre.length+@hist.length)
+					@saved[j] = pre.length+@hist.length + j
+				end
+			}
+			@hist = pre + @hist + post
+		end
+
 	end
 
 	# Add a new snapshot.
 	def add(text,row,col)
-
-		@length += 1
-
-		# Create a new node and set navigation pointers.
-		old = @current
-		@current = Node.new(text,row,col)
-		@current.next = old.next
-		if old.next != nil
-			old.next.prev = @current
-		end
-		@current.prev = old
-		old.next = @current
-
-		# Prune the tree, so it doesn't get too big.
-		if @length > 1200
-			# Start by going back.
-			n=0
-			x = @current
-			while x != nil
-				n += 1
-				x0 = x
-				x = x.prev
-			end
-			x = x0
-			while n > 500
-				n -= 1
-				x = x.next
-				x.prev.delete
-			end
-			# now forward
-			n=0
-			x = @current
-			while x != nil
-				n += 1
-				x0 = x
-				x = x.next
-			end
-			x = x0
-			while n > 500
-				n -= 1
-				break if x == @saved
-				x = x.prev
-				x.next.delete
-			end
-		end
+		@hist = @hist[0..@idx] + [State.new(text,row,col)] + @hist[@idx+1..-1]
+		@idx += 1
+		prune
 	end
 
 	# Return the current text state.
 	def text
-		@current.text
+		@hist[@idx].text
 	end
+	# Bump forward by one.
 	def row
-		@current.row
+		@hist[@idx].row
 	end
+	# Bump backward by one.
 	def col
-		@current.col
+		@hist[@idx].col
 	end
 
 	# Make a shallow copy of the text.
 	def copy
-		return(@current.text.dup)
+		@hist[@idx].text.dup
 	end
 
-	def prev
-		if @current.prev == nil
-			return(@current)
-		else
-			return(@current.prev)
-		end
+	def undo
+		@idx = [@idx-1,0].max
+		@hist[@idx]
 	end
 
-	def next
-		if @current.next == nil
-			return(@current)
-		else
-			return(@current.next)
-		end
-	end
-
-	def delete
-		if (@current.next==nil)&&(@current.prev==nil)
-			return(@current)
-		else
-			@current.delete
-			@length -= 1
-			if @current.next == nil
-				return(@current.prev)
-			else
-				return(@current.next)
-			end
-		end
+	def redo
+		@idx = [@idx+1,@hist.length-1].min
+		@hist[@idx]
 	end
 
 	# This should get called only when the file is saved.
@@ -3235,47 +3212,32 @@ class BufferHistory
 	# the contents of the saved-to-disk file (assuming nobody
 	# else has changed it).
 	def save
-		@saved = @saved[0..@saved_idx] + [@current] + @saved[@saved_idx+1..-1]
+		@saved = @saved[0..@saved_idx] + [@idx] + @saved[@saved_idx+1..-1]
 		@saved_idx += 1
-		@last_saved = @current
+		@last_saved = @hist[@idx]
 	end
 
-	# Is the text modified from the saved version.
+	# Is the text modified from the saved version?
+	# Use flatten, so that folded text is seen as unchanged.
 	def modified?
-		@last_saved.text.flatten != @current.text.flatten
+		@last_saved.text.flatten != @hist[@idx].text.flatten
 	end
 
-	def undo
-		if @current.prev != nil
-			@current = @current.prev
-			return(true)
-		else
-			return(false)
-		end
-	end
-
-	def redo
-		if @current.next != nil
-			@current = @current.next
-			return(true)
-		else
-			return(false)
-		end
-	end
 
 	# These bumps along the "saved" states of the buffer history.
 	def revert_to_saved
-		if @saved[@saved_idx] != @current
-			@saved = @saved[0..@saved_idx] + [@current] + @saved[@saved_idx+1..-1]
+		# Make a snapshot of the current state so we can come back to it.
+		if @saved[@saved_idx] != @idx
+			@saved = @saved[0..@saved_idx] + [@idx] + @saved[@saved_idx+1..-1]
 		else
 			@saved_idx = [@saved_idx-1,0].max
 		end
-		@current = @saved[@saved_idx]
+		@idx = @saved[@saved_idx]
 		return(copy)
 	end
 	def unrevert_to_saved
 		@saved_idx = [@saved_idx+1,@saved.length-1].min
-		@current = @saved[@saved_idx]
+		@idx = @saved[@saved_idx]
 		return(copy)
 	end
 
