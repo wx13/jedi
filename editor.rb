@@ -3197,13 +3197,21 @@ class BufferHistory
 	end
 
 	def undo
-		@idx = [@idx-1,0].max
-		@hist[@idx]
+		if @idx == 0
+			return(false)
+		else
+			@idx -= 1
+			return(true)
+		end
 	end
 
 	def redo
-		@idx = [@idx+1,@hist.length-1].min
-		@hist[@idx]
+		if @idx == @hist.length-1
+			return(false)
+		else
+			@idx += 1
+			return(true)
+		end
 	end
 
 	# This should get called only when the file is saved.
