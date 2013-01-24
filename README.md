@@ -6,15 +6,16 @@ designed to be portable and hackable.  No installation is required, and
 it does not use external libraries or gems.  The editor can be extended
 or modified with external ruby scripts, and ruby commands can be run
 within the editor to perform complex editing tasks.  Features include:
-undo/redo, multiple cursor modes, folding, split screen mode,
-"indentation facade", and more.  See the doc/ directory for details
+undo/redo (two levels), multiple cursor modes, text folding, split
+screen mode, "indentation facade", copy/paste history, and more.  See
+the doc/ directory for details
 
 
 
 Installing and running
 ----------------------
 
-There is no installation required; just run
+No installation is required; just run
 
     ruby editor.rb [options] [files]
 
@@ -36,13 +37,12 @@ editor.rb does not use curses or ncurses, but instead reads from
 standard input and writes to standard output.  It uses terminal escape
 codes to format the output.  Some terminals don't seem to support as
 many keycodes and will have reduced functionality.  For example, the
-mac terminal does not report shift/control + arrow keys (accept for
+mac terminal does not report shift/control + arrow keys (aside from
 ctrl-left/right).  I continually test it in xterm on linux, xterm on
-cygwin and gnome terminal on linux, all with ruby 1.8.  I occasionally
-test in on a Mac terminal and in ruby 1.9. Other than modified arrow
-keys, it should run on any unix-compatible terminal emulator.  If you
-type `echo -e "\e[2J"` and it clears the screen, then you should be
-fine.
+cygwin and gnome terminal on linux, with ruby 1.8.  I occasionally test
+in on a Mac terminal and in ruby 1.9. Other than modified arrow keys,
+it should run on any unix-compatible terminal emulator.  If you type
+`echo -e "\e[2J"` and it clears the screen, then you should be fine.
 
 
 License

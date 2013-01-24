@@ -1,6 +1,6 @@
 This tutorial is designed to get you up and running quickly, and
-demonstrate some of editor.rb's capabilities. For more details about
-running, configuring, and modifying editor.rb, see the manual.
+demonstrate some of the editor's basic capabilities. For more details
+about running, configuring, and modifying editor.rb, see the manual.
 
 Getting started
 ===============
@@ -27,7 +27,7 @@ This will run at start-up any file in $HOME/.editor/ with the ".rb" extension.
 Basic editing
 =============
 
-If you are familiar with the gnu-nano text editor, then you will be in
+If you have used the gnu-nano text editor, then you will be in
 familiar territory. In addition to the standard way of editing text
 (arrow keys, page-up/down, backspace, etc) there are a number of handy
 shortcuts.  Here is a list of commonly used commands:

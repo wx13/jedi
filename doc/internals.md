@@ -10,17 +10,22 @@ all code is found in editor.rb.  The code is split into 9 classes. This
 section describes them in the order they occur in the code.
 
 
+Terminal
+--------
+
+The terminal class defines the API for interacting with the terminal.
+It contains all the terminal-specific code, such as keyboard input and
+text decorations.
+
+
 Screen
 ------
 
-The Screen class manages screen output and user input.  Some things it
-is respnsible for
+The Screen class manages screen output and user input.  It is a wrapper
+around the terminal class, and provides editor specific functionality
+to the terminal class. Some things it is respnsible for
 
- * Define the color escape codes and key codes
- * Recieve keypresses
  * Start, suspend, resume, and close the interactive session
- * Position the cursor in the terminal
- * Write/clear text to/from the terminal
  * Display messages for the user
  * Display the status bar
  * Ask the user a question
@@ -106,6 +111,12 @@ The SyntaxColors class defines the syntax colors.  It is just a
 container class.
 
 
+CopyBuffer
+----------
+
+The CopyBuffer class stores up a history of recent copied or cut text.
+It allows the user to select previous text for pasting.
+
 Editor
 ------
 
@@ -140,7 +151,7 @@ mind.  First, never replace the entire buffer.  For example to copy
 the buffer `text` into `@text`, use
 
     @text.slice!(1..-1)
-    text.each{|k|
+    text.each_index{|k|
         @text[k] = text[k]
     }
 

@@ -1,3 +1,28 @@
+Bug fixes:
+
+Clean up:
+
+  + Simplified the ask method.
+  + More consistent menu method.
+
+Features:
+
+  + Multiple saved states for BufferHistory.  This way you can jump
+    between macroscopic snapshots of the buffer.
+  + Use 'row' mode even in col mode, when the cursor is on the same
+    line as the start of the mark.
+  + Copy buffer history, plus menu for selecting from recent
+    copy/pastes.
+  + Search in a menu.
+
+0.2.1
+-----
+
+Bug fixes:
+
+  + Improved syntax coloring algorithm
+  + Handle large negative line numbers (go-to)
+
 0.2.0
 -----
 

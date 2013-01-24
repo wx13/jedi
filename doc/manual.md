@@ -190,6 +190,7 @@ another) and `^t|` will set horizontal stacking (side-by-side buffers).
 To scroll only the current buffer up/down, use shift-up/down.  To
 scroll all the buffers on the current screen up/down, use ctrl-up/down.
 
+
 Indentation facade
 ------------------
 

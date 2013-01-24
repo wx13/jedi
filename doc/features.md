@@ -1,15 +1,5 @@
-editor.rb is a text editor writen in ruby for the unix console. The
-project is hosted on [github](https://github.com/wx13/editor).
-
-Primary objectives:
-
-1. Zero install
-2. Easy to hack
-3. Text UI
-
-
-Some Features
-=============
+A partial list of features
+==========================
 
 Portable
 --------
@@ -34,7 +24,8 @@ same. There are 2 ways to do it.
    one-liners) or call a ruby script file from within the editor.
 2. On start-up.
    Use the -s flag to call a ruby script at startup.  This is
-   useful for having an external configuration file.
+   useful for having an external configuration file or for writing
+   extensions.
 
 
 Four cursor modes
@@ -78,4 +69,21 @@ working with uses spaces (or any other scenario).  Indentation facade
 converts one indentation string to another, sets the tab key to insert
 the new indentation string, and silently keeps track of the facade for
 saving and diffing.
+
+
+Copy buffer history
+-------------------
+
+The editor saves a history of recent copied or cut text.  The history
+is accessed through a searchable menu.
+
+
+Undo/redo
+---------
+
+The editor stores a history of states for each open buffer.  Everytime
+the buffer changes, a new snapshot is created.  Additionally, everytime
+the buffer is saved, a saved-state snapshot is made.  You can perform a
+micro- undo/redo (one change at a time) or a macro -undo/redo (jump
+between previous saved states).
 
