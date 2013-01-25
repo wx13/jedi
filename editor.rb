@@ -1749,11 +1749,19 @@ class FileBuffer
 		end
 		nl = row - mark_row + 1
 
+		# If first line is indented, make all lines indented.
+		indent = @text[mark_row].gsub(/[^\s].*$/,'')
+
 		# make one long line out of multiple lines
 		text = @text[mark_row..row].join(" ")
 		for r in mark_row..row
 			delrow(mark_row)
 		end
+		# Strip out multiple spaces or tabs
+		text.gsub!(/\t/,' ')
+		text.gsub!(/   */,'  ')
+		text.gsub!(/^[\s]*/,'')
+		text = indent + text
 
 		# loop through words and check length
 		c = 0
@@ -1764,11 +1772,12 @@ class FileBuffer
 			# if we are past the edge, then put it in the next row
 			# Otherwise, keep going.
 			if c2 >= (cols-1)
-				if c == 0 then c = c2+1 end  # careful about long words
+				c = c2+1 if c==0  # careful about long words
 				insertrow(r,text[0,c])
 				text = text[c..-1]
-				if text == nil then text = "" end
+				text = "" if text==nil
 				text.lstrip!
+				text = indent + text
 				r += 1
 				c = 0
 			else
@@ -1786,7 +1795,7 @@ class FileBuffer
 			if @text[r] == nil || @text[r] == ""
 				insertrow(r,text)
 			else
-				@text[r] = text + " " + @text[r]
+				@text[r] = indent + text + " " + @text[r]
 				@row += 1
 				justify(true,false)
 				@row -= 1
@@ -1799,7 +1808,7 @@ class FileBuffer
 		# at the correct position.
 		if linewrap
 			if cursor && @col >= @text[@row].length+1
-				@col = @col - @text[@row].length - 1
+				@col = @col - @text[@row].length - 1 + indent.length
 				@row += 1
 			end
 		else
