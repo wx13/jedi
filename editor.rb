@@ -230,7 +230,7 @@ end
 
 class Screen
 
-	attr_accessor :rows, :cols, :buffer, :color
+	attr_accessor :rows, :cols, :buffer, :color, :lastline
 
 	def initialize
 
@@ -242,6 +242,7 @@ class Screen
 		# This is for detecting changes to the displayed text,
 		# so we don't have to redraw as frequently.
 		@buffer = []
+		@lastline = @rows
 
 		# Define screen-specific color codes.
 		@color = @terminal.colors
@@ -2623,10 +2624,11 @@ class FileBuffer
 
 		# vi-style blank lines
 		r = text.length
-		while r < (@window.rows)
+		while r < (@window.lastline)
 			@window.write_line(r,0,'~')
 			r += 1
 		end
+		@window.lastline = text.length
 
 		@colfeed_old = @colfeed
 		@linefeed_old = @linefeed
