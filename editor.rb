@@ -1099,6 +1099,10 @@ class FileBuffer
 		@buffer_marks = {}
 		@buffer_marks.default = [-1,-1]
 
+		# Time of the last status bar update
+		@last_status_update = 0.0
+		@min_status_update = 0.1
+
 		# This does nothing, by default; it is here to allow
 		# a user script to modify each text buffer that is opened.
 		perbuffer_userscript
@@ -2458,6 +2462,11 @@ class FileBuffer
 	end
 
 	def update_top_line(cursrow,curscol)
+
+		t = Time.now.to_f
+		return if (t-@min_status_update) < @last_status_update
+		@last_status_update = t
+
 		# report on cursor position
 		r = (@linefeed+cursrow-1)
 		c = (@colfeed+curscol)
