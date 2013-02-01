@@ -875,7 +875,7 @@ class Screen
 		return idx
 	end
 	def search_array_from_idx(term,choices,idx)
-		next if term.nil?
+		return if term.nil?
 		choices[idx+1..-1].each_index{|k|
 			if choices[idx+k+1].join(" ").index(term)
 				idx = idx + k + 1
