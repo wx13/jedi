@@ -23,7 +23,7 @@ cp scripts/config.rb ${config_dir}/
 sh="$(which sh)"
 cat <<-EOF > ${exec_dir}/${exec_name}
 	#!${sh}
-	ruby ${exec_dir}/editor.rb -s ${config_dir}/ -y ${config_dir}/history.yaml
+	ruby ${exec_dir}/editor.rb -s ${config_dir}/ -y ${config_dir}/history.yaml \$@
 EOF
 chmod a+x ${exec_dir}/${exec_name}
 
