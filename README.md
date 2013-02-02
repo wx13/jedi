@@ -19,15 +19,20 @@ No installation is required; just run
 
     ruby editor.rb [options] [files]
 
-To use a configuration file and store history, create a directory
-~/.editor containing the file config.rb.  Then run:
+To "install" the editor, run the included install script:
 
-    ruby editor.rb -s ~/.editor -y ~/.editor/history.yaml
+    sh install.sh
+
+This will copy the editor.rb file to `$HOME/bin/`, create a config
+directory in `$HOME/.editor`, and create an executable script in
+`$HOME/bin` containing the single line:
+
+    ruby editor.rb -s ~/.editor -y ~/.editor/history.yaml $@
 
 This tells editor.rb to read all *.rb files from ~/.editor/ as
 start-up scripts and to save command/search/script history in
-~/.jedi/history.yaml. To "install" the editor, create an alias, shell
-script, or shell function which executes the above command.
+~/.jedi/history.yaml.  Then you can just type `editor` to start the
+editor.
 
 
 A note about portability
