@@ -1,4 +1,11 @@
+0.2.2
+-----
+
 Bug fixes:
+
+Speed up:
+
+  + More efficient screen writing.
 
 Clean up:
 
@@ -14,6 +21,9 @@ Features:
   + Copy buffer history, plus menu for selecting from recent
     copy/pastes.
   + Search in a menu.
+  + Installation script.
+  + Allow indentation in line-wrapping mode.  Good for writing markdown
+    text.
 
 0.2.1
 -----
