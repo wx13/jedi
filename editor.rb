@@ -1672,7 +1672,7 @@ class FileBuffer
 			if @autoindent
 
 				# snap shot, so we can undo auto-indent
-				@buffer_history.add(@text,@row,@col)
+				@buffer_history.add(@text,@row+1,0)
 
 				# Figure out leading "whitespace", where "whitespace"
 				# now includes non-whitespace leading characters which are
