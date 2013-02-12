@@ -1599,17 +1599,29 @@ class FileBuffer
 	# Very simple if text is not marked.
 	# For marked text, issues are similar to delete method above.
 	def addchar(c)
+
 		return if @multimarkmode
+
+		# Handle the tab character.
 		if c == :tab
 			c = @tabchar
+			# Fortran hack.
 			c = " "*6 if @filetype == 'f' && @col == 0
 		end
+
+		# Catch problem characters.
 		return if ! c.is_a?(String)
-		return if c.index("\e")
+		return if c.index(@window.escape[0])
+
+		# If text is not marked, we just add the character.
+		# Otherwise, things are much more complicated.
 		if @marked == false
 			insertchar(@row,@col,c)
 		else
+
 			mark_row,row = ordered_mark_rows
+
+			# Construct list of cursor positions, depending on mark mode.
 			if @cursormode == 'multi'
 				list = mark_list
 			elsif @cursormode == 'col' && mark_row != row
@@ -1630,6 +1642,9 @@ class FileBuffer
 					list[r] = [0]
 				end
 			end
+
+			# Now that we have a list of cursor positions, add the character
+			# at each cursor poition.
 			list.each{|row,cols|
 
 				# don't insert blanks at start of line
@@ -1653,10 +1668,12 @@ class FileBuffer
 
 			}
 		end
+
 		cursor_right(c.length)
 		if @linewrap
 			justify(true)
 		end
+
 	end
 
 	# Add a line-break.
