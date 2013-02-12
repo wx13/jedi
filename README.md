@@ -57,7 +57,7 @@ All code and documentation are covered by the following license:
 
 ------------------------------------------------------------------------
 
-Copyright (C) 2011-2012, Jason P. DeVita (jason@wx13.com)
+Copyright (C) 2011-2013, Jason P. DeVita (jason@wx13.com)
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty or restriction.  This file

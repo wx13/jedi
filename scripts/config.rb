@@ -53,7 +53,7 @@ $color[:regex] = :normal
 # keybindings
 #
 
-$keymap.commandlist[:ctrl_q] = "buffer = $buffers.close"
-$keymap.commandlist[:ctrl_x] = "buffer.mark"
+#$keymap.commandlist[:ctrl_q] = "buffer = $buffers.close"
+#$keymap.commandlist[:ctrl_x] = "buffer.mark"
 
 
