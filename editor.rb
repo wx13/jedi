@@ -16,7 +16,6 @@ $version = "0.2.2"
 # Wrap Terminal, Screen, and Window in a module, for use in other
 # projects.
 module Antsy
-VERSION = "0.0.0"
 
 #---------------------------------------------------------------------
 # Terminal class defines the API for interacting with the terminal.
@@ -25,12 +24,14 @@ VERSION = "0.0.0"
 #---------------------------------------------------------------------
 class Terminal
 
-	attr_accessor :colors, :keycodes, :escape, :mouse_x, :mouse_y
+	attr_accessor :colors, :keycodes, :escape, :mouse_x, :mouse_y,
+		:escapeRE
 
 	def initialize
 		define_colors
 		define_keycodes
 		@escape = ["\e","m"]
+		@escapeRE = /\e\[.*?m/
 	end
 
 	def define_colors
@@ -2760,12 +2761,15 @@ class FileBuffer
 		comment = false
 		bline = ""
 		escape = false
+		e0,e1 = @window.escape
+		ere = @window.escapeRE
+		ec = e0[0,1]
 
 		cline = aline.dup
 		while (cline!=nil)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,"\\"].flatten)
+			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,ec].flatten)
 			k = cline.index(all)
 			if k==nil
 				bline += cline
@@ -2774,13 +2778,19 @@ class FileBuffer
 			bline += cline[0..(k-1)] if k > 0
 			cline = cline[k..-1]
 
-			# if it is an escape, then move down 2 chars
-			if cline[0].chr == "\\"
-				r = cline[0,2]
-				if r != nil
-					bline += r
+			# If it is an escape, then skip.
+			if cline[0].chr == ec
+				r,x,q = cline.partition(ere)
+				if r == ""
+					bline += x
+					cline = q
+				else
+					r = cline[0,2]
+					if r!=nil
+						bline += r
+					end
+					cline = cline[2..-1]
 				end
-				cline = cline[2..-1]
 				next
 			end
 
@@ -2790,7 +2800,7 @@ class FileBuffer
 				if cline.index(str)==0
 					bline += $color[:comment]
 					# remove any other colors inside of the comment
-					bline += cline.gsub(/\e\[.*?m/,'')
+					bline += cline.gsub(ere,'')
 					bline += $color[:normal]
 					flag = true
 					break
@@ -2806,7 +2816,7 @@ class FileBuffer
 					if b != nil
 						bline += $color[:comment]
 						# remove any other colors inside of the comment
-						bline += b.gsub(/\e\[.*?m/,'')
+						bline += b.gsub(ere,'')
 						bline += $color[:normal]
 						cline = c
 						flag = true
@@ -2822,7 +2832,7 @@ class FileBuffer
 				if b != nil
 					bline += $color[:string]
 					# remove any other colors inside of the comment
-					bline += b.gsub(/\e\[.*?m/,'')
+					bline += b.gsub(ere,'')
 					bline += $color[:normal]
 					cline = c
 					next
@@ -2836,7 +2846,7 @@ class FileBuffer
 				if b != nil
 					bline += $color[:regex]
 					# remove any other colors inside of the comment
-					bline += b.gsub(/\e\[.*?m/,'')
+					bline += b.gsub(ere,'')
 					bline += $color[:normal]
 					cline = c
 					next
@@ -2869,7 +2879,9 @@ class FileBuffer
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
 		# trailing whitespace
-		aline.gsub!(/\s+(\e\[0m)+$/,$color[:whitespace]+"\\0"+$color[:normal])
+		ere = Regexp.escape($color[:normal])
+		re = Regexp.new /\s+/.source + "\(" + ere + "\)+" + /$/.source
+		aline.gsub!(re,$color[:whitespace]+"\\0"+$color[:normal])
 		return(aline)
 	end
 
@@ -2920,7 +2932,7 @@ class FileBuffer
 		a = a[1..-1]
 		return ans if a == nil
 		a.each{|str|
-			n = ans.gsub(/\e\[.*?m/,"").length
+			n = ans.gsub(@window.escapeRE,"").length
 			m = @tabsize - (n+@tabsize).modulo(@tabsize)
 			ans += " "*m + str
 		}
