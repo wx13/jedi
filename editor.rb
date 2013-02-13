@@ -24,14 +24,14 @@ module Antsy
 #---------------------------------------------------------------------
 class Terminal
 
-	attr_accessor :colors, :keycodes, :escape, :mouse_x, :mouse_y,
-		:escapeRE
+	attr_accessor :colors, :keycodes
+	attr_accessor :escape_regexp
+	attr_accessor :mouse_x, :mouse_y
 
 	def initialize
 		define_colors
 		define_keycodes
-		@escape = ["\e","m"]
-		@escapeRE = /\e\[.*?m/
+		@escape_regexp = /\e\[.*?m/
 	end
 
 	def define_colors
@@ -429,40 +429,25 @@ class Screen
 		#   - shift by whole number of characters
 		#     (including multibyte escape codes)
 		#   - apply chopped-off escape codes (color codes) to the line
+
+		# Code is the text decoration code that would get chopped off;
+		# but we want to save it.
 		code = ""
-		esc = @terminal.escape
+
+		esc = @terminal.escape_regexp
 		while colfeed > 0
-			j = line.index(esc[0])
-			break if j==nil
-			if j > colfeed
+			a,b,c = line.partition(esc)
+			break if b.length == 0
+			if a.length > colfeed
 				line = line[colfeed..-1]
 				break
 			end
-			line = line[j..-1]
-			colfeed -= j
-			j = line.index(esc[1])
-			code += line[0..j]
-			line = line[j+1..-1]
+			line = c
+			colfeed -= a.length
+			code += b
 		end
-		print code
-		words = line.split(esc[0])
-		return if words.length == 0
-		word = words[0]
-		write_string(row,col,word[0,width])
-		col += word.length
-		width -= word.length
-		flag = true
-		flag = false if width <= 0
-		return if words.length <= 1  # in case file contains control characters
-		words[1..-1].each{|word|
-			j = word.index(esc[1])
-			next if j.nil?
-			print esc[0] + word[0..j]
-			write_string(row,col,word[j+1,width]) if flag
-			col += word[j+1..-1].length
-			width -= word[j+1..-1].length
-			flag = false if width <= 0
-		}
+
+		print code + line
 
 	end
 
@@ -1427,29 +1412,36 @@ class FileBuffer
 	def delrows(row1,row2)
 		@text[row1..row2] = []
 	end
+
 	# merge two consecutive rows
 	def mergerows(row1,row2)
+
 		return if @text[row1] == nil || @text[row2] == nil
-		if @text[row1] == ''
-			@text[row1] = @text[row2]
-			@text.delete_at(row2)
-			return
+
+		# Special case: one of the rows is empty.
+		# This is special, because the other row is unmodified, and
+		# we don't want to dup the string.
+		case
+			when @text[row1]==''
+				@text.delete_at(row1)
+				return
+			when @text[row1]==''
+				@text.delete_at(row2)
+				return
 		end
-		if @text[row2] == ''
-			@text[row2] = @text[row1]
-			@text.delete_at(row1)
-			return
-		end
+
+		# We can merge a folded block with an empty line, but not with
+		# non-full lines.
 		return if @text[row1].kind_of?(Array)
 		return if @text[row2].kind_of?(Array)
-		if row2 >= @text.length
-			return
-		end
+
+		# Normal merge
 		col = @text[row1].length
-		@text[row1] = @text[row1].dup
-		@text[row1] += @text[row2]
+		@text[row1] = @text[row1].dup + @text[row2]
 		@text.delete_at(row2)
+
 	end
+
 	# split a row into two
 	def splitrow(row,col)
 		return if @text[row].kind_of?(Array)
@@ -1612,7 +1604,7 @@ class FileBuffer
 
 		# Catch problem characters.
 		return if ! c.is_a?(String)
-		return if c.index(@window.escape[0])
+		return if c.index('\e')
 
 		# If text is not marked, we just add the character.
 		# Otherwise, things are much more complicated.
@@ -2752,47 +2744,41 @@ class FileBuffer
 	#
 	def syntax_color_string_comment(aline,lccs,bccs)
 
-		dqc = '"'
-		sqc = '\''
-		rxc = '/'
-		dquote = false
-		squote = false
-		regx = false
-		comment = false
-		bline = ""
-		escape = false
-		e0,e1 = @window.escape
-		ere = @window.escapeRE
-		ec = e0[0,1]
+		# quote and regex characters
+		dqc, sqc, rxc = '"', '\'', '/'
 
+		# Flags to tell if we are in the middle of something
+		dquote = squote = regx = comment = escape = false
+
+		# Escape characters
+		ere = @window.escape_regexp
+
+		# Temporaray string variables that we can chop apart without
+		# messing with the real line.
+		# cline will start as aline but get chopped up.
+		# bline will start empty, and get filled up.
 		cline = aline.dup
+		bline = ""
+
+		# Slowly much through cline until it is gone.
 		while (cline!=nil)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,ec].flatten)
-			k = cline.index(all)
-			if k==nil
-				bline += cline
-				break
-			end
-			bline += cline[0..(k-1)] if k > 0
-			cline = cline[k..-1]
+			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,ere].flatten)
+			a,b,c = cline.partition(all)
 
-			# If it is an escape, then skip.
-			if cline[0].chr == ec
-				r,x,q = cline.partition(ere)
-				if r == ""
-					bline += x
-					cline = q
-				else
-					r = cline[0,2]
-					if r!=nil
-						bline += r
-					end
-					cline = cline[2..-1]
-				end
+			# Add uninteresting part to bline.
+			bline += a
+			break if b == ""
+
+			# If the special string is a terminal escape sequence, then skip.
+			if b.match(ere)
+				bline += b
+				cline = c
 				next
 			end
+
+			cline = b + c
 
 			# if eol comment, then we are done
 			flag = false
@@ -2864,25 +2850,35 @@ class FileBuffer
 
 
 	def syntax_color(sline)
+
+		# Don't waste time on empty lines.
 		return(sline) if sline == ""
+
+		# Make a copy that we can muck with.
 		aline = sline.dup
+
 		# general regex coloring
 		@syntax_color_regex.each{|k,v|
 			aline.gsub!(k,$color[v]+"\\0"+$color[:normal])
 		}
+
 		# leading whitespace
 		if @indentchar
 			q = aline.partition(/\S/)
 			q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+"\\0"+$color[:normal])
 			aline = q.join
 		end
+
 		# comments & quotes
 		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
+
 		# trailing whitespace
 		ere = Regexp.escape($color[:normal])
 		re = Regexp.new /\s+/.source + "\(" + ere + "\)+" + /$/.source
 		aline.gsub!(re,$color[:whitespace]+"\\0"+$color[:normal])
+
 		return(aline)
+
 	end
 
 
@@ -2932,7 +2928,7 @@ class FileBuffer
 		a = a[1..-1]
 		return ans if a == nil
 		a.each{|str|
-			n = ans.gsub(@window.escapeRE,"").length
+			n = ans.gsub(@window.escape_regexp,"").length
 			m = @tabsize - (n+@tabsize).modulo(@tabsize)
 			ans += " "*m + str
 		}
@@ -3747,6 +3743,7 @@ class KeyMap
 			:ctrl_scroll_down => "$buffers.screen_down(4)",
 		}
 		@commandlist.default = ""
+
 		@extramode_commandlist = {
 			"b" => "buffer.bookmark",
 			"g" => "buffer.goto_bookmark",
@@ -3795,6 +3792,7 @@ class KeyMap
 			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode').last)"
 		}
 		@extramode_commandlist.default = ""
+
 		@editmode_commandlist = {
 			:backspace => "buffer.backspace",
 			:backspace2 => "buffer.backspace",
@@ -3809,6 +3807,7 @@ class KeyMap
 			:tab => "buffer.addchar(c)",
 		}
 		@editmode_commandlist.default = ""
+
 		@viewmode_commandlist = {
 			"q" => "buffer = $buffers.close",
 			"k" => "buffer.cursor_up(1)",
@@ -3835,7 +3834,6 @@ class KeyMap
 			":" => "buffer.enter_command"
 		}
 		@viewmode_commandlist.default = ""
-
 
 		@togglelist = {
 			"E" => "@editmode = :edit",
@@ -3867,6 +3865,8 @@ class KeyMap
 		return(cmd)
 	end
 
+	# First try the normal command list.  If that returns nothing,
+	# then try the edit/view command list.
 	def command(keycode, editmode)
 		cmd = @commandlist[keycode]
 		if cmd == ""
