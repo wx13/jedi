@@ -1067,9 +1067,11 @@ class FileBuffer
 		@linewrap = $linewrap[@filetype]
 		@cursormode = $cursormode[@filetype]
 		@syntax_color = $syntax_color[@filetype]
+		@backups = $backups[@filetype]
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text,@row,@col)
+		@buffer_history.load(@filename+@backups) if @backups
 		# save up info about screen to detect changes
 		@colfeed_old = 0
 		@marked_old = false
@@ -1310,6 +1312,9 @@ class FileBuffer
 		# Let the undo/redo history know that we have saved,
 		# for revert-to-saved purposes.
 		@buffer_history.save
+
+		# Store file history in a backup file.
+		@buffer_history.backup(@filename+@backups) if @backups
 
 		# Save the command/search histories.
 		$histories.save
@@ -3269,9 +3274,91 @@ class BufferHistory
 	# the contents of the saved-to-disk file (assuming nobody
 	# else has changed it).
 	def save
+		return if !modified?
 		@saved = @saved[0..@saved_idx] + [@idx] + @saved[@saved_idx+1..-1]
 		@saved_idx += 1
 		@last_saved = @hist[@idx]
+	end
+
+	# Optional file history backup.  Write to a backup file all the saved
+	# state history. The first line of the file will be the current
+	# buffer history index. The second line of the file will be all of
+	# the strings (lines) from all of the saved buffer states.  Each line
+	# after that is the indices (into the first line array) for each
+	# buffer state.
+	def backup(filename)
+
+		# Create a 'set' of lines (strings), so that we remove duplicates.
+		require 'set'
+		s = Set.new
+		@saved.each{|k| s.merge(@hist[k].text)}
+
+		# Convert to an array; create an index array; create a hash index
+		# for the index array, so that we can find elements quickly.
+		a = s.to_a
+		ah = a.map{|x|x.hash}
+		ah = Hash[*ah.zip(Array(0..(a.length-1))).flatten]
+
+		# Write to the backup file.
+		File.open(filename,'w'){|f|
+			f.puts @saved_idx
+			f.puts a.inspect
+			@saved.each{|k|
+				# Use the hash index to find the index into the lines array.
+				b = @hist[k].text.map{|line|
+					ah[line.hash]
+				}
+				# Prepend the row and column to the array of indices.
+				r,c = @hist[k].row,@hist[k].col
+				b = [r,c] + b
+				f.puts b.inspect
+			}
+		}
+	rescue
+		$screen.write_message($!.to_s)
+		return
+	end
+
+	# Read in the saved states from the backup file.
+	def load(filename)
+		return if !File.exist?(filename)
+		File.open(filename){|f|
+
+			k = f.readline.to_i
+			begin
+				a = eval(f.readline)
+			rescue
+				$screen.write_message($!.to_s)
+				return
+			end
+
+			# Map the indices into the strings.
+			b = []
+			f.readlines.each{|line|
+				begin
+					s = eval(line)
+				rescue
+					$screen.write_message($!.to_s)
+					return
+				end
+				r,c = s[0,2]
+				text = s[2..-1].map{|x|a[x]}
+				b << State.new(text,r,c)
+			}
+
+			# Create the buffer history list.
+			if @hist[@idx].text.flatten == b[k].text.flatten
+				@idx = k
+				@hist = b.dup
+			else
+				@hist = b.dup + @hist
+				@idx += b.length
+				@saved_idx += b.length
+			end
+			@saved_idx = @idx
+			@saved = (0..(@hist.length-1)).to_a
+
+		}
 	end
 
 	# Is the text modified from the saved version?
@@ -4064,6 +4151,7 @@ class Editor
 		$syntax_color = Hash.new(true)
 		$editmode = Hash.new(:edit)      # false = start in view mode
 		$linelength = Hash.new(0)        # 0 = terminal width
+		$backups = Hash.new('...')
 
 		# Define the key mapping and colors up front, so that they
 		# can be modified by config files and start-up scripts.
@@ -4233,6 +4321,12 @@ class Editor
 			}
 			opts.on('-M', '--mouse', 'Enable mouse interaction'){
 				$mouse = true
+			}
+			opts.on('-B', '--backups', 'Enable file backupts'){
+					$backups = Hash.new('...')
+			}
+			opts.on('-b', '--no-backups', 'Disable file backupts'){
+				$backups = Hash.new(false)
 			}
 			opts.on('-v', '--version', 'Print version number'){
 				puts $version
