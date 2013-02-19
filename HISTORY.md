@@ -1,3 +1,27 @@
+Bug fixes:
+
+  + Cursor placement on undone auto-indent.
+    - When we undo an auto-indent, the cursor should end up at the
+      start of the line.  It was going to the previous line.
+  + Proper tab completion in filenames.
+    - previous efforts to clean up the file selector code caused this
+      behavior to disappear.
+
+Clean up:
+
+  + Removed explicit references to the escape character outside of the
+    terminal class
+  + Simplified syntax coloring and line output.
+
+Features:
+
+  + Undo autoindent whitespace separately from non-whitespace.
+    - When autoindent involves non-whitespace characters, separate
+      snapshots so that we can quickly undo unwanted autoindents.
+  + Save buffer history to a backup file. Then resuming the editor will
+    read in the old history and use it as the buffer history.
+
+
 0.2.2
 -----
 
