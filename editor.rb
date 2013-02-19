@@ -632,82 +632,82 @@ class Screen
 		idx = 0  # for tabbing through files
 
 		# for file globbing
-		glob = token
+		glob = token.dup
 
 		# interact with user
 		loop do
 
 			c = getch until c!=nil
-			case c
+			if c==:tab && file
+				# find files that match typed string
+				# Cycle through matches.
+				list = Dir.glob(glob+"*")
+				if list.length == 0
+					next
+				end
+				idx = idx.modulo(list.length)
+				token = list[idx]
+				col = token.length
+				idx += 1
+			else
+				case c
 
-				# abort
-				when :ctrl_c then return(nil)
+					# abort
+					when :ctrl_c then return(nil)
 
-				# allow for empty strings
-				when :ctrl_n then return("")
+					# allow for empty strings
+					when :ctrl_n then return("")
 
-				# cursor up scrolls through history
-				when :up
-					token = ask_hist.scroll(1)
-					col = token.length
-				when :down
-					token = ask_hist.scroll(-1)
-					col = token.length
-				when :ctrl_r
-					token = ask_hist.reverse_i(self)
-					col = token.length
-				when :left
-					col = [col-1,0].max
-				when :right
-					col = [col+1,token.length].min
-				when :ctrl_e
-					col = token.length
-				when :ctrl_a
-					col = 0
-				when :ctrl_u
-					# cut to start-of-line
-					token = token[col..-1]
-					col = 0
-				when :ctrl_k
-					# cut to end-of-line
-					token = token[0,col]
-				when :ctrl_d
-					# delete character at cursor
-					if col < token.length
-						token[col] = ""
-					end
-				when :ctrl_m, :enter, :ctrl_j
-					break
-				when :backspace, :backspace2, :ctrl_h
-					if col > 0
-						token[col-1] = ""
-						col -= 1
-					end
-				when :tab
-					if file
-						# find files that match typed string
-						# Cycle through matches.
-						list = Dir.glob(glob+"*")
-						if list.length == 0
-							next
-						end
-						idx = idx.modulo(list.length)
-						token = list[idx]
+					# cursor up scrolls through history
+					when :up
+						token = ask_hist.scroll(1)
 						col = token.length
-						idx += 1
-					else
+					when :down
+						token = ask_hist.scroll(-1)
+						col = token.length
+					when :ctrl_r
+						token = ask_hist.reverse_i(self)
+						col = token.length
+					when :left
+						col = [col-1,0].max
+					when :right
+						col = [col+1,token.length].min
+					when :ctrl_e
+						col = token.length
+					when :ctrl_a
+						col = 0
+					when :ctrl_u
+						# cut to start-of-line
+						token = token[col..-1]
+						col = 0
+					when :ctrl_k
+						# cut to end-of-line
+						token = token[0,col]
+					when :ctrl_d
+						# delete character at cursor
+						if col < token.length
+							token[col] = ""
+						end
+					when :ctrl_m, :enter, :ctrl_j
+						break
+					when :backspace, :backspace2, :ctrl_h
+						if col > 0
+							token[col-1] = ""
+							col -= 1
+						end
+					when :tab
 						# not a file, so insert literal tab character
 						token.insert(col,"\t")
 						col += 1
-					end
-				else
-					# regular character
-					if c.is_a?(String)
-						token.insert(col,c)
-						col += 1
-					end
+					else
+						# regular character
+						if c.is_a?(String)
+							token.insert(col,c)
+							col += 1
+						end
+				end
+				glob = token.dup
 			end
-			glob = token
 
 			# display the answer so far
 			if (col+question.length+2) > @cols
