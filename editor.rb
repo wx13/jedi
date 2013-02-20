@@ -1718,10 +1718,13 @@ class FileBuffer
 				if @text[@row].match(/^\s*$/)
 					@text[@row] = ""
 				end
-				w0,w0,w1 = ws.partition(/\s+/)
-				insertchar(@row+1,0,w0) if w0.length > 0
-				@buffer_history.add(@text,@row+1,w0.length)
-				insertchar(@row+1,w0.length,w1) if w1.length > 0
+				c = 0
+				ws.partition(/\s+/).each{|w|
+					next if w.length==0
+					insertchar(@row+1,c,w)
+					c += w.length
+					@buffer_history.add(@text,@row+1,c)
+				}
 			end
 			@col = ws.length
 			@row += 1
