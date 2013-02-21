@@ -4178,7 +4178,7 @@ class Editor
 		$syntax_color = Hash.new(true)
 		$editmode = Hash.new(:edit)      # false = start in view mode
 		$linelength = Hash.new(0)        # 0 = terminal width
-		$backups = Hash.new('...')
+		$backups = Hash.new(false)
 
 		# Define the key mapping and colors up front, so that they
 		# can be modified by config files and start-up scripts.
@@ -4350,7 +4350,7 @@ class Editor
 				$mouse = true
 			}
 			opts.on('-B', '--backups', 'Enable file backupts'){
-					$backups = Hash.new('...')
+				$backups = Hash.new('...')
 			}
 			opts.on('-b', '--no-backups', 'Disable file backupts'){
 				$backups = Hash.new(false)

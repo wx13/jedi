@@ -46,6 +46,8 @@ $color[:message] = :yellow
 $color[:status] = :underline
 $color[:regex] = :normal
 
+# Turn on backups
+$backups = Hash.new('...')
 
 
 #
