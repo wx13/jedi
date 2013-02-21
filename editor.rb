@@ -2,6 +2,30 @@
 #
 # editor.rb
 #
+# Code layout:
+#   class Terminal
+#     wrapper around ANSI terminal keycodes
+#   class Screen
+#     controls screen output and input (calls to Terminal)
+#   class Window
+#     manages the screen for a single buffer
+#   class FileBuffer
+#     handles most of the editing stuff
+#   class BufferHistory
+#     keeps track of buffer states (undo/redo)
+#   class BuffersList
+#     manages multiplf file buffers
+#   class KeyMap
+#     defines the key-method mappings
+#   class Histories
+#     manages search/script/etc histories
+#   class SyntaxColors
+#     defines syntax colors
+#   class CopyBuffer
+#     keeps a history of copy/paste texts
+#   class Editor
+#     main class which orchestrates the others
+#
 # Copyright (C) 2011-2013, Jason P. DeVita (jason@wx13.com)
 #
 # Copying and distribution of this file, with or without modification,
