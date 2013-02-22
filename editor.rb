@@ -1744,7 +1744,7 @@ class FileBuffer
 				end
 				c = 0
 				ws.partition(/\s+/).each{|w|
-					next if w.length==0
+					next if w.nil? || w.length==0
 					insertchar(@row+1,c,w)
 					c += w.length
 					@buffer_history.add(@text,@row+1,c)
@@ -1767,6 +1767,7 @@ class FileBuffer
 		# If we are doing linewrap, use the current linelength,
 		# otherwise ask for the linelength to use.
 		if linewrap
+			return if @text[@row].nil?
 			cols = @linelength
 			# If line is short, nothing to be done.
 			return if @text[@row].length < cols
