@@ -4103,6 +4103,7 @@ class SyntaxColors
 		# Define per-language block comments.
 		@bc = {
 			:c => {"/*"=>"*/"},
+			:html => {'<!--'=>'-->'},
 		}
 		@bc.default = {}
 		# Define generic regexp syntax rules.
@@ -4243,6 +4244,7 @@ class Editor
 			/\.txt$/ => :text,
 			/\.pl$/ => :perl,
 			/\.tex$/ => :latex,
+			/\.html?$/ => :html,
 		}
 		return filetypes
 	end
