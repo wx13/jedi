@@ -471,7 +471,19 @@ class Screen
 			code += b
 		end
 
-		print code + line
+		k=@cols
+		pline = ""
+		while k > 0
+			a,b,line = line.partition(esc)
+			if a.length > k
+				pline += a[0,k] + b
+				break
+			end
+			pline += a + b
+			k -= a.length
+			break if b.length == 0
+		end
+		print code + pline
 
 	end
 
