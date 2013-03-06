@@ -2,6 +2,46 @@ This document describes the internal structure and algorithms of the
 editor.rb code.
 
 
+Code flow
+=========
+
+The code runs by declaring a new editor instance and letting it run.
+
+    $editor = Editor.new
+    $editor.go
+
+The instantiation does the following:
+
+1. Set default parameter values.
+2. Create instances of:
+    - BuffersList
+    - CopyBuffer
+    - Histories
+    - KeyMap
+    - Screen
+3. Parse options (including running user startup scripts)
+
+The `go` method starts a loop where the editor waits for a keypress
+from the Screen class and then uses KeyMap to decide what to do with
+it. The main object that editor interacts with is the BuffersList.
+BuffersList keeps a list of FileBuffer objects, where each one
+represents a file. (This is not strictly true, because we could be
+editing the same file in two "buffers".)  BuffersList does the
+following:
+
+ - keep a list of file buffers
+ - keep track of which buffers reside on which virtual "page"
+
+Each buffer is an instance of the FileBuffer, which
+
+ - stores information about filetype, cursor position, indentation
+   preferences, etc
+ - creates a TextBuffer for storing the actual text
+ - has methods for doing stuff to the text
+ - calls out to BufferHistory class for undo/redo stuff
+ - creates an instance of the Window class for user interaction
+
+
 Overview of classes
 ===================
 
@@ -45,6 +85,12 @@ things it is responsible for
    interacts with a window
 
 
+TextBuffer
+----------
+
+Low-level text editing.
+
+
 FileBuffer
 ----------
 
@@ -52,14 +98,12 @@ The FileBuffer class manages everything about a single file buffer. It
 is huge, because it contains all the text editing functionality.  What
 it does:
 
- * Let the user enter a ruby command or script file
  * Bookmark positions in the file
  * Read/save/reload files
  * A whole slew of text modifications on the buffer text
  * Navigation and scrolling
  * Search and replace
  * Marking, copying, cutting, and pasting
- * Syntax coloring and hightlighting
  * Send text to the window for display
  * Map buffer position to screen position and back
  * Text folding/hiding
@@ -107,8 +151,8 @@ histories.
 SyntaxColors
 ------------
 
-The SyntaxColors class defines the syntax colors.  It is just a
-container class.
+The SyntaxColors class defines the syntax colors and does syntax
+coloring.
 
 
 CopyBuffer
@@ -126,6 +170,7 @@ The Editor class orchestrates everything.
  * Declare other classes
  * Parse command-line options
  * Run start-up scripts
+ * Let the user enter a ruby command or script file
  * Start user interaction loop
 
 
