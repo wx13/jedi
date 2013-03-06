@@ -8,7 +8,7 @@ or modified with external ruby scripts, and ruby commands can be run
 within the editor to perform complex editing tasks.  Features include:
 undo/redo (two levels), multiple cursor modes, text folding, split
 screen mode, "indentation facade", copy/paste history, and more.  See
-the doc/ directory for details
+the doc/ directory for details.
 
 
 

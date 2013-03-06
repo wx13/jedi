@@ -1,3 +1,6 @@
+0.3.0
+-----
+
 Bug fixes:
 
   + Cursor placement on undone auto-indent.
@@ -6,6 +9,10 @@ Bug fixes:
   + Proper tab completion in filenames.
     - previous efforts to clean up the file selector code caused this
       behavior to disappear.
+  + Prevent line-wrap from chocking on some nil lines.
+  + Don't depend on terminal for non-linewrapping.
+    - some terminals do funky things; instead manually measure the
+      correct line length.
 
 Clean up:
 

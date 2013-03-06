@@ -32,7 +32,7 @@
 # are permitted in any medium without royalty or restriction. This file
 # is offered as-is, without any warranty.
 #
-$version = "0.2.2"
+$version = "0.3.0"
 
 
 
