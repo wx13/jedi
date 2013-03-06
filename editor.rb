@@ -9,8 +9,10 @@
 #     controls screen output and input (calls to Terminal)
 #   class Window
 #     manages the screen for a single buffer
+#   class TextBuffer
+#     holds a text buffer and low-leveling editing
 #   class FileBuffer
-#     handles most of the editing stuff
+#     all info about a file and its state
 #   class BufferHistory
 #     keeps track of buffer states (undo/redo)
 #   class BuffersList
@@ -1028,6 +1030,167 @@ end
 
 
 
+
+
+
+
+#---------------------------------------------------------------------
+# TextBuffer class
+#
+# This class manages the actual text of a buffer.
+#---------------------------------------------------------------------
+
+class TextBuffer
+
+	attr_accessor :text
+
+	def initialize(text=[""])
+		@text = text.dup
+	end
+
+	def method_missing(method,*args,&block)
+		@text.send method, *args, &block
+	end
+
+	# delete a character
+	def delchar(row,col)
+		return if @text[row].kind_of?(Array)
+		if col == @text[row].length
+			mergerows(row,row+1)
+		else
+			@text[row] = @text[row].dup
+			@text[row][col] = ""
+		end
+	end
+
+	# insert a character
+	def insertchar(row,col,c,insertmode=true)
+		return if @text[row].kind_of?(Array)
+		return if c.is_a?(String) == false
+		return if col > @text[row].length
+		if @text[row] == nil
+			@text[row] = c
+			return
+		end
+		@text[row] = @text[row].dup
+		if insertmode || col == @text[row].length
+			@text[row].insert(col,c)
+		else
+			@text[row][col] = c
+		end
+	end
+
+	# delete a row
+	def delrow(row)
+		@text.delete_at(row)
+	end
+
+	# delete a range of rows (inclusive)
+	def delrows(row1,row2)
+		@text[row1..row2] = []
+	end
+
+	# merge two consecutive rows
+	def mergerows(row1,row2)
+
+		return if @text[row1] == nil || @text[row2] == nil
+
+		# Special case: one of the rows is empty.
+		# This is special, because the other row is unmodified, and
+		# we don't want to dup the string.
+		case
+			when @text[row1]==''
+				@text.delete_at(row1)
+				return
+			when @text[row1]==''
+				@text.delete_at(row2)
+				return
+		end
+
+		# We can merge a folded block with an empty line, but not with
+		# non-full lines.
+		return if @text[row1].kind_of?(Array)
+		return if @text[row2].kind_of?(Array)
+
+		# Normal merge
+		col = @text[row1].length
+		@text[row1] = @text[row1].dup + @text[row2]
+		@text.delete_at(row2)
+
+	end
+
+	# split a row into two
+	def splitrow(row,col)
+		return if @text[row].kind_of?(Array)
+		text = @text[row].dup
+		@text[row] = text[(col)..-1]
+		insertrow(row,text[0..(col-1)])
+	end
+
+	# new row
+	def insertrow(row,text)
+		@text.insert(row,text)
+	end
+
+	# insert a string
+	def insert(row,col,text)
+		return if @text[row].kind_of?(Array)
+		@text[row] = @text[row].dup
+		@text[row].insert(col,text)
+	end
+	# delete a column of text
+	def column_delete(row1,row2,col)
+		for r in row1..row2
+			next if @text[r].kind_of?(Array)  # Skip folded text.
+			next if @text[r].length < -col    # Skip too short lines.
+			next if col >= @text[r].length    # Can't delete past end of line.
+			@text[r] = @text[r].dup
+			@text[r][col] = ""
+		end
+	end
+
+	# Hide the text from srow to erow.
+	def hide_lines_at(srow,erow)
+		text = @text[srow..erow]  # grab the chosen lines
+		@text[srow] = [text].flatten  # current row = array of marked text
+		@text[(srow+1)..erow] = [] if srow < erow  # technically, can hide a single line, but why?
+		return text.length
+	end
+
+	def unhide_lines(row)
+		hidden_text = @text[row]
+		return if hidden_text.kind_of?(String)
+		text = @text.dup
+		@text.delete_if{|x|true}
+		@text.concat(text[0,row])
+		@text.concat(hidden_text)
+		@text.concat(text[(row+1)..-1])
+	end
+
+	def unhide_all
+		@text.flatten!
+	end
+
+end
+
+# end of text buffer class
+#---------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #---------------------------------------------------------------------
 # FileBuffer class
 #
@@ -1048,14 +1211,10 @@ class FileBuffer
 
 		# read in the file
 		@filename = filename
-		@text = [""]
+		@text = TextBuffer.new
 		read_file
 		# file type for syntax coloring
 		set_filetype(@filename)
-		# set up syntax coloring
-		@syntax_color_lc = $syntax_colors.lc[@filetype]
-		@syntax_color_bc = $syntax_colors.bc[@filetype]
-		@syntax_color_regex = $syntax_colors.regex[@filetype]
 
 		# position of cursor in buffer
 		@row = 0
@@ -1106,7 +1265,7 @@ class FileBuffer
 		@backups = $backups[@filetype]
 
 		# undo-redo history
-		@buffer_history = BufferHistory.new(@text,@row,@col)
+		@buffer_history = BufferHistory.new(@text.text,@row,@col)
 		@buffer_history.load(@filename+@backups) if @backups
 		# save up info about screen to detect changes
 		@colfeed_old = 0
@@ -1138,16 +1297,6 @@ class FileBuffer
 
 
 
-	# Enter arbitrary ruby command.
-	def enter_command
-		answer = @window.ask("command:",$histories.command)
-		eval(answer)
-		dump_to_screen(true)
-		@window.write_message("done")
-	rescue
-		@window.write_message("Unknown command")
-	end
-
 	def update_indentation
 		a = @text.map{|line|
 			if line[0] != nil && !line[0].is_a?(String)
@@ -1163,31 +1312,6 @@ class FileBuffer
 		else
 			@fileindentchar = nil
 		end
-	end
-
-	# run a script file of ruby commands
-	def run_script
-		file = @window.ask("run script file:",$histories.script,false,true)
-		if (file==nil) || (file=="")
-			@window.write_message("cancelled")
-			return
-		end
-		if File.directory?(file)
-			list = Dir.glob(file+"/*.rb")
-			list.each{|f|
-				script = File.read(f)
-				eval(script)
-				@window.write_message("done")
-			}
-		elsif File.exist?(file)
-			script = File.read(file)
-			eval(script)
-			@window.write_message("done")
-		else
-			@window.write_message("script file #{file} doesn't exist")
-		end
-	rescue
-		@window.write_message("Bad script")
 	end
 
 
@@ -1407,115 +1531,10 @@ class FileBuffer
 
 	# If changed, take a snapshot of the new buffer.
 	def snapshot
-		if @buffer_history.text != @text
-			@buffer_history.add(@text,@row,@col)
+		if @buffer_history.text != @text.text
+			@buffer_history.add(@text.text,@row,@col)
 		end
 	end
-
-
-
-	# -----------------------------------------------
-	# low-level methods for modifying text
-	# -----------------------------------------------
-
-	# delete a character
-	def delchar(row,col)
-		return if @text[row].kind_of?(Array)
-		if col == @text[row].length
-			mergerows(row,row+1)
-		else
-			@text[row] = @text[row].dup
-			@text[row][col] = ""
-		end
-	end
-	# insert a character
-	def insertchar(row,col,c)
-		c = @tabchar if c == :tab
-		return if @text[row].kind_of?(Array)
-		return if c.is_a?(String) == false
-		return if col > @text[row].length
-		if @text[row] == nil
-			@text[row] = c
-			return
-		end
-		@text[row] = @text[row].dup
-		if @insertmode || col == @text[row].length
-			@text[row].insert(col,c)
-		else
-			@text[row][col] = c
-		end
-	end
-	# delete a row
-	def delrow(row)
-		@text.delete_at(row)
-	end
-	# delete a range of rows (inclusive)
-	def delrows(row1,row2)
-		@text[row1..row2] = []
-	end
-
-	# merge two consecutive rows
-	def mergerows(row1,row2)
-
-		return if @text[row1] == nil || @text[row2] == nil
-
-		# Special case: one of the rows is empty.
-		# This is special, because the other row is unmodified, and
-		# we don't want to dup the string.
-		case
-			when @text[row1]==''
-				@text.delete_at(row1)
-				return
-			when @text[row1]==''
-				@text.delete_at(row2)
-				return
-		end
-
-		# We can merge a folded block with an empty line, but not with
-		# non-full lines.
-		return if @text[row1].kind_of?(Array)
-		return if @text[row2].kind_of?(Array)
-
-		# Normal merge
-		col = @text[row1].length
-		@text[row1] = @text[row1].dup + @text[row2]
-		@text.delete_at(row2)
-
-	end
-
-	# split a row into two
-	def splitrow(row,col)
-		return if @text[row].kind_of?(Array)
-		text = @text[row].dup
-		@text[row] = text[(col)..-1]
-		insertrow(row,text[0..(col-1)])
-	end
-	# new row
-	def insertrow(row,text)
-		@text.insert(row,text)
-	end
-	# insert a string
-	def insert(row,col,text)
-		return if @text[row].kind_of?(Array)
-		@text[row] = @text[row].dup
-		@text[row].insert(col,text)
-	end
-	# delete a column of text
-	def column_delete(row1,row2,col)
-		for r in row1..row2
-			next if @text[r].kind_of?(Array)  # Skip folded text.
-			next if @text[r].length < -col    # Skip too short lines.
-			next if col >= @text[r].length    # Can't delete past end of line.
-			@text[r] = @text[r].dup
-			@text[r][col] = ""
-		end
-	end
-
-	# end of low-level text modifiers
-	# -----------------------------------------------
-
-
-
 
 
 
@@ -1550,13 +1569,13 @@ class FileBuffer
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
 				c = (mark_row==row)?(0):(@col)
-				column_delete(mark_row,row,c)
+				@text.column_delete(mark_row,row,c)
 			elsif @cursormode == 'row'
-				column_delete(mark_row,row,0)
+				@text.column_delete(mark_row,row,0)
 			elsif @cursormode == 'loc'
 				n = @text[@row][@col..-1].length
 				if n > 0
-					column_delete(mark_row,row,-n)
+					@text.column_delete(mark_row,row,-n)
 				end
 			else
 				mark_list.each{|row,cols|
@@ -1564,7 +1583,7 @@ class FileBuffer
 					# because doing stuff at early in the line changes
 					# positions later in the line.
 					cols.uniq.sort.reverse.each{|col|
-						column_delete(row,row,col)
+						@text.column_delete(row,row,col)
 						# Adjust mark positions due to changes to the left
 						# of the mark.
 						@mark_list[row-@row].map!{|x|
@@ -1578,7 +1597,7 @@ class FileBuffer
 				}
 			end
 		else
-			delchar(@row,@col) if @text[@row].kind_of?(String)
+			@text.delchar(@row,@col) if @text[@row].kind_of?(String)
 		end
 	end
 
@@ -1591,19 +1610,19 @@ class FileBuffer
 			mark_row,row = ordered_mark_rows
 			if @cursormode == 'col'
 				c = (mark_row==row)?(0):(@col-1)
-				column_delete(mark_row,row,c)
+				@text.column_delete(mark_row,row,c)
 				cursor_left
 			elsif @cursormode == 'row'
-				column_delete(mark_row,row,0)
+				@text.column_delete(mark_row,row,0)
 				cursor_left
 			elsif @cursormode == 'loc'
 				n = @text[@row][@col..-1].length + 1
-				column_delete(mark_row,row,-n)
+				@text.column_delete(mark_row,row,-n)
 				cursor_left
 			else
 				mark_list.each{|row,cols|
 					cols.uniq.sort.reverse.each{|col|
-						column_delete(row,row,col-1)
+						@text.column_delete(row,row,col-1)
 						@mark_list[row-@row].map!{|x|
 							if (x+@col) > col
 								x-1
@@ -1621,11 +1640,11 @@ class FileBuffer
 			end
 			if @col == 0
 				cursor_left
-				mergerows(@row,@row+1)
+				@text.mergerows(@row,@row+1)
 				return
 			end
 			cursor_left
-			delchar(@row,@col)
+			@text.delchar(@row,@col)
 		end
 	end
 
@@ -1650,7 +1669,7 @@ class FileBuffer
 		# If text is not marked, we just add the character.
 		# Otherwise, things are much more complicated.
 		if @marked == false
-			insertchar(@row,@col,c)
+			@text.insertchar(@row,@col,c,@insertmode)
 		else
 
 			mark_row,row = ordered_mark_rows
@@ -1688,7 +1707,7 @@ class FileBuffer
 
 				cols = cols.uniq.sort.reverse
 				cols.each{|col|
-					insertchar(row,col,c)
+					@text.insertchar(row,col,c,@insertmode)
 					if @cursormode == 'multi'
 						@mark_list[row-@row].map!{|x|
 							if (x+@col) > col
@@ -1715,15 +1734,15 @@ class FileBuffer
 	def newline
 		if @marked then return end
 		if @col == 0
-			insertrow(@row,"")
+			@text.insertrow(@row,"")
 			cursor_down(1)
 		else
-			splitrow(@row,@col)
+			@text.splitrow(@row,@col)
 			ws = ""
 			if @autoindent
 
 				# snap shot, so we can undo auto-indent
-				@buffer_history.add(@text,@row+1,0)
+				@buffer_history.add(@text.text,@row+1,0)
 
 				# Figure out leading "whitespace", where "whitespace"
 				# now includes non-whitespace leading characters which are
@@ -1757,9 +1776,9 @@ class FileBuffer
 				c = 0
 				ws.partition(/\s+/).each{|w|
 					next if w.nil? || w.length==0
-					insertchar(@row+1,c,w)
+					@text.insertchar(@row+1,c,w)
 					c += w.length
-					@buffer_history.add(@text,@row+1,c)
+					@buffer_history.add(@text.text,@row+1,c)
 				}
 			end
 			@col = ws.length
@@ -1818,7 +1837,7 @@ class FileBuffer
 		# make one long line out of multiple lines
 		text = @text[mark_row..row].join(" ")
 		for r in mark_row..row
-			delrow(mark_row)
+			@text.delrow(mark_row)
 		end
 		# Strip out multiple spaces or tabs
 		text.gsub!(/\t/,' ')
@@ -1836,7 +1855,7 @@ class FileBuffer
 			# Otherwise, keep going.
 			if c2 >= (cols-1)
 				c = c2+1 if c==0  # careful about long words
-				insertrow(r,text[0,c])
+				@text.insertrow(r,text[0,c])
 				text = text[c..-1]
 				text = "" if text==nil
 				text.lstrip!
@@ -1856,7 +1875,7 @@ class FileBuffer
 		# Otherwise, create a new row for the overflow.
 		if linewrap && @text[r].is_a?(String)
 			if @text[r] == nil || @text[r] == ""
-				insertrow(r,text)
+				@text.insertrow(r,text)
 			else
 				@text[r] = indent + text + " " + @text[r]
 				@row += 1
@@ -1864,7 +1883,7 @@ class FileBuffer
 				@row -= 1
 			end
 		else
-			insertrow(r,text)
+			@text.insertrow(r,text)
 		end
 
 		# If we are line-wrapping, we must be careful to place the cursor
@@ -1912,7 +1931,7 @@ class FileBuffer
 	end
 	def undo
 		if @buffer_history.undo
-			@text = @buffer_history.copy
+			@text.text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
 			better_cursor_position
@@ -1920,7 +1939,7 @@ class FileBuffer
 	end
 	def redo
 		if @buffer_history.redo
-			@text = @buffer_history.copy
+			@text.text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
 			better_cursor_position
@@ -2365,7 +2384,7 @@ class FileBuffer
 				$copy_buffer.text += [line] + ['']
 				if cut == 1
 					@text[@row] = ''
-					mergerows(@row,@row+1)
+					@text.mergerows(@row,@row+1)
 				end
 			else  # regular text
 				@text[@row] = line[0,@mark_col] if cut == 1
@@ -2375,7 +2394,7 @@ class FileBuffer
 				else
 					# include line ending in cut/copy
 					$copy_buffer.text += [line[@mark_col..@col]] + ['']
-					mergerows(@row,@row+1) if cut == 1
+					@text.mergerows(@row,@row+1) if cut == 1
 				end
 			end
 
@@ -2401,7 +2420,7 @@ class FileBuffer
 				tail = lastline[@col+1..-1]
 				@text[@mark_row] += tail if cut == 1 && tail != nil
 			end
-			delrows(@mark_row+1,@row) if cut == 1
+			@text.delrows(@mark_row+1,@row) if cut == 1
 
 		end
 
@@ -2661,7 +2680,7 @@ class FileBuffer
 			next if line == nil
 			if line.kind_of?(String)
 				if @syntax_color
-					aline = syntax_color(line)
+					aline = $syntax_colors.syntax_color(line,@filetype,@tabchar)
 				else
 					aline = line + $color[:normal]
 				end
@@ -2738,194 +2757,6 @@ class FileBuffer
 
 
 
-	#
-	# INPUT:
-	#	bline -- string to add result to
-	#	cline -- string to inspect
-	#	cqc -- current quote character (to look for)
-	# OUTPUT:
-	#	bline -- updated bline string
-	#	cline -- remainder of cline strin
-	#
-	def syntax_find_match(cline,cqc,bline)
-
-		k = cline[1..-1].index(cqc)
-		if k==nil
-			# didn't find the character
-			return nil
-		end
-		bline = cline[0].chr
-		cline = cline[1..-1]
-		while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
-			bline += cline[0,k+cqc.length]
-			cline = cline[k+cqc.length..-1]
-			break if cline == nil
-			k = cline.index(cqc)
-		end
-		if k==nil
-			bline += cline
-			return(bline)
-		end
-		if cline == nil
-			return(bline)
-		end
-		bline += cline[0..k+cqc.length-1]
-		cline = cline[k+cqc.length..-1]
-		return bline,cline
-	end
-
-
-
-	#
-	# Do string and comment coloring.
-	# INPUT:
-	#   aline -- line of text to color
-	#   lccs  -- line comment characters
-	#            (list of characters that start comments to end-of-line)
-	#   bccs  -- block comment characters
-	#            (pairs of comment characters, such as /* */)
-	# OUTPUT:
-	#   line with color characters inserted
-	#
-	def syntax_color_string_comment(aline,lccs,bccs)
-
-		# quote and regex characters
-		dqc, sqc, rxc = '"', '\'', '/'
-
-		# Flags to tell if we are in the middle of something
-		dquote = squote = regx = comment = escape = false
-
-		# Escape characters
-		ere = @window.escape_regexp
-
-		# Temporaray string variables that we can chop apart without
-		# messing with the real line.
-		# cline will start as aline but get chopped up.
-		# bline will start empty, and get filled up.
-		cline = aline.dup
-		bline = ""
-
-		# Slowly much through cline until it is gone.
-		while (cline!=nil)&&(cline.length>0) do
-
-			# find first occurance of special character
-			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,ere].flatten)
-			a,b,c = cline.partition(all)
-
-			# Add uninteresting part to bline.
-			bline += a
-			break if b == ""
-
-			# If the special string is a terminal escape sequence, then skip.
-			if b.match(ere)
-				bline += b
-				cline = c
-				next
-			end
-
-			cline = b + c
-
-			# if eol comment, then we are done
-			flag = false
-			lccs.each{|str|
-				if cline.index(str)==0
-					bline += $color[:comment]
-					# remove any other colors inside of the comment
-					bline += cline.gsub(ere,'')
-					bline += $color[:normal]
-					flag = true
-					break
-				end
-			}
-			break if flag
-
-			# block comments
-			flag = false
-			bccs.each{|sc,ec|
-				if cline.index(sc)==0
-					b,c = syntax_find_match(cline,ec,bline)
-					if b != nil
-						bline += $color[:comment]
-						# remove any other colors inside of the comment
-						bline += b.gsub(ere,'')
-						bline += $color[:normal]
-						cline = c
-						flag = true
-					end
-				end
-			}
-			next if flag
-
-			# if quote, then look for match
-			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
-				cqc = cline[0].chr
-				b,c = syntax_find_match(cline,cqc,bline)
-				if b != nil
-					bline += $color[:string]
-					# remove any other colors inside of the comment
-					bline += b.gsub(ere,'')
-					bline += $color[:normal]
-					cline = c
-					next
-				end
-			end
-
-			# if regex, look for match
-			if (cline[0].chr == rxc)
-				cqc = cline[0].chr
-				b,c = syntax_find_match(cline,cqc,bline)
-				if b != nil
-					bline += $color[:regex]
-					# remove any other colors inside of the comment
-					bline += b.gsub(ere,'')
-					bline += $color[:normal]
-					cline = c
-					next
-				end
-			end
-
-			bline += cline[0].chr
-			cline = cline[1..-1]
-		end
-
-		aline = bline + $color[:normal]
-		return aline
-	end
-
-
-
-	def syntax_color(sline)
-
-		# Don't waste time on empty lines.
-		return(sline) if sline == ""
-
-		# Make a copy that we can muck with.
-		aline = sline.dup
-
-		# general regex coloring
-		@syntax_color_regex.each{|k,v|
-			aline.gsub!(k,$color[v]+"\\0"+$color[:normal])
-		}
-
-		# leading whitespace
-		if @indentchar
-			q = aline.partition(/\S/)
-			q[0].gsub!(/([^#{@indentchar}]+)/,$color[:whitespace]+"\\0"+$color[:normal])
-			aline = q.join
-		end
-
-		# comments & quotes
-		aline = syntax_color_string_comment(aline,@syntax_color_lc,@syntax_color_bc)
-
-		# trailing whitespace
-		ere = Regexp.escape($color[:normal])
-		re = Regexp.new /\s+/.source + "\(" + ere + "\)+" + /$/.source
-		aline.gsub!(re,$color[:whitespace]+"\\0"+$color[:normal])
-
-		return(aline)
-
-	end
-
 
 	# functions for converting from column position in buffer
 	# to column position on screen
@@ -2989,20 +2820,13 @@ class FileBuffer
 	# text folding/hiding
 	#
 
-	# Hide the text from srow to erow.
-	def hide_lines_at(srow,erow)
-		text = @text[srow..erow]  # grab the chosen lines
-		@text[srow] = [text].flatten  # current row = array of marked text
-		@text[(srow+1)..erow] = [] if srow < erow  # technically, can hide a single line, but why?
-		return text.length
-	end
 	# Use marking to figure out which lines to hide.
 	def hide_lines
 		return if !@marked  # need multiple lines for folding
 		return if @cursormode == 'multi'
 		mark_row,row = ordered_mark_rows
 		oldrow = mark_row  # so we can reposition the cursor
-		hide_lines_at(mark_row,row)
+		@text.hide_lines_at(mark_row,row)
 		@marked = false
 		@row = oldrow
 	end
@@ -3028,9 +2852,9 @@ class FileBuffer
 					next if line.kind_of?(Array)
 					if ((pend==//) && !(line=~pstart)) || ((pend!=//) && (line =~ pend))
 						if pend == //
-							x = hide_lines_at(i,j-1)
+							x = @text.hide_lines_at(i,j-1)
 						else
-							x = hide_lines_at(i,j)
+							x = @text.hide_lines_at(i,j)
 						end
 						i = j - x
 						break
@@ -3041,16 +2865,10 @@ class FileBuffer
 		@window.write_message("done")
 	end
 	def unhide_lines
-		hidden_text = @text[@row]
-		return if hidden_text.kind_of?(String)
-		text = @text.dup
-		@text.delete_if{|x|true}
-		@text.concat(text[0,@row])
-		@text.concat(hidden_text)
-		@text.concat(text[(@row+1)..-1])
+		@text.unhide_lines(@row)
 	end
 	def unhide_all
-		@text.flatten!
+		@text.unhide_all
 	end
 
 
@@ -3850,7 +3668,7 @@ class KeyMap
 			:ctrl_z => "$buffers.suspend",
 			:ctrl_t => "buffer.toggle",
 			:ctrl_6 => "buffer.extramode = true",
-			:ctrl_s => "buffer.enter_command",
+			:ctrl_s => "enter_command",
 			:ctrl_l => "$buffers.next_buffer",
 			:shift_up => "buffer.screen_down",
 			:shift_down => "buffer.screen_up",
@@ -3890,7 +3708,7 @@ class KeyMap
 			"{" => "buffer.revert_to_saved",
 			"}" => "buffer.unrevert_to_saved",
 			"l" => "buffer.justify",
-			"s" => "buffer.run_script",
+			"s" => "run_script",
 			"h" => "buffer.hide_lines",
 			"u" => "buffer.unhide_lines",
 			"U" => "buffer.unhide_all",
@@ -3958,7 +3776,7 @@ class KeyMap
 			"K" => "buffer.screen_down",
 			"H" => "buffer.screen_left",
 			"L" => "buffer.screen_right",
-			":" => "buffer.enter_command"
+			":" => "enter_command"
 		}
 		@viewmode_commandlist.default = ""
 
@@ -4096,7 +3914,9 @@ end
 #---------------------------------------------------------------------
 
 class SyntaxColors
+
 	attr_accessor :lc, :bc, :regex
+
 	def initialize
 		# Define per-language from-here-to-end-of-line comments.
 		@lc = {
@@ -4126,6 +3946,194 @@ class SyntaxColors
 		}
 		@regex.default = {}
 	end
+
+
+	#
+	# INPUT:
+	#	bline -- string to add result to
+	#	cline -- string to inspect
+	#	cqc -- current quote character (to look for)
+	# OUTPUT:
+	#	bline -- updated bline string
+	#	cline -- remainder of cline strin
+	#
+	def syntax_find_match(cline,cqc,bline)
+
+		k = cline[1..-1].index(cqc)
+		if k==nil
+			# didn't find the character
+			return nil
+		end
+		bline = cline[0].chr
+		cline = cline[1..-1]
+		while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
+			bline += cline[0,k+cqc.length]
+			cline = cline[k+cqc.length..-1]
+			break if cline == nil
+			k = cline.index(cqc)
+		end
+		if k==nil
+			bline += cline
+			return(bline)
+		end
+		if cline == nil
+			return(bline)
+		end
+		bline += cline[0..k+cqc.length-1]
+		cline = cline[k+cqc.length..-1]
+		return bline,cline
+	end
+
+
+
+	#
+	# Do string and comment coloring.
+	# INPUT:
+	#   aline -- line of text to color
+	#   lccs  -- line comment characters
+	#            (list of characters that start comments to end-of-line)
+	#   bccs  -- block comment characters
+	#            (pairs of comment characters, such as /* */)
+	# OUTPUT:
+	#   line with color characters inserted
+	#
+	def syntax_color_string_comment(aline,lccs,bccs)
+
+		# quote and regex characters
+		dqc, sqc, rxc = '"', '\'', '/'
+
+		# Flags to tell if we are in the middle of something
+		dquote = squote = regx = comment = escape = false
+
+		# Escape characters
+		ere = $screen.escape_regexp
+
+		# Temporaray string variables that we can chop apart without
+		# messing with the real line.
+		# cline will start as aline but get chopped up.
+		# bline will start empty, and get filled up.
+		cline = aline.dup
+		bline = ""
+
+		# Slowly much through cline until it is gone.
+		while (cline!=nil)&&(cline.length>0) do
+
+			# find first occurance of special character
+			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,ere].flatten)
+			a,b,c = cline.partition(all)
+
+			# Add uninteresting part to bline.
+			bline += a
+			break if b == ""
+
+			# If the special string is a terminal escape sequence, then skip.
+			if b.match(ere)
+				bline += b
+				cline = c
+				next
+			end
+
+			cline = b + c
+
+			# if eol comment, then we are done
+			flag = false
+			lccs.each{|str|
+				if cline.index(str)==0
+					bline += $color[:comment]
+					# remove any other colors inside of the comment
+					bline += cline.gsub(ere,'')
+					bline += $color[:normal]
+					flag = true
+					break
+				end
+			}
+			break if flag
+
+			# block comments
+			flag = false
+			bccs.each{|sc,ec|
+				if cline.index(sc)==0
+					b,c = syntax_find_match(cline,ec,bline)
+					if b != nil
+						bline += $color[:comment]
+						# remove any other colors inside of the comment
+						bline += b.gsub(ere,'')
+						bline += $color[:normal]
+						cline = c
+						flag = true
+					end
+				end
+			}
+			next if flag
+
+			# if quote, then look for match
+			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
+				cqc = cline[0].chr
+				b,c = syntax_find_match(cline,cqc,bline)
+				if b != nil
+					bline += $color[:string]
+					# remove any other colors inside of the comment
+					bline += b.gsub(ere,'')
+					bline += $color[:normal]
+					cline = c
+					next
+				end
+			end
+
+			# if regex, look for match
+			if (cline[0].chr == rxc)
+				cqc = cline[0].chr
+				b,c = syntax_find_match(cline,cqc,bline)
+				if b != nil
+					bline += $color[:regex]
+					# remove any other colors inside of the comment
+					bline += b.gsub(ere,'')
+					bline += $color[:normal]
+					cline = c
+					next
+				end
+			end
+
+			bline += cline[0].chr
+			cline = cline[1..-1]
+		end
+
+		aline = bline + $color[:normal]
+		return aline
+	end
+
+	def syntax_color(sline,filetype,indentchar)
+
+		# Don't waste time on empty lines.
+		return(sline) if sline == ""
+
+		# Make a copy that we can muck with.
+		aline = sline.dup
+
+		# general regex coloring
+		@regex[filetype].each{|k,v|
+			aline.gsub!(k,$color[v]+"\\0"+$color[:normal])
+		}
+
+		# leading whitespace
+		if indentchar
+			q = aline.partition(/\S/)
+			q[0].gsub!(/([^#{indentchar}]+)/,$color[:whitespace]+"\\0"+$color[:normal])
+			aline = q.join
+		end
+
+		# comments & quotes
+		aline = syntax_color_string_comment(aline,@lc[filetype],@bc[filetype])
+
+		# trailing whitespace
+		ere = Regexp.escape($color[:normal])
+		re = Regexp.new /\s+/.source + "\(" + ere + "\)+" + /$/.source
+		aline.gsub!(re,$color[:whitespace]+"\\0"+$color[:normal])
+
+		return(aline)
+
+	end
+
 end
 
 # end of SyntaxColors class
@@ -4259,6 +4267,16 @@ class Editor
 			/\.html?$/ => :html,
 		}
 		return filetypes
+	end
+
+
+	# Enter arbitrary ruby command.
+	def enter_command
+		answer = $screen.ask("command:",$histories.command)
+		eval(answer)
+		$screen.write_message("done")
+	rescue Exception => e
+		$screen.write_message(e.to_s)
 	end
 
 
