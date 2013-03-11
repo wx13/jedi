@@ -1,15 +1,19 @@
-editor.rb
-=========
+Jedi (J's EDItor)
+=================
 
-editor.rb is a text editor writen in ruby for the unix console,
-designed to be portable and hackable.  No installation is required, and
-it does not use external libraries or gems.  The editor can be extended
-or modified with external ruby scripts, and ruby commands can be run
-within the editor to perform complex editing tasks.  Features include:
-undo/redo (two levels), multiple cursor modes, text folding, split
-screen mode, "indentation facade", copy/paste history, and more.  See
-the doc/ directory for details.
+Jedi is a text editor writen in ruby for the unix console,
+designed to be portable and hackable.
 
+ - No installation required
+ - Needs only ruby to run (no libraries or gems)
+ - Full ruby scriptability (on startup, and while running)
+ - Multi-level undo/redo with (optional) file history saved to disk.
+ - Multiple cursor modes (row, column, nmuloc, and ad hoc)
+ - Indentation facade (use whatever indentation you want, regardless of
+   what the file uses)
+ - Searchable copy/paste history
+ - Split screen modes and multiple views of a singe file
+ - Text folding, including pattern-based auto-folding
 
 
 Installing and running
@@ -17,28 +21,41 @@ Installing and running
 
 No installation is required; just run
 
-    ruby editor.rb [options] [files]
+    ruby jedi.rb [options] [files]
 
-To "install" the editor, run the included install script:
+To "install" jedi, run the included install script:
 
     sh install.sh
 
-This will copy the editor.rb file to `$HOME/bin/`, create a config
-directory in `$HOME/.editor`, and create an executable script in
+This will copy the editor.rb file to `$HOME/local/bin/`, create a
+config directory in `$HOME/.editor`, and create an executable script in
 `$HOME/bin` containing the single line:
 
-    ruby editor.rb -s ~/.editor -y ~/.editor/history.yaml $@
+    ruby jedi.rb -s ~/.jedi -y ~/.jedi/history.yaml $@
 
-This tells editor.rb to read all *.rb files from ~/.editor/ as
+This tells jedi.rb to read all *.rb files from ~/.jedi/ as
 start-up scripts and to save command/search/script history in
-~/.jedi/history.yaml.  Then you can just type `editor` to start the
+~/.jedi/history.yaml.  Then you can just type `jedi` to start the
 editor.
+
+
+Single file
+-----------
+
+The code is split into multiple files to simplify development.  The
+install script creates a single file script from those files.  To
+create the single file script without installing, run
+
+    sh make_jedi.sh > jedi.rb
+
+The resulting file is entirely self contained, and may be executed
+anywhere ruby is installed.
 
 
 A note about portability
 ------------------------
 
-editor.rb does not use curses or ncurses, but instead reads from
+Jedi does not use curses or ncurses, but instead reads from
 standard input and writes to standard output.  It uses terminal escape
 codes to format the output.  Some terminals don't seem to support as
 many keycodes and will have reduced functionality.  For example, the
