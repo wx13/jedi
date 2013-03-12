@@ -385,7 +385,7 @@ class FileBuffer
 
 		# Ask the user for a file.
 		# Defaults to current file.
-		ans = @window.ask("save to:",[@filename],true,true)
+		ans = @window.ask("save to:",[@filename],:display_last_answer=>true,:file=>true)
 		if ans == nil
 			@window.write_message("Cancelled")
 			return
@@ -769,7 +769,7 @@ class FileBuffer
 		else
 			# Ask for desired line length.
 			# nil means cancel, empty means screen width
-			ans = @window.ask("Justify width:",[@linelength.to_s],true)
+			ans = @window.ask("Justify width:",[@linelength.to_s],:display_last_answer=>true)
 			if ans == nil
 				@window.write_message("Cancelled")
 				return
@@ -1148,7 +1148,7 @@ class FileBuffer
 		end
 
 		# Get the replace string from the user.
-		replacement = @window.ask("Replace:",$histories.replace)
+		replacement = @window.ask("Replace:",$histories.replace,:return_empty=>true)
 		if replacement == nil
 			@window.write_message("Cancelled")
 			return

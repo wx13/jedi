@@ -611,9 +611,14 @@ class Screen
 			end
 		end
 	end
-	def ask(question,hist=[],last_answer=false,file=false)
+	def ask(question,hist=[],user_flags={})
+		flags = {
+			:display_last_answer=>false,
+			:file=>false,
+			:return_empty=>false
+		}.merge(user_flags)
 
-		ask_hist = AskHist.new(hist,last_answer)
+		ask_hist = AskHist.new(hist,flags[:display_last_answer])
 
 		# remember typed string, even if we move away
 		token = ask_hist.token
@@ -633,7 +638,7 @@ class Screen
 		loop do
 
 			c = getch until c!=nil
-			if c==:tab && file
+			if c==:tab && flags[:file]
 				# find files that match typed string
 				# Cycle through matches.
 				list = Dir.glob(glob+"*")
@@ -714,7 +719,7 @@ class Screen
 			setpos(@rows,(col-shift)+question.length+1)
 
 		end
-		if token == ""
+		if token == "" && !flags[:return_empty]
 			token = ask_hist.scroll(1)
 		end
 		ask_hist.add(token)
