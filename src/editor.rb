@@ -272,7 +272,7 @@ class Editor
 				else
 					command = $keymap.command(c,buffer.editmode)
 					if command == nil
-						buffer.addchar(c) if buffer.editmode && c.is_a?(String)
+						buffer.addchar(c) if buffer.editmode==:edit && c.is_a?(String)
 					else
 						eval(command)
 					end
