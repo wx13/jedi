@@ -1154,6 +1154,8 @@ class FileBuffer
 			return
 		end
 
+		@yes_to_all = false
+
 		# Start at current position.
 		if @marked
 			row,sr = @mark_row,@row
@@ -1208,7 +1210,15 @@ class FileBuffer
 			end
 			dump_to_screen(true)
 			highlight(row,idx,idx+str.length-1)
-			yn = @window.ask_yesno("Replace this occurance?")
+			if @yes_to_all
+				yn = 'yes'
+			else
+				yn = @window.ask_yesno("Replace this occurance?")
+				if yn == "all"
+					yn = 'yes'
+					@yes_to_all = true
+				end
+			end
 			l = str.length
 			if yn == "yes"
 				temp = @text[row].dup

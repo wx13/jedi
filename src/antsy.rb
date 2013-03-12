@@ -739,19 +739,11 @@ class Screen
 		answer = "cancel"
 		loop do
 			c = getch until c!=nil
-			if c == :ctrl_c
-				answer = "cancel"
-				break
-			end
+			return "cancel" if c == :ctrl_c
+			return "all" if c == :ctrl_y
 			next if c.is_a?(String) == false
-			if c.downcase == "y"
-				answer = "yes"
-				break
-			end
-			if c.downcase == "n"
-				answer = "no"
-				break
-			end
+			return "yes" if c.downcase == "y"
+			return "no" if c.downcase == "n"
 		end
 		return answer
 	end
