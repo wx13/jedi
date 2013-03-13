@@ -60,7 +60,10 @@ class BuffersList
 		end
 		def refresh_buffers
 			if @stack_orientation == "v"
-				@buffers.each{|buf| buf.dump_to_screen(true)}
+				@buffers.each{|buf|
+					buf.dump_to_screen(true)
+					buf.update_top_line(nil,nil,true)
+				}
 			else
 				@buffers.each_index{|i|
 					if i > 0

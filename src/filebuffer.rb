@@ -1512,10 +1512,16 @@ class FileBuffer
 		return cursrow,curscol
 	end
 
-	def update_top_line(cursrow,curscol)
+	def update_top_line(cursrow,curscol,force=false)
+
+		if cursrow.nil? || curscol.nil?
+			cursrow,curscol = get_cursor_position
+		end
 
 		t = Time.now.to_f
-		return if (t-@min_status_update) < @last_status_update
+		unless force
+			return if (t-@min_status_update) < @last_status_update
+		end
 		@last_status_update = t
 
 		# report on cursor position
