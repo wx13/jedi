@@ -398,7 +398,6 @@ class Screen
 	def write_line(row,col,width,colfeed,line)
 
 		# clear the line
-		setpos(row,col)
 		if width == @cols
 			clear_line(row)
 		else
@@ -430,7 +429,7 @@ class Screen
 			code += b
 		end
 
-		k=@cols
+		k=width
 		pline = ""
 		while k > 0
 			a,b,line = line.partition(esc)
@@ -442,7 +441,7 @@ class Screen
 			k -= a.length
 			break if b.length == 0
 		end
-		print code + pline
+		write_string(row,col,code + pline)
 
 	end
 
