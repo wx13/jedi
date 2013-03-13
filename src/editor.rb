@@ -108,7 +108,7 @@ class Editor
 	def run_script(file=nil)
 		# If not file is specified, ask the user for one.
 		if file == nil
-			file = $screen.ask("run script file:",[""],false,true)
+			file = $screen.ask("run script file:",[""],:file=>true)
 			if (file==nil) || (file=="")
 				$screen.write_message("cancelled")
 				return

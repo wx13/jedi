@@ -196,7 +196,7 @@ class BuffersList
 	def open
 
 		# Ask for the file to open.
-		ans = $screen.ask("open file:",[""],false,true)
+		ans = $screen.ask("open file:",[""],:file=>true)
 		if (ans==nil) || (ans == "")
 			$screen.write_message("cancelled")
 			return(@pages[@ipage].buffer)
