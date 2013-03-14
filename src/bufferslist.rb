@@ -237,20 +237,21 @@ class BuffersList
 	def all_on_one_page
 		if @npage == 1
 			while @pages[0].nbuf > 1
-				move_to_page(@npage+1)
+				move_to_page(@npage+1,false)
 			end
 		else
 			while @npage > 1
 				@ipage = @npage - 1
-				move_to_page(1)
+				move_to_page(1,false)
 			end
 		end
+		@pages[@ipage].refresh_buffers
 		@ipage = 0
 		@pages[@ipage].ibuf = 0
 	end
 
 	# Move current buffer to page n.
-	def move_to_page(n)
+	def move_to_page(n,refresh=true)
 
 		# Adjust for zero-based indexing.
 		n -= 1
@@ -283,7 +284,7 @@ class BuffersList
 
 		# Refresh
 		@pages[@ipage].resize_buffers
-		@pages[@ipage].refresh_buffers
+		@pages[@ipage].refresh_buffers if refresh
 
 		return(@pages[@ipage].buffer)
 

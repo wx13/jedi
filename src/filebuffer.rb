@@ -1690,7 +1690,11 @@ class FileBuffer
 
 		# vi-style blank lines
 		r = text.length
-		@window.lastline = @window.rows if refresh
+		if refresh
+			@window.lastline = @window.rows
+		else
+			@window.lastline = [@window.lastline,@window.rows].min
+		end
 		while r < (@window.lastline)
 			@window.write_line(r,0,'~')
 			r += 1
