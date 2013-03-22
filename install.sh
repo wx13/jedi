@@ -1,6 +1,6 @@
 # This script does the following:
 #   1. copy jedi.rb to the specified executable directory.
-#   2. copy the config.rb file to the specifed config directory.
+#   2. create the specified startup script directory.
 #   3. create a one-line shell script which tells jedi.rb where
 #      to find the config files and where to place the history file.
 
@@ -19,7 +19,6 @@ bash make_jedi.sh > jedi.rb
 mkdir -p $exec_dir
 cp jedi.rb ${exec_dir}/
 mkdir -p ${config_dir}
-cp scripts/config.rb ${config_dir}/
 
 # Create the one-line shell script
 sh="$(which sh)"
