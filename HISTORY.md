@@ -1,3 +1,32 @@
+0.4.0
+-----
+
+Mostly code restructuring changes.
+
+Bug fixes:
+
+  + Better handling of replace strings for search/replace
+  + Potential issue with handling of keyboard input (never occured in
+    practice, though)
+  + Fixed seversl bugs that arose when putting many windows on the same
+    screen.
+  + Allow user to cancel command execution
+
+
+Clean up:
+
+  + Significant refactoring
+    - Separated code into multiple files
+    - Wrote a bash script to combine into a single file
+    - Moved a bunch of stuff out of FileBuffer, and into other classes
+  + Make commands run in scope of the FileBuffer, rather than globally.
+    Makes more sense to me.
+
+Features:
+
+  + Yes-to-all option for search/replace
+
+
 0.3.0
 -----
 
