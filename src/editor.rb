@@ -100,7 +100,7 @@ class Editor
 			$screen.write_message("cancelled")
 			return
 		end
-		eval(answer)
+		$buffers.current.instance_eval(answer)
 		$screen.write_message("done")
 	rescue Exception => e
 		$screen.write_message(e.to_s)
