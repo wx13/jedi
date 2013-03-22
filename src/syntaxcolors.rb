@@ -1,8 +1,8 @@
 #---------------------------------------------------------------------
 # SyntaxColors class
 #
-# This class defines the default syntax colors.
-# This is just a container class.
+# 1. Defines the syntax coloring
+# 2. Contains methods for coloring lines of text.
 #---------------------------------------------------------------------
 
 class SyntaxColors

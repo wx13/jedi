@@ -1,3 +1,12 @@
+#---------------------------------------------------------------------
+# The Antsy (ANSI) module contains three classes:
+#
+# 1. The Terminal class is a low-level API for interacting with
+#    an ANSI terminal.
+# 2. The Scren class is a wrapper around the Terminal class designed
+#    to add higher-level functionality.
+# 3. The Window class implements virtual windows within a screen.
+#---------------------------------------------------------------------
 module Antsy
 
 #---------------------------------------------------------------------
