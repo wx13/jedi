@@ -16,22 +16,48 @@ designed to be portable and hackable.
  - Text folding, including pattern-based auto-folding
 
 
-Installing and running
-----------------------
+Try it out
+----------
 
-No installation is required; just run
+To try out the latest release:
 
-    ruby jedi.rb [options] [files]
+    wget http://wx13.com/jedi/latest/jedi.rb
+    ruby jedi.rb <list of files>
 
-To "install" jedi, run the included install script:
+To try the newest (unreleased) version, replace "latest" with
+"testing".  
 
-    sh install.sh
 
-This will copy the editor.rb file to `$HOME/local/bin/`, create a
-config directory in `$HOME/.editor`, and create an executable script in
-`$HOME/bin` containing the single line:
+Manual install
+--------------
 
-    ruby jedi.rb -s ~/.jedi -y ~/.jedi/history.yaml $@
+No installation is required.  You can just run the code, as shown in
+the above section.  If you want to use configuration/extension scripts,
+specify files/directories with the `-s` option.  To store
+search/command/etc history, specify a file with the `-y` option.
+
+To install, copy the jedi.rb file to your path, and create a shell
+script in that same location containing the single line:
+
+    ruby <path>/jedi.rb -s ~/.jedi -y ~/.jedi/history.yaml $@
+
+Then all config/extend/history files can reside in the `~/.jedi`
+directory.
+
+
+Auto install
+------------
+
+Grab the full source code from http://github.com/wx13/editor, and run
+
+    sh install.sh 
+
+This will create the jedi.rb file from the files in `src/`,
+copy the jedi.rb file to `$HOME/local/bin/`, create a
+config directory in `$HOME/.jedi`, and create an executable script in
+`$HOME/local/bin` containing the single line:
+
+    ruby $HOME/local/bin/jedi.rb -s ~/.jedi -y ~/.jedi/history.yaml $@
 
 This tells jedi.rb to read all *.rb files from ~/.jedi/ as
 start-up scripts and to save command/search/script history in
