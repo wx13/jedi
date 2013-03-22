@@ -96,6 +96,10 @@ class Editor
 	# Enter arbitrary ruby command.
 	def enter_command
 		answer = $screen.ask("command:",$histories.command)
+		if answer.nil?
+			$screen.write_message("cancelled")
+			return
+		end
 		eval(answer)
 		$screen.write_message("done")
 	rescue Exception => e
