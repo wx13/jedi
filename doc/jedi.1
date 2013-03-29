@@ -1,0 +1,182 @@
+.TH JEDI 1 jedi\-0.4.0
+.SH NAME
+jedi \- J's EDItor
+.SH SYNOPSIS
+.B jedi
+.RB [options] \ [files]
+.SH DESCRIPTION
+jedi is a text editor written in ruby for the unix console.  It is
+designed to be portable and hackable.
+
+
+.SH OPTIONS
+
+.TP
+.B \-v
+Prints version information to standard output, then exits.
+
+.TP
+.B \-h
+Prints usage information
+
+.TP
+.B \-s --script FILE
+Runs the named script file on startup.  All code will be run by the
+ruby interpreter in the scope of the main text editor class.
+
+.TP
+.B \-t --tabsize N
+Sets the tab character display width to N spaces.
+
+.TP
+.B \-T --tabchar C
+Sets the tab character to C.  Whenever the tab key is entered, the
+character C is inserted into the text buffer.
+
+.TP
+.B \-a --no-autoindent
+Turn off autoindent.
+
+.TP
+.B \-A --autoindent
+Turn on autoindent.
+
+.TP
+.B \-y --save-hist FILE
+Save command/search/etc history in file FILE.
+
+.TP
+.B \-e --no-edit
+Start in view/navigation mode.
+
+.TP
+.B \-E --edit
+Start in edit mode [Default]
+
+.TP
+.B \-w --no-linewrap
+Turn off line-wrapping.
+
+.TP
+.B \-W --linewrap
+Turn on line-wrapping.
+
+.TP
+.B \-c --no-color
+Turn off syntax coloring.
+
+.TP
+.B \-C --color
+Turn on syntax coloring.
+
+.TP
+.B \-m --no-mouse
+Turn off mouse interaction. [Default]
+
+.TP
+.B \-M --mouse
+Turn on mouse interaction.
+
+.TP
+.B \-b --no-backups
+Disable backup file. [Default]
+
+.TP
+.B \-B --backups [string]
+Enable backup file.  Optional string specifies the filename suffix to
+use.  Default is '...'.
+
+.TP
+.B [files]
+List of files to open.
+
+
+.SH USAGE
+.SS Keyboard commands
+
+The keyboard commands are numerous, and change depending on state. This
+section describes some of the basic editing commands.  See the user
+manual for more complex interactions.
+
+.TP
+.B C\-q
+Close the current file, and exit the editor if all files are closed.
+
+.TP
+.B C\-x
+Mark text for copy/paste.
+
+.TP
+.B C\-k
+Cut marked text (or current line if text is unmarked).
+
+.TP
+.B C\-p
+Copy marked text (or current line if text is unmarked).
+
+.TP
+.B C\-u
+Paste copied text.
+
+.TP
+.B S\-ARROW
+Shift the screen up/down/left/right
+
+.TP
+.B C\-LEFT C\-RIGHT
+Undo/redo
+
+.TP
+.B C\-S\-LEFT/RIGHT
+Macroscopic undo/redo: jumps between saved snapshots. Snapshots are
+made whenever the file is saved.
+
+.TP
+.B C\-o
+Save file.
+
+.TP
+.B C\-n C\-b
+Switch to next/previous open file.
+
+.TP
+.B C\-f
+Open a new file for editing.
+
+.TP
+.B C\-t
+Toggle. Subsequently, hit 'tab' to see toggle options.
+
+.TP
+.B C\-6
+Extramode.  Subsequently, hit 'tab' to see additional commands.
+
+.TP
+.B C\-s
+Enter a ruby command to be run in the scope of the text buffer.
+
+.TP
+.B C\-a C\-e
+Go to start/end of the line.
+
+.TP
+.B C\-w C\-r
+Search and search/replace.
+
+.TP
+.B C\-g
+Go to line number.
+
+
+.SH MORE INFORMATION
+.TP
+See the manual (http://github.com/wx13/editor) for more details.
+
+.SH CUSTOMIZATION
+jedi is customized through startup scripts.  Almost the entire editor
+can be modified through a startup script, because ruby supports
+meta-programming.
+
+
+.SH AUTHOR
+jedi is written by Jason DeVita <jason@wx13.com>

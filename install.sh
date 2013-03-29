@@ -11,6 +11,7 @@
 exec_dir=$HOME/local/bin/
 exec_name=jedi
 config_dir=$HOME/.jedi
+doc_dir=$HOME/local/share/
 
 # Construct single file
 bash make_jedi.sh > jedi.rb
@@ -19,6 +20,10 @@ bash make_jedi.sh > jedi.rb
 mkdir -p $exec_dir
 cp jedi.rb ${exec_dir}/
 mkdir -p ${config_dir}
+mkdir -p ${doc_dir}/man/man1
+mkdir -p ${doc_dir}/doc/jedi
+cp doc/manual.md ${doc_dir}/doc/jedi/manual.md
+cp doc/jedi.1 ${doc_dir}/man/man1/jedi.1
 
 # Create the one-line shell script
 sh="$(which sh)"
