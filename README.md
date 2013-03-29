@@ -25,7 +25,7 @@ To try out the latest release:
     ruby jedi.rb <list of files>
 
 To try the newest (unreleased) version, replace "latest" with
-"testing".  
+"testing".
 
 
 Manual install
@@ -91,6 +91,19 @@ cygwin and gnome terminal on linux, with ruby 1.8.  I occasionally test
 in on a Mac terminal and in ruby 1.9. Other than modified arrow keys,
 it should run on any unix-compatible terminal emulator.  If you type
 `echo -e "\e[2J"` and it clears the screen, then you should be fine.
+
+
+
+More information
+----------------
+
+See the documentation here:
+https://github.com/wx13/editor/tree/master/doc
+
+Also, feel free to email me (jason@wx13.com) with any questions or
+feedback.  I started this project to satisfy my own needs, and as far
+as I know, I am the only user.  So you if you find this useful or
+interesting, I'd like to hear about it.
 
 
 License
