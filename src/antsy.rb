@@ -108,7 +108,7 @@ class Terminal
 		}
 	end
 
-	def set_cursor_color
+	def set_cursor_color(color)
 		print "\e]12;#{color}\007"
 	end
 
