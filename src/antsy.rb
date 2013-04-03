@@ -250,7 +250,7 @@ class Screen
 		new_colors.each{|k,v|
 			@color[k] = ""
 			[v].flatten.each{|c|
-				@color[k] += @color[c]
+				@color[k] += @color[c] if @color[c]
 			}
 		}
 		return @color
