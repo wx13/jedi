@@ -95,7 +95,7 @@ $cursormode[:text] = 'row'
 $cursormode[:markdown] = 'row'
 
 # Turn on backups
-$backups = Hash.new('...')
+$backups = Hash.new('.~')
 
 #-----------------------------------------------------------
 

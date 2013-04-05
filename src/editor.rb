@@ -210,7 +210,7 @@ class Editor
 				$mouse = true
 			}
 			opts.on('-B', '--backups', 'Enable file backupts'){
-				$backups = Hash.new('...')
+				$backups = Hash.new('.~')
 			}
 			opts.on('-b', '--no-backups', 'Disable file backupts'){
 				$backups = Hash.new(false)

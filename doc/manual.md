@@ -249,6 +249,34 @@ use the same command within the editor, or type
 where color is the desired cursor color.
 
 
+### Backups
+
+Backups can be enabled on the command line with the `-B` option (`-b`
+to disable), or in a configuration script (or live script):
+
+	$backups = Hash.new('.~')
+
+To enable for only some filetypes:
+
+	$backups = Hash.new(false)
+	$backups[:c] = '~.'
+	$backups[:python] = '.~'
+
+To disable for only some filetypes:
+
+	$backups = Hash.new('.~')
+	$backups[:text] = false
+
+The command line flag always uses the default prefix.  Using the config
+file, you can set the prefix to be whatever you want.
+
+The backup system is different than most editors'.  The backup file
+stores a history of text buffers. Every time the file is saved, a
+snapshot is made and stored in the backup file.  So you can close a
+file and quit the editor; then start it up again later, and be able to
+undo prior changes.
+
+
 <a id="advanced"></a>
 ## Advanced Editing
 

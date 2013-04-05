@@ -230,7 +230,7 @@ class FileBuffer
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text.text,@row,@col)
-		@buffer_history.load(@filename+@backups) if @backups
+		@buffer_history.load(@filename.rpartition('/').insert(2,@backups).join) if @backups
 		# save up info about screen to detect changes
 		@colfeed_old = 0
 		@marked_old = false
@@ -438,7 +438,7 @@ class FileBuffer
 		@buffer_history.save
 
 		# Store file history in a backup file.
-		@buffer_history.backup(@filename+@backups) if @backups
+		@buffer_history.backup(@filename.rpartition('/').insert(2,@backups).join) if @backups
 
 		# Save the command/search histories.
 		$histories.save
