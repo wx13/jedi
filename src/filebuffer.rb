@@ -227,6 +227,7 @@ class FileBuffer
 		@cursormode = $cursormode[@filetype]
 		@syntax_color = $syntax_color[@filetype]
 		@backups = $backups[@filetype]
+		@enforce_ascii = $enforce_ascii[@filetype]
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text.text,@row,@col)
@@ -353,7 +354,7 @@ class FileBuffer
 			return
 		else
 			if File.exists? @filename
-				text = File.open(@filename,"rb"){|f| f.read}
+				text = File.open(@filename,"rb:UTF-8"){|f| f.read}
 			else
 				@text.slice!(1..-1)
 				@text[0] = ""
@@ -425,12 +426,21 @@ class FileBuffer
 				}
 				text = text.join(@eol)
 			end
-			File.open(@filename,"w"){|file|
+			File.open(@filename,"w:UTF-8"){|file|
 				file.write(text)
 			}
 		rescue
-			@window.write_message($!.to_s)
-			return
+			if $!.to_s.index('incompatible character encodings:')
+				if fix_encoding('mixed char encodings')
+					retry
+				else
+					@window.write_message('cancelled')
+					return
+				end
+			else
+				@window.write_message($!.to_s)
+				return
+			end
 		end
 
 		# Let the undo/redo history know that we have saved,
@@ -448,6 +458,20 @@ class FileBuffer
 		@window.write_message("saved to: "+@filename)
 
 	end
+
+
+	def fix_encoding(msg)
+		ans = @window.ask_yesno(msg+'. convert to unicode? ')
+		if ans == 'yes'
+			text.each_index{|k|
+				@text[k] = @text[k].force_encoding('UTF-8')
+			}
+			return true
+		else
+			return false
+		end
+	end
+
 
 	# re-open current buffer from file
 	def reload
@@ -1659,6 +1683,7 @@ class FileBuffer
 			line = text[r]
 			next if line == nil
 			if line.kind_of?(String)
+				line = line.bytes.to_a.map{|b|[b,126].min.chr}.join if @enforce_ascii
 				if @syntax_color
 					aline = $syntax_colors.syntax_color(line,@filetype,@tabchar)
 				else

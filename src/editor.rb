@@ -24,6 +24,7 @@ class Editor
 		$editmode = Hash.new(:edit)      # false = start in view mode
 		$linelength = Hash.new(0)        # 0 = terminal width
 		$backups = Hash.new(false)
+		$enforce_ascii = Hash.new(false)
 
 		# Define the key mapping and colors up front, so that they
 		# can be modified by config files and start-up scripts.

@@ -177,6 +177,8 @@ class KeyMap
 			"|" => "$buffers.hstack",
 			"M" => "$screen.toggle_mouse(true)",
 			"m" => "$screen.toggle_mouse(false)",
+			"D" => "@enforce_ascii = true",
+			"d" => "@enforce_ascii = false",
 		}
 		@togglelist.default = ""
 
