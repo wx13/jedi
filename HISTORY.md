@@ -1,3 +1,28 @@
+0.4.1
+-----
+
+Bug fixes:
+
+  + Fixed potential crashing caused by bad color specification in
+    config file.
+  + Fixed typo in set_cursor_color, which could cause crashing.
+
+Clean up:
+
+  + Better documentation organization
+  + Added a man page
+  + Changed backup-file suffix to a prefix, for less cluttered
+    directories.
+
+Features:
+
+  + Better handling of character encodings (see commit c4ed7a2 for more
+    details.
+      - Handle mixed, incompatible encodings
+      - Allow ruby 1.8 users to convert multi-byte characters to tildes,
+        for easier editing.
+      - Force reading/writing to UTF-8 if available.
+
 0.4.0
 -----
 

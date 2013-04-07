@@ -24,6 +24,7 @@ To try out the latest release:
     wget http://wx13.com/jedi/latest/jedi.rb
     ruby jedi.rb <list of files>
 
+Or download it [here](http://wx13.com/jedi/latest/jedi.rb).
 To try the newest (unreleased) version, replace "latest" with
 "testing".
 
@@ -97,8 +98,8 @@ it should run on any unix-compatible terminal emulator.  If you type
 More information
 ----------------
 
-See the documentation here:
-https://github.com/wx13/editor/tree/master/doc
+See the manual in
+[doc/manual.md](https://github.com/wx13/editor/tree/master/doc/manual.md)
 
 Also, feel free to email me (jason@wx13.com) with any questions or
 feedback.  I started this project to satisfy my own needs, and as far
