@@ -109,7 +109,9 @@ class BuffersList
 	end
 
 	def update_screen_size
-		@pages[@ipage].resize_buffers
+		@pages.each{|page|
+			page.resize_buffers
+		}
 		@pages[@ipage].refresh_buffers
 	end
 
