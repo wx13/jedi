@@ -16,7 +16,7 @@ module Antsy
 #---------------------------------------------------------------------
 class Terminal
 
-	attr_accessor :colors, :keycodes
+	attr_accessor :colors
 	attr_accessor :escape_regexp
 	attr_accessor :mouse_x, :mouse_y
 
@@ -118,6 +118,7 @@ class Terminal
 	# otherwise returns the raw string.
 	def getch
 		c = STDIN.getc.chr
+		# Escape character
 		if c=="\e"
 			2.times{c += STDIN.getc.chr}
 		end
@@ -127,6 +128,7 @@ class Terminal
 			@mouse_x = STDIN.getc - 33
 			@mouse_y = STDIN.getc - 33
 		end
+		# Some sequences are extra long.
 		if c == "\e[5" || c == "\e[6"
 			c += STDIN.getc.chr
 		end
@@ -135,20 +137,20 @@ class Terminal
 			c = "\e["
 			2.times{c += STDIN.getc.chr}
 		end
+		# Don't accept raw escape characters.
 		if c == "\e" || c == "\e\e" || c == "\e\e\e" || c == "\e\e\e\e"
 			return nil
 		end
+		# Return the user-friendly key name, if possible.
 		d = @keycodes[c]
 		d = c if d == nil
 		return(d)
 	end
 
-
 	def get_screen_size
 		@rows,@cols = `stty size`.split
 		return @rows,@cols
 	end
-
 
 	def set_raw
 		system('stty raw -echo')
@@ -246,6 +248,11 @@ class Screen
 	end
 
 
+	# Allow the addition of meta colors.  The terminal class
+	# defines @terminal.colors to contain a mapping between raw
+	# codes (e.g. \e[31m) and nice names (e.g. :red).  This method
+	# allows a user to define meta mappings (e.g. from :comment to
+	# :cyan).
 	def add_colors(new_colors)
 		new_colors.each{|k,v|
 			@color[k] = ""
@@ -274,8 +281,6 @@ class Screen
 
 	# Call to stty utility for screen size update, and set
 	# @rows and @cols.
-	#
-	# Returns nothing.
 	def update_screen_size
 		cols_old = @cols
 		rows_old = @rows
@@ -291,8 +296,6 @@ class Screen
 
 	# This starts the interactive session.
 	# When this exits, return screen to normal.
-	#
-	# Returns nothing.
 	def start_screen
 		@terminal.set_raw
 		@terminal.roll_screen_up(@rows)
@@ -310,10 +313,6 @@ class Screen
 	end
 
 	# Suspend the editor, and refresh on return.
-	#
-	# buffer - the current buffer, so we can refresh upon return.
-	#
-	# Returns nothing.
 	def suspend
 		@terminal.enable_linewrap
 		@terminal.clear_screen
@@ -328,54 +327,29 @@ class Screen
 	end
 
 	# Set cursor position.
-	#
-	# row - screen row (0 = first line)
-	# col - screen column (0 = first column)
-	#
-	# Returns nothing.
 	def setpos(row,col)
 		@terminal.cursor(row+1,col+1)
 	end
 
 	# Write a string at the current cursor position.
 	# This was more complex when using curses, but now is trivial.
-	#
-	# text - a string to be printed, including escape codes
-	#
-	# Returns nothing.
 	def addstr(text)
 		@terminal.write(text)
 	end
 
 	# Write a string at a specified position.
-	#
-	# row - screen row
-	# cow - screen column
-	# text - string to be printed
-	#
-	# Returns nothing.
 	def write_string(row,col,text)
 		setpos(row,col)
 		addstr(text)
 	end
+
 	# Write a colored string at a specified position.
-	#
-	# row - screen row
-	# col - screen column
-	# text - string to be printed
-	# color
-	#
-	# Returns nothing.
 	def write_string_colored(row,col,text,color)
 		setpos(row,col)
 		addstr(@color[color]+text+@color[:normal])
 	end
 
 	# Clear an entrire line on the screen.
-	#
-	# row - screen row
-	#
-	# Returns nothing.
 	def clear_line(row)
 		setpos(row,0)
 		@terminal.clear_line
@@ -386,10 +360,6 @@ class Screen
 
 	# Write to the bottom line (full with).
 	# Typically used for asking the user a question.
-	#
-	# str - string of text to write
-	#
-	# Returns nothing.
 	def write_bottom_line(str)
 		write_string_colored(@rows,0," "*@cols,:message)
 		write_string_colored(@rows,0,str,:message)
@@ -397,13 +367,6 @@ class Screen
 
 	# Write an entire line of text to the screen.
 	# Handle horizontal shifts (colfeed), escape chars, and tab chars.
-	#
-	# row - screen row
-	# col - screen column to start writing at
-	# width - how many columns of text to write
-	# lin - the entire line of text (a substring of which will be printed)
-	#
-	# Returns nothing.
 	def write_line(row,col,width,colfeed,line)
 
 		# clear the line
@@ -462,8 +425,6 @@ class Screen
 	# cstr - centered text
 	# row - screen row
 	# col - screen column
-	#
-	# Returns nothing.
 	def write_info_line(lstr,cstr,rstr,row,col,width)
 
 		rstr = cstr + "  " + rstr
@@ -487,10 +448,6 @@ class Screen
 
 
 	# Write a message at the bottom (centered, partial line).
-	#
-	# message - text to write
-	#
-	# Returns nothing.
 	def write_message(message)
 		@terminal.save_cursor
 		xpos = (@cols - message.length)/2
