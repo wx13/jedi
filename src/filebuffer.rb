@@ -1764,8 +1764,8 @@ class FileBuffer
 	# scol & ecol are columns in the text buffer
 	def highlight(row,scol,ecol)
 		# only do rows that are on the screen
-		if row < @linefeed then return end
-		if row > (@linefeed + @window.rows - 1) then return end
+		return if row < @linefeed
+		return if row > (@linefeed + @window.rows - 1)
 
 		#return if @text[row].length < 1
 		return if @text[row].kind_of?(Array)
@@ -1777,11 +1777,12 @@ class FileBuffer
 		# replace tabs with spaces
 		sline = tabs2spaces(@text[row])
 		# get just string of interest
-		if sc < @colfeed then sc = @colfeed end
-		if ec < @colfeed then return end
+		sc = @colfeed if sc < @colfeed
+		return if ec < @colfeed
 		str = sline[sc..ec]
 		if ec == sline.length then str += " " end
 		ssc = sc - @colfeed
+		return if ssc >= @window.cols
 		sec = ec - @colfeed
 
 		if (str.length+ssc) >= @window.cols
