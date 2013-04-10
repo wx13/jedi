@@ -186,7 +186,7 @@ class Terminal
 		print "\e[?25l"
 	end
 	def show_cursor
-		puts "\e[?25h"
+		print "\e[?25h"
 	end
 	def save_cursor
 		print "\e[s"
