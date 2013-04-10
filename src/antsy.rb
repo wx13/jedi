@@ -116,7 +116,8 @@ class Terminal
 	#
 	# Returns a symbol if the character is a key in the keycodes hash,
 	# otherwise returns the raw string.
-	def getch
+	def getch(options={})
+		show_cursor unless options[:hide_cursor]
 		c = STDIN.getc.chr
 		# Escape character
 		if c=="\e"
@@ -145,6 +146,8 @@ class Terminal
 		d = @keycodes[c]
 		d = c if d == nil
 		return(d)
+	ensure
+		hide_cursor
 	end
 
 	def get_screen_size
@@ -274,8 +277,8 @@ class Screen
 	end
 
 
-	def getch
-		return @terminal.getch
+	def getch(options={})
+		return @terminal.getch(options)
 	end
 
 
@@ -732,8 +735,6 @@ class Screen
 	# Allow the use to choose from a menu of choices.
 	def menu(items,header)
 
-		@terminal.hide_cursor
-
 		choices = items.to_a
 
 		# how many rows should the menu take up (less than 1 screen)
@@ -773,7 +774,7 @@ class Screen
 				write_string(r,margin+2,pre+' '*(cols-3))
 				write_string(r,margin+2,s[j].join('  ')+post)
 			}
-			c = getch
+			c = getch({:hide_cursor=>true})
 			case c
 				when :up
 					idx = [idx-1,0].max
@@ -800,10 +801,6 @@ class Screen
 		end
 
 		return(choices[idx])
-
-	ensure
-
-		@terminal.show_cursor
 
 	end
 
