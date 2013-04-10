@@ -90,9 +90,9 @@ $linewrap[:git] = true
 $linelength = Hash.new(72)
 
 # start in column-mode for marking/selecting text
-$cursormode = Hash.new('col')
-$cursormode[:text] = 'row'
-$cursormode[:markdown] = 'row'
+$cursormode = Hash.new(:col)
+$cursormode[:text] = :row
+$cursormode[:markdown] = :row
 
 # Turn on backups
 $backups = Hash.new('.~')

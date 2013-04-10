@@ -555,12 +555,12 @@ class FileBuffer
 		return if @multimarkmode
 		if @marked
 			mark_row,row = ordered_mark_rows
-			if @cursormode == 'col'
+			if @cursormode == :col
 				c = (mark_row==row)?(0):(@col)
 				@text.column_delete(mark_row,row,c)
-			elsif @cursormode == 'row'
+			elsif @cursormode == :row
 				@text.column_delete(mark_row,row,0)
-			elsif @cursormode == 'loc'
+			elsif @cursormode == :loc
 				n = @text[@row][@col..-1].length
 				if n > 0
 					@text.column_delete(mark_row,row,-n)
@@ -596,14 +596,14 @@ class FileBuffer
 		if @marked
 			return if @col == 0
 			mark_row,row = ordered_mark_rows
-			if @cursormode == 'col'
+			if @cursormode == :col
 				c = (mark_row==row)?(0):(@col-1)
 				@text.column_delete(mark_row,row,c)
 				cursor_left
-			elsif @cursormode == 'row'
+			elsif @cursormode == :row
 				@text.column_delete(mark_row,row,0)
 				cursor_left
-			elsif @cursormode == 'loc'
+			elsif @cursormode == :loc
 				n = @text[@row][@col..-1].length + 1
 				@text.column_delete(mark_row,row,-n)
 				cursor_left
@@ -663,14 +663,14 @@ class FileBuffer
 			mark_row,row = ordered_mark_rows
 
 			# Construct list of cursor positions, depending on mark mode.
-			if @cursormode == 'multi'
+			if @cursormode == :multi
 				list = mark_list
-			elsif @cursormode == 'col' && mark_row != row
+			elsif @cursormode == :col && mark_row != row
 				list = {}
 				for r in mark_row..row
 					list[r] = [@col] unless @col > @text[r].length
 				end
-			elsif @cursormode == 'loc'
+			elsif @cursormode == :loc
 				n = @text[@row][@col..-1].length
 				list = {}
 				for r in mark_row..row
@@ -696,7 +696,7 @@ class FileBuffer
 				cols = cols.uniq.sort.reverse
 				cols.each{|col|
 					@text.insertchar(row,col,c,@insertmode)
-					if @cursormode == 'multi'
+					if @cursormode == :multi
 						@mark_list[row-@row].map!{|x|
 							if (x+@col) > col
 								x+1
@@ -1340,7 +1340,7 @@ class FileBuffer
 	def unmark
 		@marked = false
 		@mark_list = {}
-		@cursormode = $cursormode if @cursormode == 'multi'
+		@cursormode = $cursormode if @cursormode == :multi
 		@window.write_message("Unmarked")
 	end
 
@@ -1358,17 +1358,17 @@ class FileBuffer
 		else
 			@multimarkmode = true
 			@marked = false
-			@cursormode = 'multi'
+			@cursormode = :multi
 			@mark_list = {}
 		end
 	end
 
 	def copy(cut=0)
-		return if @cursormode == 'multi'
+		return if @cursormode == :multi
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
-			return if ((@cursormode=='col')&&(@mark_row!=@row)) || @cursormode == 'loc'
+			return if ((@cursormode==:col)&&(@mark_row!=@row)) || @cursormode == :loc
 			$copy_buffer.clear
 			@marked = false
 		else
@@ -1654,17 +1654,17 @@ class FileBuffer
 		if @marked
 			mark_row,row = @mark_row,@row
 			mark_row,row = row,mark_row if mark_row > row
-			if @cursormode == 'col' && mark_row != row
+			if @cursormode == :col && mark_row != row
 				for j in mark_row..row
 					buffer_marks[j] = [[@col,@col]] unless j==@row
 				end
-			elsif @cursormode == 'loc'
+			elsif @cursormode == :loc
 				n =  @text[@row][@col..-1].length
 				for j in mark_row..row
 					m = @text[j].length - n
 					buffer_marks[j] = [[m,m]] unless j==@row
 				end
-			elsif @cursormode == 'row' || ((@cursormode=='col')&&(mark_row==row))
+			elsif @cursormode == :row || ((@cursormode==:col)&&(mark_row==row))
 				# Start with 'internal' rows (not first nor last.
 				# Easy: do the whole row.
 				for j in (mark_row+1)..(row-1)
@@ -1859,7 +1859,7 @@ class FileBuffer
 	# Use marking to figure out which lines to hide.
 	def hide_lines
 		return if !@marked  # need multiple lines for folding
-		return if @cursormode == 'multi'
+		return if @cursormode == :multi
 		mark_row,row = ordered_mark_rows
 		oldrow = mark_row  # so we can reposition the cursor
 		@text.hide_lines_at(mark_row,row)

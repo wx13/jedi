@@ -19,7 +19,7 @@ class Editor
 		$tabchar = Hash.new("\t")        # What to insert when tab key is pressed
 		$autoindent = Hash.new(true)
 		$linewrap = Hash.new(false)
-		$cursormode = Hash.new('col')    # Default text selection mode
+		$cursormode = Hash.new(:col)    # Default text selection mode
 		$syntax_color = Hash.new(true)
 		$editmode = Hash.new(:edit)      # false = start in view mode
 		$linelength = Hash.new(0)        # 0 = terminal width
