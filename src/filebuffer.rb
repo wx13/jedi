@@ -1089,6 +1089,12 @@ class FileBuffer
 	end
 
 
+	def string2regexp(string)
+		return(eval(string))
+	rescue SyntaxError => se
+		@window.write_message("Invalid Regex")
+		return(nil)
+	end
 
 
 	#
@@ -1107,7 +1113,8 @@ class FileBuffer
 		end
 		# is it a regexp
 		if token.match(/^\/.*\/$/) != nil
-			token = eval(token)
+			token = string2regexp(token)
+			return if token.nil?
 		end
 		nlines = @text.length
 		row = @row
@@ -1168,7 +1175,8 @@ class FileBuffer
 		end
 		# Is it a regexp?
 		if token.match(/^\/.*\/$/) != nil
-			token = eval(token)
+			token = string2regexp(token)
+			return if token.nil?
 		end
 
 		# Get the replace string from the user.
@@ -1221,17 +1229,29 @@ class FileBuffer
 
 	# Execute a search and replace on a single line.
 	def search_and_replace_single_line(token,replacement,row,col,endcol=nil)
+
+		# Watch out for folded lines.
 		return if @text[row].kind_of?(Array)
+
+		# Loop over occurances in this line.
 		idx = @text[row].index(token,col)
 		while(idx!=nil)
+
+			# Let user optionally specify the end of the line.
 			return if endcol!=nil && idx >= endcol
+
+			# Get the matching string (since we might be looking for a regexp).
 			str = @text[row][idx..-1].scan(token)[0]
+			str = str.join if str.is_a?(Array)
+
+			# Recenter sreen, when we have gone off page
 			@row = row
 			@col = idx
-			# recenter sreen, when we have gone off page
 			if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
 				center_screen(@row)
 			end
+
+			# Highlight the match, and ask for confirmation.
 			dump_to_screen(true)
 			highlight(row,idx,idx+str.length-1)
 			if @yes_to_all
@@ -1243,16 +1263,23 @@ class FileBuffer
 					@yes_to_all = true
 				end
 			end
+
+			# Do the replacement.
 			l = str.length
 			if yn == "yes"
 				temp = @text[row].dup
-				@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
+				if token.is_a?(Regexp)
+					@text[row] = temp[0,idx]+temp[idx..-1].sub(token,replacement)
+				else
+					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
+				end
 				col = idx+replacement.length
 			elsif yn == "cancel"
 				return -1
 			else
 				col = idx+replacement.length
 			end
+
 			if col > @text[row].length
 				break
 			end
