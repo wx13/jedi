@@ -6,6 +6,11 @@ Bug fixes:
   + Fixed potential crashing caused by bad color specification in
     config file.
   + Fixed typo in set_cursor_color, which could cause crashing.
+  + Fixed terminal resize bug, where other pages did not resize.
+  + Fixed ruby version specific bug that only affects development (not
+    installed or single-file editor)
+  + Changed puts to print in show_cursor method (newline difference)
+  + Nmuloc mode was crashing when cursor went off the screen. Fixed.
 
 Clean up:
 
@@ -22,6 +27,9 @@ Features:
       - Allow ruby 1.8 users to convert multi-byte characters to tildes,
         for easier editing.
       - Force reading/writing to UTF-8 if available.
+  + Better handling of regexp search/replace.  Can now use /(...)(...)/
+    type notation in search and ...\1...\2... type notation in replace.
+    Makes for more powerful search/replace.
 
 0.4.0
 -----
