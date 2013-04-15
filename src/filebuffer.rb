@@ -183,6 +183,9 @@ class FileBuffer
 		# position of cursor in buffer
 		@row = 0
 		@col = 0
+		# Desired column (memory of where we used to be)
+		@usedescol = false
+		@descol = false
 		# shifts of the buffer
 		@linefeed = 0
 		@colfeed = 0
@@ -509,6 +512,18 @@ class FileBuffer
 			len = 0
 		end
 		@col = [@col,len].min
+
+		# Desired column.
+		# If usedescol is set, then unset it, but leave the descol
+		# alone.
+		# If unset, then we did something other than up/down, so we
+		# should unset the disired column.
+		if @usedescol
+			@usedescol = false
+		else
+			@descol = false
+		end
+
 	end
 
 
@@ -1009,12 +1024,22 @@ class FileBuffer
 			@col = 0
 		end
 	end
+	def handle_desired_column(sc)
+		if @descol
+			sc = @descol
+		else
+			@descol = sc
+		end
+		@usedescol = true
+		return(sc)
+	end
 	def cursor_down(n)
 		sc = bc2sc(@row,@col)
 		@row += n
 		if @row >= @text.length
 			@row = @text.length-1
 		end
+		sc = handle_desired_column(sc)
 		@col = sc2bc(@row,sc)
 	end
 	def cursor_up(n)
@@ -1023,6 +1048,7 @@ class FileBuffer
 		if @row < 0
 			@row = 0
 		end
+		sc = handle_desired_column(sc)
 		@col = sc2bc(@row,sc)
 	end
 	def page_down
