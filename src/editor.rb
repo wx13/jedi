@@ -125,7 +125,7 @@ class Editor
 			list.each{|f|
 				script = File.read(f)
 				eval(script,TOPLEVEL_BINDING)
-				if $screen != nil
+				if $screen
 					$screen.write_message("done")
 				end
 			}
@@ -133,7 +133,7 @@ class Editor
 		elsif File.exist?(file)
 			script = File.read(file)
 			eval(script,TOPLEVEL_BINDING)
-			if $screen != nil
+			if $screen
 				$screen.write_message("done")
 			end
 		# Complain if the file doesn't exist.
@@ -143,7 +143,7 @@ class Editor
 			STDIN.getc
 		end
 	rescue
-		if $screen != nil
+		if $screen
 			$screen.write_message("Bad script")
 		else
 			puts "Bad script file: #{file}"

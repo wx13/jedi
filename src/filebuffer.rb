@@ -566,27 +566,31 @@ class FileBuffer
 	# - loc => same as col, but measure from end of line
 	# - row => delete first character of each marked line
 	# - multi => delete at each mark
-	def delete
+	def delete(backspace=0)
 		return if @multimarkmode
 		if @marked
+			return if backspace==1 && @col==0
 			mark_row,row = ordered_mark_rows
 			if @cursormode == :col
-				c = (mark_row==row)?(0):(@col)
+				c = (mark_row==row)?(0):(@col-backspace)
 				@text.column_delete(mark_row,row,c)
+				cursor_left(backspace)
 			elsif @cursormode == :row
 				@text.column_delete(mark_row,row,0)
+				cursor_left(backspace)
 			elsif @cursormode == :loc
-				n = @text[@row][@col..-1].length
+				n = @text[@row][@col..-1].length + backspace
 				if n > 0
 					@text.column_delete(mark_row,row,-n)
 				end
+				cursor_left(backspace)
 			else
 				mark_list.each{|row,cols|
 					# Loop over column positions starting from end,
 					# because doing stuff at early in the line changes
 					# positions later in the line.
 					cols.uniq.sort.reverse.each{|col|
-						@text.column_delete(row,row,col)
+						@text.column_delete(row,row,col-backspace)
 						# Adjust mark positions due to changes to the left
 						# of the mark.
 						@mark_list[row-@row].map!{|x|
@@ -598,57 +602,24 @@ class FileBuffer
 						}
 					}
 				}
+				cursor_left(backspace)
 			end
 		else
+			if backspace == 1
+				return if (@col+@row)==0
+				if @col == 0
+					cursor_left
+					@text.mergerows(@row,@row+1)
+					return
+				end
+			end
+			cursor_left(backspace)
 			@text.delchar(@row,@col) if @text[@row].kind_of?(String)
 		end
 	end
 
-	# Backspace over a character.
-	# Similar to delete (above).
 	def backspace
-		return if @multimarkmode
-		if @marked
-			return if @col == 0
-			mark_row,row = ordered_mark_rows
-			if @cursormode == :col
-				c = (mark_row==row)?(0):(@col-1)
-				@text.column_delete(mark_row,row,c)
-				cursor_left
-			elsif @cursormode == :row
-				@text.column_delete(mark_row,row,0)
-				cursor_left
-			elsif @cursormode == :loc
-				n = @text[@row][@col..-1].length + 1
-				@text.column_delete(mark_row,row,-n)
-				cursor_left
-			else
-				mark_list.each{|row,cols|
-					cols.uniq.sort.reverse.each{|col|
-						@text.column_delete(row,row,col-1)
-						@mark_list[row-@row].map!{|x|
-							if (x+@col) > col
-								x-1
-							else
-								x
-							end
-						}
-					}
-				}
-				cursor_left
-			end
-		else
-			if (@col+@row)==0
-				return
-			end
-			if @col == 0
-				cursor_left
-				@text.mergerows(@row,@row+1)
-				return
-			end
-			cursor_left
-			@text.delchar(@row,@col)
-		end
+		delete(1)
 	end
 
 	# Insert a char and move to the right.
