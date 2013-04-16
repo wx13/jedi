@@ -903,8 +903,8 @@ class FileBuffer
 			center_screen
 		end
 	end
-	def undo
-		if @buffer_history.undo
+	def undo(method=:undo)
+		if @buffer_history.send(method)
 			@text.text = @buffer_history.copy
 			@row = @buffer_history.row
 			@col = @buffer_history.col
@@ -912,26 +912,17 @@ class FileBuffer
 		end
 	end
 	def redo
-		if @buffer_history.redo
-			@text.text = @buffer_history.copy
-			@row = @buffer_history.row
-			@col = @buffer_history.col
-			better_cursor_position
-		end
+		undo(:redo)
 	end
-	def revert_to_saved
+	def revert_to_saved(method=:revert_to_saved)
 		@text.delete_if{|x|true}
-		@text.concat(@buffer_history.revert_to_saved)
+		@text.concat(@buffer_history.send(method))
 		@row = @buffer_history.row
 		@col = @buffer_history.col
 		better_cursor_position
 	end
 	def unrevert_to_saved
-		@text.delete_if{|x|true}
-		@text.concat(@buffer_history.unrevert_to_saved)
-		@row = @buffer_history.row
-		@col = @buffer_history.col
-		better_cursor_position
+		revert_to_saved(:unrevert_to_saved)
 	end
 
 
