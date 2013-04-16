@@ -16,6 +16,13 @@ class TextBuffer
 		@text.send method, *args, &block
 	end
 
+	def replace(text)
+		@text.slice!(1..-1)
+		text.each_index{|k|
+			@text[k] = text[k]
+		}
+	end
+
 	# delete a character
 	def delchar(row,col)
 		return if @text[row].kind_of?(Array)
@@ -350,17 +357,15 @@ class FileBuffer
 	# Read into buffer array.
 	# Called by initialize -- shouldn't need to call
 	# this directly.
-	def read_file
+	def read_file(update=true)
 		if @filename == ""
-			@text.slice!(1..-1)
-			@text[0] = ""
+			@text.replace([""])
 			return
 		else
 			if File.exists? @filename
 				text = File.open(@filename,"rb:UTF-8"){|f| f.read}
 			else
-				@text.slice!(1..-1)
-				@text[0] = ""
+				@text.replace([""])
 				return
 			end
 		end
@@ -373,15 +378,16 @@ class FileBuffer
 		end
 		text.gsub!(/\r/,"\n")
 		text = text.split("\n",-1)
-		@text.slice!(1..-1)
-		text.each_index{|k|
-			@text[k] = text[k]
-		}
-		if @text.empty?
-			@text[0] = ""
+		if update
+			@text.replace(text)
+			if @text.empty?
+				@text[0] = ""
+			end
+			update_indentation
+			@indentchar = @fileindentchar
+		else
+			return text
 		end
-		update_indentation
-		@indentchar = @fileindentchar
 	end
 
 	# Save buffer to a file.
@@ -482,15 +488,11 @@ class FileBuffer
 			ans = @window.ask_yesno("Buffer has been modified. Continue anyway?")
 			return unless ans == 'yes'
 		end
-		old_text = @text.dup
-		read_file
-		if @text != old_text
+		text = read_file(false)
+		if @text.text != text
 			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
-			if ans != 'yes'
-				@text.slice!(1..-1)
-				old_text.each_index{|k|
-					@text[k] = old_text[k]
-				}
+			if ans == 'yes'
+				@text.replace(text)
 			end
 		end
 	end
