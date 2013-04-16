@@ -1962,27 +1962,7 @@ class FileBuffer
 		# Replace one indentation with the other.
 		@fileindentstring = fileindentstring
 		@indentstring = indentstring
-		@text.map{|line|
-			if line.is_a?(Array)
-				line.map{|sline|
-					efis = Regexp.escape(@fileindentstring)
-					after = sline.split(/^(#{efis})+/).last
-					next if after.nil?
-					ni = (sline.length - after.length)/(@fileindentstring.length)
-					sline.slice!(0..-1)
-					sline << @indentstring * ni
-					sline << after
-				}
-			else
-				efis = Regexp.escape(@fileindentstring)
-				after = line.split(/^(#{efis})+/).last
-				next if after.nil?
-				ni = (line.length - after.length)/(@fileindentstring.length)
-				line.slice!(0..-1)
-				line << @indentstring * ni
-				line << after
-			end
-		}
+		swap_indent_string(@fileindentstring, @indentstring)
 
 		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
@@ -1997,32 +1977,37 @@ class FileBuffer
 	# Remove the indentation facade.
 	def indentation_real
 		return if @indentstring == @fileindentstring
-		@text.map{|line|
-			if line.is_a?(Array)
-				line.map{|sline|
-					eis = Regexp.escape(@indentstring)
-					after = sline.split(/^(#{eis})+/).last
-					next if after.nil?
-					ni = (sline.length - after.length)/(@indentstring.length)
-					sline.slice!(0..-1)
-					sline << @fileindentstring * ni
-					sline << after
-				}
-			else
-				eis = Regexp.escape(@indentstring)
-				after = line.split(/^(#{eis})+/).last
-				next if after.nil?
-				ni = (line.length - after.length)/(@indentstring.length)
-				line.slice!(0..-1)
-				line << @fileindentstring * ni
-				line << after
-			end
-		}
+		swap_indent_string(@indentstring, @fileindentstring)
 		@indentchar = @fileindentchar
 		@indentstring = @fileindentstring
 		@tabchar = @fileindentstring
 		dump_to_screen(true)
 		@window.write_message("Indentation facade disabled")
+	end
+
+	def swap_indent_string(str1, str2)
+		e1 = Regexp.escape(str1)
+		@text.map{|line|
+			if line.is_a?(Array)
+				line.map{|sline|
+					after = sline.split(/^#{e1}+/).last
+					next if after.nil?
+					ni = (sline.length - after.length)/(str1.length)
+					sline.slice!(0..-1)
+					sline << str2 * ni
+					sline << after
+				}
+			else
+				after = line.split(/^#{e1}+/).last
+				next if after.nil?
+				ni = (line.length - after.length)/(str1.length)
+				line.slice!(0..-1)
+				line << str2 * ni
+				line << after
+			end
+		}
+	rescue
+		@window.write_message($!.to_s)
 	end
 
 
