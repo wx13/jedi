@@ -10,26 +10,27 @@ class SyntaxColors
 	attr_accessor :lc, :bc, :regex
 
 	def initialize
-		# Define per-language from-here-to-end-of-line comments.
-		@lc = {
-			:shell => ["#"],
-			:git => ["#"],
-			:ruby => ["#"],
-			:perl => ["#"],
-			:python => ["#"],
-			:c => ["//"],
-			:fortran => ["!",/^c/],
-			:matlab => ["#","%"],
-			:idl => [";"],
-			:latex => ["%"],
+
+		# Comments and strings are different than other regex's,
+		# because they block each other.
+		@strings = {}
+		@strings.default = {'"'=>'"', "'"=>"'", '/'=>'/'}
+
+		@comments = {
+			:shell   => {'#'=>/$/},
+			:ruby    => {'#'=>/$/},
+			:perl    => {'#'=>/$/},
+			:git     => {'#'=>/$/},
+			:python  => {'#'=>/$/},
+			:c       => {'//'=>/$/,'/*'=>'*/'},
+			:fortran => {'!'=>/$/,/^[cC]/=>/$/},
+			:idl     => {';'=>/$/},
+			:latex   => {'%'=>/$/},
+			:octave  => {'#'=>/$/,'%'=>/$/},
+			:html    => {'<!--'=>'-->'},
 		}
-		@lc.default = []
-		# Define per-language block comments.
-		@bc = {
-			:c => {"/*"=>"*/"},
-			:html => {'<!--'=>'-->'},
-		}
-		@bc.default = {}
+		@comments.default = {}
+
 		# Define generic regexp syntax rules.
 		@regex = {
 			# Colorize long lines in fortran.
@@ -37,65 +38,39 @@ class SyntaxColors
 			:latex => {/\\[^\s\{\\\[]*/ => :green},
 		}
 		@regex.default = {}
+
 	end
 
 
-	#
-	# INPUT:
-	#	bline -- string to add result to
-	#	cline -- string to inspect
-	#	cqc -- current quote character (to look for)
-	# OUTPUT:
-	#	bline -- updated bline string
-	#	cline -- remainder of cline strin
-	#
-	def syntax_find_match(cline,cqc,bline)
 
-		k = cline[1..-1].index(cqc)
-		if k==nil
-			# didn't find the character
-			return nil
-		end
-		bline = cline[0].chr
-		cline = cline[1..-1]
-		while (k!=nil) && (k>0) && (cline[k-1].chr=="\\") do
-			bline += cline[0,k+cqc.length]
-			cline = cline[k+cqc.length..-1]
-			break if cline == nil
-			k = cline.index(cqc)
-		end
-		if k==nil
-			bline += cline
-			return(bline)
-		end
-		if cline == nil
-			return(bline)
-		end
-		bline += cline[0..k+cqc.length-1]
-		cline = cline[k+cqc.length..-1]
-		return bline,cline
+	def apply_rules(bline,cline,rules,color)
+
+		flag = false
+		ere = $screen.escape_regexp
+
+		rules.each{|sc,ec|
+			if cline.index(sc)==0
+				bline += $color[color]
+				a,b,c = cline.partition(sc)
+				bline += b
+				a,b,c = c.partition(ec)
+				bline += a.gsub(ere,'') + b + $color[:normal]
+				cline = c
+				flag = true
+				break
+			end
+		}
+
+		return bline, cline, flag
+
 	end
 
 
 
 	#
 	# Do string and comment coloring.
-	# INPUT:
-	#   aline -- line of text to color
-	#   lccs  -- line comment characters
-	#            (list of characters that start comments to end-of-line)
-	#   bccs  -- block comment characters
-	#            (pairs of comment characters, such as /* */)
-	# OUTPUT:
-	#   line with color characters inserted
 	#
-	def syntax_color_string_comment(aline,lccs,bccs)
-
-		# quote and regex characters
-		dqc, sqc, rxc = '"', '\'', '/'
-
-		# Flags to tell if we are in the middle of something
-		dquote = squote = regx = comment = escape = false
+	def syntax_color_string_comment(aline,strings,comments)
 
 		# Escape characters
 		ere = $screen.escape_regexp
@@ -108,10 +83,10 @@ class SyntaxColors
 		bline = ""
 
 		# Slowly much through cline until it is gone.
-		while (cline!=nil)&&(cline.length>0) do
+		while (cline)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union([lccs,bccs.keys,dqc,sqc,rxc,ere].flatten)
+			all = Regexp.union([strings.keys,comments.keys,ere].flatten)
 			a,b,c = cline.partition(all)
 
 			# Add uninteresting part to bline.
@@ -127,69 +102,11 @@ class SyntaxColors
 
 			cline = b + c
 
-			# if eol comment, then we are done
-			flag = false
-			lccs.each{|str|
-				if cline.index(str)==0
-					bline += $color[:comment]
-					# remove any other colors inside of the comment
-					bline += cline.gsub(ere,'')
-					bline += $color[:normal]
-					flag = true
-					break
-				end
-			}
-			break if flag
-
-			# block comments
-			flag = false
-			bccs.each{|sc,ec|
-				if cline.index(sc)==0
-					b,c = syntax_find_match(cline,ec,bline)
-					if b != nil
-						bline += $color[:comment]
-						# remove any other colors inside of the comment
-						bline += b.gsub(ere,'')
-						bline += $color[:normal]
-						cline = c
-						flag = true
-					end
-				end
-			}
+			bline,cline,flag = apply_rules(bline,cline,comments,:comment)
 			next if flag
+			bline,cline,flag = apply_rules(bline,cline,strings,:string)
 
-			# if quote, then look for match
-			if (cline[0].chr == sqc) || (cline[0].chr == dqc)
-				cqc = cline[0].chr
-				b,c = syntax_find_match(cline,cqc,bline)
-				if b != nil
-					bline += $color[:string]
-					# remove any other colors inside of the comment
-					bline += b.gsub(ere,'')
-					bline += $color[:normal]
-					cline = c
-					next
-				end
-			end
-
-			# if regex, look for match
-			if (cline[0].chr == rxc)
-				cqc = cline[0].chr
-				b,c = syntax_find_match(cline,cqc,bline)
-				if b != nil
-					bline += $color[:regex]
-					# remove any other colors inside of the comment
-					bline += b.gsub(ere,'')
-					bline += $color[:normal]
-					cline = c
-					next
-				end
-			end
-
-			bline += cline[0].chr
-			cline = cline[1..-1]
 		end
-
 		aline = bline + $color[:normal]
 		return aline
 	end
@@ -215,7 +132,7 @@ class SyntaxColors
 		end
 
 		# comments & quotes
-		aline = syntax_color_string_comment(aline,@lc[filetype],@bc[filetype])
+		aline = syntax_color_string_comment(aline,@strings[filetype],@comments[filetype])
 
 		# trailing whitespace
 		ere = Regexp.escape($color[:normal])

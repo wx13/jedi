@@ -80,7 +80,7 @@ class Editor
 			/\.(py)$/ => :python,
 			/\.([cCh]|cpp)$/ => :c,
 			"COMMIT_EDITMSG" => :git,
-			/\.m$/ => :matlab,
+			/\.m$/ => :octave,
 			/\.pro$/ => :idl,
 			/\.[fF]$/ => :fortran,
 			/\.yaml$/ => :yaml,
