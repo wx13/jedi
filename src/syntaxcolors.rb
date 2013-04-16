@@ -50,8 +50,13 @@ class SyntaxColors
 
 		rules.each{|sc,ec|
 			if cline.index(sc)==0
-				bline += $color[color]
 				a,b,c = cline.partition(sc)
+				unless c.match(ec)
+					bline += b
+					cline = c
+					next
+				end
+				bline += $color[color]
 				bline += b
 				a,b,c = c.partition(ec)
 				bline += a.gsub(ere,'') + b + $color[:normal]
