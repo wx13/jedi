@@ -34,6 +34,7 @@ class Editor
 		$cursor_color = ''
 		$filetypes = define_filetypes
 		$mouse = false
+		$backup_prefix = '.~'
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
@@ -211,7 +212,7 @@ class Editor
 				$mouse = true
 			}
 			opts.on('-B', '--backups', 'Enable file backupts'){
-				$backups = Hash.new('.~')
+				$backups = Hash.new($backup_prefix)
 			}
 			opts.on('-b', '--no-backups', 'Disable file backupts'){
 				$backups = Hash.new(false)
