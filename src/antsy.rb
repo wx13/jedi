@@ -895,8 +895,8 @@ class Window
 
 	# Set the window size, where k is the number of windows
 	# and j is the number of this window.
-	def set_window_size(j,k,vh="v")
-		if vh == "v"
+	def set_window_size(j,k,vh=:v)
+		if vh == :v
 			@pos_row = j*((@screen.rows+1)/k)
 			@rows = (@screen.rows+1)/k - 1
 			@pos_col = 0
@@ -911,8 +911,8 @@ class Window
 
 	# Set the size of the last window to fit to the remainder of
 	# the screen.
-	def set_last_window_size(vh="v")
-		if vh == "v"
+	def set_last_window_size(vh=:v)
+		if vh == :v
 			@rows = @screen.rows - @pos_row - 1
 			@cols = @screen.cols
 		else

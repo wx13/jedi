@@ -995,23 +995,16 @@ class FileBuffer
 		@usedescol = true
 		return(sc)
 	end
-	def cursor_down(n)
+	def cursor_down(n=1)
 		sc = bc2sc(@row,@col)
 		@row += n
-		if @row >= @text.length
-			@row = @text.length-1
-		end
+		@row = [@row, 0].max
+		@row = [@row, @text.length-1].min
 		sc = handle_desired_column(sc)
 		@col = sc2bc(@row,sc)
 	end
-	def cursor_up(n)
-		sc = bc2sc(@row,@col)
-		@row -= n
-		if @row < 0
-			@row = 0
-		end
-		sc = handle_desired_column(sc)
-		@col = sc2bc(@row,sc)
+	def cursor_up(n=1)
+		cursor_down(-n)
 	end
 	def page_down
 		r = @row - @linefeed
@@ -1088,11 +1081,12 @@ class FileBuffer
 	#
 	# search
 	#
-	def search(p)
-		if p == 0
+	def search(mode=:ask)
+		if mode == :ask
 			# get search string from user
 			token = @window.ask("Search:",$histories.search)
-		elsif
+			mode = :forward
+		else
 			token = $histories.search[-1]
 		end
 		if token == nil || token == ""
@@ -1106,7 +1100,7 @@ class FileBuffer
 		end
 		nlines = @text.length
 		row = @row
-		if p >= 0
+		if mode == :forward
 			# find first match from this line down
 			# start with current line
 			idx = nil

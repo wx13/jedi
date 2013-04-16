@@ -22,7 +22,7 @@ class BuffersList
 			@buffers = buffers
 			@nbuf = @buffers.length
 			@ibuf = 0
-			@stack_orientation = "v"
+			@stack_orientation = :v
 			resize_buffers
 		end
 		def delete_buffer(n=@ibuf)
@@ -41,13 +41,12 @@ class BuffersList
 		def buffer
 			@buffers[@ibuf]
 		end
-		def next_buffer
-			@ibuf = (@ibuf+1).modulo(@nbuf)
+		def next_buffer(n=1)
+			@ibuf = (@ibuf+n).modulo(@nbuf)
 			@buffers[@ibuf]
 		end
 		def prev_buffer
-			@ibuf = (@ibuf-1).modulo(@nbuf)
-			@buffers[@ibuf]
+			next_buffer(-1)
 		end
 		def resize_buffers
 			j = 0;
@@ -59,7 +58,7 @@ class BuffersList
 			buf.window.set_last_window_size(@stack_orientation)
 		end
 		def refresh_buffers
-			if @stack_orientation == "v"
+			if @stack_orientation == :v
 				@buffers.each{|buf|
 					buf.dump_to_screen(true)
 					buf.update_top_line(nil,nil,true)
@@ -73,15 +72,13 @@ class BuffersList
 				}
 			end
 		end
-		def vstack
-			@stack_orientation = "v"
+		def vstack(orientation=:v)
+			@stack_orientation = orientation
 			resize_buffers
 			refresh_buffers
 		end
 		def hstack
-			@stack_orientation = "h"
-			resize_buffers
-			refresh_buffers
+			vstack(:h)
 		end
 	end
 
