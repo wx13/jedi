@@ -300,10 +300,7 @@ class BuffersList
 		@pages[@ipage].refresh_buffers
 	end
 	def screen_down(n=1)
-		@pages[@ipage].buffers.each{|buf|
-			buf.screen_down(n)
-		}
-		@pages[@ipage].refresh_buffers
+		screen_up(-n)
 	end
 
 	# Use the mouse position to select a buffer.

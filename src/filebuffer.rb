@@ -1058,7 +1058,7 @@ class FileBuffer
 		@window.write_message("went to line "+@row.to_s)
 	end
 	def screen_left(n=1)
-		@colfeed += n
+		screen_right(-n)
 	end
 	def screen_right(n=1)
 		@colfeed = [0,@colfeed-n].max
@@ -1066,10 +1066,10 @@ class FileBuffer
 	def screen_down(n=1)
 		@linefeed = [0,@linefeed-n].max
 		@row = [@row,@linefeed+@window.rows-1].min
+		@row = [@row,@linefeed].max
 	end
 	def screen_up(n=1)
-		@linefeed += n
-		@row = [@row,@linefeed].max
+		screen_down(-n)
 	end
 	def center_screen(r=@row)
 		@linefeed = @row - @window.rows/2
