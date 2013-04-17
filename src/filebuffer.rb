@@ -128,6 +128,33 @@ class TextBuffer
 		return text.length
 	end
 
+	def hide_by_pattern(pstart,pend)
+		i = -1
+		n = @text.length
+		while i < n
+			i += 1
+			line = @text[i]
+			next if line.kind_of?(Array)
+			if line =~ pstart
+				j = i
+				while j < n
+					j += 1
+					line = @text[j]
+					next if line.kind_of?(Array)
+					if ((pend==//) && !(line=~pstart)) || ((pend!=//) && (line =~ pend))
+						if pend == //
+							x = hide_lines_at(i,j-1)
+						else
+							x = hide_lines_at(i,j)
+						end
+						i = j - x
+						break
+					end
+				end
+			end
+		end
+	end
+
 	def unhide_lines(row)
 		hidden_text = @text[row]
 		return if hidden_text.kind_of?(String)
@@ -141,6 +168,34 @@ class TextBuffer
 	def unhide_all
 		@text.flatten!
 	end
+
+
+	# Change indentation string in text buffer.
+	def swap_indent_string(str1, str2)
+		e1 = Regexp.escape(str1)
+		@text.map{|line|
+			if line.is_a?(Array)
+				line.map{|sline|
+					after = sline.split(/^#{e1}+/).last
+					next if after.nil?
+					ni = (sline.length - after.length)/(str1.length)
+					sline.slice!(0..-1)
+					sline << str2 * ni
+					sline << after
+				}
+			else
+				after = line.split(/^#{e1}+/).last
+				next if after.nil?
+				ni = (line.length - after.length)/(str1.length)
+				line.slice!(0..-1)
+				line << str2 * ni
+				line << after
+			end
+		}
+	rescue
+		$screen.write_message($!.to_s)
+	end
+
 
 end
 
@@ -1859,30 +1914,7 @@ class FileBuffer
 		return if pstart == nil || pend == nil
 		pstart = Regexp.new(pstart)
 		pend = Regexp.new(pend)
-		i = -1
-		n = @text.length
-		while i < n
-			i += 1
-			line = @text[i]
-			next if line.kind_of?(Array)
-			if line =~ pstart
-				j = i
-				while j < n
-					j += 1
-					line = @text[j]
-					next if line.kind_of?(Array)
-					if ((pend==//) && !(line=~pstart)) || ((pend!=//) && (line =~ pend))
-						if pend == //
-							x = @text.hide_lines_at(i,j-1)
-						else
-							x = @text.hide_lines_at(i,j)
-						end
-						i = j - x
-						break
-					end
-				end
-			end
-		end
+		@text.hide_by_pattern(pstart,pend)
 		@window.write_message("done")
 	end
 	def unhide_lines
@@ -1949,7 +1981,7 @@ class FileBuffer
 		# Replace one indentation with the other.
 		@fileindentstring = fileindentstring
 		@indentstring = indentstring
-		swap_indent_string(@fileindentstring, @indentstring)
+		@text.swap_indent_string(@fileindentstring, @indentstring)
 
 		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
@@ -1964,37 +1996,12 @@ class FileBuffer
 	# Remove the indentation facade.
 	def indentation_real
 		return if @indentstring == @fileindentstring
-		swap_indent_string(@indentstring, @fileindentstring)
+		@text.swap_indent_string(@indentstring, @fileindentstring)
 		@indentchar = @fileindentchar
 		@indentstring = @fileindentstring
 		@tabchar = @fileindentstring
 		dump_to_screen(true)
 		@window.write_message("Indentation facade disabled")
-	end
-
-	def swap_indent_string(str1, str2)
-		e1 = Regexp.escape(str1)
-		@text.map{|line|
-			if line.is_a?(Array)
-				line.map{|sline|
-					after = sline.split(/^#{e1}+/).last
-					next if after.nil?
-					ni = (sline.length - after.length)/(str1.length)
-					sline.slice!(0..-1)
-					sline << str2 * ni
-					sline << after
-				}
-			else
-				after = line.split(/^#{e1}+/).last
-				next if after.nil?
-				ni = (line.length - after.length)/(str1.length)
-				line.slice!(0..-1)
-				line << str2 * ni
-				line << after
-			end
-		}
-	rescue
-		@window.write_message($!.to_s)
 	end
 
 
