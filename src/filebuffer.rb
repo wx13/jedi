@@ -418,7 +418,11 @@ class FileBuffer
 			return
 		else
 			if File.exists? @filename
-				text = File.open(@filename,"rb:UTF-8"){|f| f.read}
+				begin
+					text = File.open(@filename,"rb:UTF-8"){|f| f.read}
+				rescue
+					text = File.open(@filename,"r"){|f| f.read}
+				end
 			else
 				@text.replace([""])
 				return
@@ -490,9 +494,15 @@ class FileBuffer
 				}
 				text = text.join(@eol)
 			end
-			File.open(@filename,"w:UTF-8"){|file|
-				file.write(text)
-			}
+			begin
+				File.open(@filename,"w:UTF-8"){|file|
+					file.write(text)
+				}
+			rescue
+				File.open(@filename,"w"){|file|
+					file.write(text)
+				}
+			end
 		rescue
 			if $!.to_s.index('incompatible character encodings:')
 				if fix_encoding('mixed char encodings')
@@ -1547,7 +1557,7 @@ class FileBuffer
 			# Copy new text to @text, but do so in a way
 			# which keeps the pointer the same. This is in case
 			# we are editing the file in multiple windows.
-			@text.shift(@row+1)
+			@text.slice!(0,@row+1)
 			text.reverse.each{|line|
 				@text.unshift(line)
 			}

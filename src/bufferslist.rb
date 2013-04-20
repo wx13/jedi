@@ -377,7 +377,7 @@ class CopyBuffer
 	end
 	def clear
 		@hist.unshift @text.dup
-		@hist.slice!(-50..-1)
+		@hist.slice!(50..-1)
 		@hist.delete_if{|x|x.empty?}
 		@hist.uniq!
 		@text = []

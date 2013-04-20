@@ -91,7 +91,7 @@ class SyntaxColors
 		while (cline)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union([strings.keys,comments.keys,ere].flatten)
+			all = Regexp.union(*([strings.keys,comments.keys,ere].flatten))
 			a,b,c = cline.partition(all)
 
 			# Add uninteresting part to bline.
