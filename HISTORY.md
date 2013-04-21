@@ -1,3 +1,26 @@
+0.4.2
+-----
+
+Bug fixes:
+
+  + Now compatible with ruby 1.8.5 and 1.8.6.
+
+Clean up:
+
+  + Various clean-ups
+    - Reduce duplicate code
+    - Move some methods out of FileBuffer, to reduce its size.
+
+Features:
+
+  + Memory of column position on cursor up/down.
+    - This is something other editors do, which I resisted for a long
+      time. I felt it violated the principle of least surprise (the
+      behavior of cursor up/down would depend on more than the current
+      position), but the truth is that this is very handy.
+  + Let backups be toggle-able from in the editor.
+
+
 0.4.1
 -----
 
