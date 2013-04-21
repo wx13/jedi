@@ -82,16 +82,21 @@ anywhere ruby is installed.
 A note about portability
 ------------------------
 
-Jedi does not use curses or ncurses, but instead reads from
-standard input and writes to standard output.  It uses terminal escape
-codes to format the output.  Some terminals don't seem to support as
-many keycodes and will have reduced functionality.  For example, the
-mac terminal does not report shift/control + arrow keys (aside from
-ctrl-left/right).  I continually test it in xterm on linux, xterm on
-cygwin and gnome terminal on linux, with ruby 1.8.  I occasionally test
-in on a Mac terminal and in ruby 1.9. Other than modified arrow keys,
-it should run on any unix-compatible terminal emulator.  If you type
-`echo -e "\e[2J"` and it clears the screen, then you should be fine.
+Jedi does not use curses or ncurses, but instead reads from standard
+input and writes to standard output.  It uses terminal escape codes to
+format the output.  Some terminals don't seem to support as many
+keycodes and will have reduced functionality.  For example, the mac
+terminal does not report shift/control + arrow keys (aside from
+ctrl-left/right). Other than modified arrow keys, it should run on any
+unix-compatible terminal emulator.  If you type `echo -e "\e[2J"` and
+it clears the screen, then you should be fine.
+
+I periodically test it on the following platforms:
+
+ - xterm on linux
+ - xterm on cygwin
+ - gnome terminal on linux
+ - ruby 1.8.5, 1.8.6, 1.8.7, 1.9.3, 2.0.0
 
 
 
@@ -100,6 +105,9 @@ More information
 
 See the manual in
 [doc/manual.md](https://github.com/wx13/editor/tree/master/doc/manual.md)
+
+See the website at
+[http://jedi.wx13.com](http://jedi.wx13.com).
 
 Also, feel free to email me (jason@wx13.com) with any questions or
 feedback.  I started this project to satisfy my own needs, and as far
@@ -110,7 +118,8 @@ interesting, I'd like to hear about it.
 License
 -------
 
-All code and documentation are covered by the following license:
+All code and documentation are covered by license shown below.  It says
+you can do pretty much anything you want with it.
 
 ------------------------------------------------------------------------
 

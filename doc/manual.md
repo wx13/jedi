@@ -438,7 +438,9 @@ The files are:
 	  autofolding, etc.
 - syntaxcolors.rb
 	+ Everything related to syntax coloring
-
+- compatibility.rb
+	+ Some backported string and array functionality for ruby versions
+	  1.8.6 or below.
 
 
 <a id="algo"></a>
