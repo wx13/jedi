@@ -1,3 +1,10 @@
+#---------------------------------------------------------------------
+# Compatibility code.
+#
+# Backports of some string and array functionality to help
+# with old versions of ruby.
+#---------------------------------------------------------------------
+
 if RUBY_VERSION < "1.9"
 class String
 	def partition(pattern)
@@ -31,3 +38,6 @@ class Array
 	end
 end
 end
+
+# end of compatibility code
+#---------------------------------------------------------------------
