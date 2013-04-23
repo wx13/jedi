@@ -723,7 +723,7 @@ class FileBuffer
 				for r in mark_row..row
 					list[r] = [@col] unless @col > @text[r].length
 				end
-			elsif @cursormode == :loc
+			elsif @cursormode == :loc && mark_row != row
 				n = @text[@row][@col..-1].length
 				list = {}
 				for r in mark_row..row
@@ -1417,7 +1417,7 @@ class FileBuffer
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
-			return if ((@cursormode==:col)&&(@mark_row!=@row)) || @cursormode == :loc
+			return if ((@cursormode!=:row)&&(@mark_row!=@row))
 			$copy_buffer.clear
 			@marked = false
 		else
@@ -1707,13 +1707,13 @@ class FileBuffer
 				for j in mark_row..row
 					buffer_marks[j] = [[@col,@col]] unless j==@row
 				end
-			elsif @cursormode == :loc
+			elsif @cursormode == :loc && mark_row != row
 				n =  @text[@row][@col..-1].length
 				for j in mark_row..row
 					m = @text[j].length - n
 					buffer_marks[j] = [[m,m]] unless j==@row
 				end
-			elsif @cursormode == :row || ((@cursormode==:col)&&(mark_row==row))
+			elsif @cursormode == :row || ((@cursormode!=:row)&&(mark_row==row))
 				# Start with 'internal' rows (not first nor last.
 				# Easy: do the whole row.
 				for j in (mark_row+1)..(row-1)
