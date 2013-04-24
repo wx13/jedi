@@ -27,7 +27,6 @@ class BufferHistory
 	class State
 		attr_accessor :text, :row, :col
 		def initialize(text,row,col)
-			@text = []
 			@text = text.dup
 			@row = row
 			@col = col

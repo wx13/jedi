@@ -1,21 +1,29 @@
 #---------------------------------------------------------------------
 # TextBuffer class
 #
-# This class manages the actual text of a buffer.
+# This class manages the actual text of a buffer.  All other
+# information is stored elsewhere.  This class litterally just
+# maintains the text.
 #---------------------------------------------------------------------
 
 class TextBuffer
 
 	attr_accessor :text
 
+	# The text buffer is an array of strings.
 	def initialize(text=[""])
 		@text = text.dup
 	end
 
+	# Pass undefined methods on to the raw array of strings.
 	def method_missing(method,*args,&block)
 		@text.send method, *args, &block
 	end
 
+	# Replace the text buffer with a whole new array of strings.
+	# This is different than an assignment (which should never be
+	# done) because it keeps the array intact, and only replaces
+	# the strings.
 	def replace(text)
 		@text.slice!(1..-1)
 		text.each_index{|k|
@@ -23,7 +31,7 @@ class TextBuffer
 		}
 	end
 
-	# delete a character
+	# Delete a character at a (row,col) location.
 	def delchar(row,col)
 		return if @text[row].kind_of?(Array)
 		if col == @text[row].length
@@ -34,7 +42,9 @@ class TextBuffer
 		end
 	end
 
-	# insert a character
+	# Insert a character at a (row,col) locatation.
+	# If insertmode is true, the character is inserted,
+	# otherwise it replaces the current character.
 	def insertchar(row,col,c,insertmode=true)
 		return if @text[row].kind_of?(Array)
 		return if c.is_a?(String) == false
@@ -51,17 +61,17 @@ class TextBuffer
 		end
 	end
 
-	# delete a row
+	# Delete a row.
 	def delrow(row)
 		@text.delete_at(row)
 	end
 
-	# delete a range of rows (inclusive)
+	# Delete a range of rows (inclusive).
 	def delrows(row1,row2)
 		@text[row1..row2] = []
 	end
 
-	# merge two consecutive rows
+	# Merge two consecutive rows.
 	def mergerows(row1,row2)
 
 		return if @text[row1] == nil || @text[row2] == nil
@@ -90,7 +100,7 @@ class TextBuffer
 
 	end
 
-	# split a row into two
+	# Split a row into two.
 	def splitrow(row,col)
 		return if @text[row].kind_of?(Array)
 		text = @text[row].dup
@@ -98,18 +108,19 @@ class TextBuffer
 		insertrow(row,text[0..(col-1)])
 	end
 
-	# new row
+	# Insert a new row.
 	def insertrow(row,text)
 		@text.insert(row,text)
 	end
 
-	# insert a string
+	# Insert a string at a (row,col) position).
 	def insert(row,col,text)
 		return if @text[row].kind_of?(Array)
 		@text[row] = @text[row].dup
 		@text[row].insert(col,text)
 	end
-	# delete a column of text
+
+	# Delete a column of text.
 	def column_delete(row1,row2,col)
 		for r in row1..row2
 			next if @text[r].kind_of?(Array)  # Skip folded text.
@@ -128,6 +139,8 @@ class TextBuffer
 		return text.length
 	end
 
+	# Hide all text between a start pattern and an end pattern.
+	# Do it for all matches.
 	def hide_by_pattern(pstart,pend)
 		i = -1
 		n = @text.length
@@ -155,6 +168,7 @@ class TextBuffer
 		end
 	end
 
+	# Unhide the lines folded into row 'row'.
 	def unhide_lines(row)
 		hidden_text = @text[row]
 		return if hidden_text.kind_of?(String)
@@ -165,6 +179,7 @@ class TextBuffer
 		@text.concat(text[(row+1)..-1])
 	end
 
+	# Unhide all folded lines.
 	def unhide_all
 		@text.flatten!
 	end
@@ -322,11 +337,15 @@ class FileBuffer
 
 	end
 
+	# Empty method which gets called by initialize.
+	# This is so the user can include (in a startup script)
+	# code which runs everytime we open a new buffer.
 	def perbuffer_userscript
 	end
 
 
 
+	# Determine the primary indentation string of the text.
 	def update_indentation
 		a = @text.map{|line|
 			if line[0] != nil && !line[0].is_a?(String)
@@ -345,7 +364,7 @@ class FileBuffer
 	end
 
 
-	# set the file type from the filename
+	# Set the file type from the filename.
 	def set_filetype(filename)
 		$filetypes.each{|k,v|
 			if filename.match(k) != nil
@@ -355,7 +374,7 @@ class FileBuffer
 	end
 
 
-	# remember a position in the text
+	# Remember a position in the text.
 	def bookmark
 		answer = @window.ask("bookmark:",@bookmarks_hist)
 		if answer == nil
@@ -366,6 +385,7 @@ class FileBuffer
 		end
 	end
 
+	# Go to a remembered position.
 	def goto_bookmark
 		answer = @window.ask("go to:",@bookmarks_hist)
 		if answer == nil
