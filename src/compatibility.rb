@@ -5,7 +5,7 @@
 # with old versions of ruby.
 #---------------------------------------------------------------------
 
-if RUBY_VERSION < "1.9"
+if RUBY_VERSION < "1.8.7"
 class String
 	def partition(pattern)
 		a,b = self.split(pattern,2)
@@ -25,7 +25,9 @@ class String
 		a = "" if a.nil?
 		return a, c, b
 	end
-	alias_method :each_char, :each_byte
+	def each_char
+		self.each_byte{|b| yield b.chr}
+	end
 end
 class Array
 	alias_method :slice_orig!, :slice!
