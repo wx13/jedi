@@ -230,6 +230,120 @@ end
 
 
 
+#---------------------------------------------------------------------
+# FileAccessor class
+#
+# This class is called on by the FileBuffer class to handle
+# interactions with the file: reading, writing, etc.
+#---------------------------------------------------------------------
+
+class FileAccessor
+
+	attr_accessor :name, :indentchar, :indentstring
+
+	def initialize(filename)
+		@name = filename
+		@eol = "\n"
+		@indentchar = nil
+		@indentstring = nil
+	end
+
+
+	# Determine the primary indentation string of the file.
+	def update_indentation(text)
+		a = text.map{|line|
+			if line[0] != nil && !line[0].is_a?(String)
+				line[0].chr
+			end
+		}
+		numtabs = a.count("\t")
+		numspaces = a.count(" ")
+		if numtabs < (numspaces-4)
+			@indentchar = " "
+		elsif numtabs > (numspaces+4)
+			@indentchar = "\t"
+		else
+			@indentchar = nil
+		end
+	end
+
+
+	# Read file into an array.
+	def read
+
+		return([""]) if @name=="" || !File.exists?(@name)
+
+		begin
+			text = File.open(@name,"rb:UTF-8"){|f| f.read}
+		rescue
+			text = File.open(@name,"r"){|f| f.read}
+		end
+
+		# get rid of crlf
+		temp = text.gsub!(/\r\n/,"\n")
+		if temp == nil
+			@eol = "\n"
+		else
+			@eol = "\r\n"
+		end
+		text.gsub!(/\r/,"\n")
+		text = text.split("\n",-1)
+		update_indentation(text)
+
+		return(text)
+
+	end
+
+	# Save buffer to a file.
+	def save(text)
+
+		# Dump the text to the file.
+		begin
+			text = text.join(@eol)
+			begin
+				File.open(@name,"w:UTF-8"){|file|
+					file.write(text)
+				}
+			rescue
+				File.open(@name,"w"){|file|
+					file.write(text)
+				}
+			end
+		rescue
+			return $!
+		end
+
+		update_indentation(text)
+
+	end
+
+	def reload
+		text = read_file(false)
+		if @text.text != text
+			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
+			if ans == 'yes'
+				@text.replace(text)
+			end
+		end
+	end
+
+
+end
+
+# end of FileAccessor class
+#---------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #---------------------------------------------------------------------
@@ -251,11 +365,11 @@ class FileBuffer
 	def initialize(filename)
 
 		# read in the file
-		@filename = filename
-		@text = TextBuffer.new
-		read_file
+		@file = FileAccessor.new(filename)
+		@text = TextBuffer.new(@file.read)
+
 		# file type for syntax coloring
-		set_filetype(@filename)
+		@filetype = get_filetype(@file.name)
 
 		# position of cursor in buffer
 		@row = 0
@@ -266,9 +380,6 @@ class FileBuffer
 		# shifts of the buffer
 		@linefeed = 0
 		@colfeed = 0
-
-		# remember if file was CRLF
-		@eol = "\n"
 
 		# copy,cut,paste stuff
 		@marked = false
@@ -284,13 +395,9 @@ class FileBuffer
 		@tabsize = $tabsize[@filetype]
 		# what to insert when tab key is pressed
 		@tabchar = $tabchar[@filetype]
-		# char the file uses for indentation
-		@fileindentchar = nil
 		# char the editor uses for indentation
-		@indentchar = @fileindentchar
-		# full indentation string (could be multiple indentation chars)
-		@fileindentstring = @tabchar
-		@indentstring = @fileindentstring
+		@indentchar = @file.indentchar
+		@indentstring = @file.indentstring
 
 		# for text justify
 		# 0 means full screen width
@@ -311,7 +418,7 @@ class FileBuffer
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text.text,@row,@col)
-		@buffer_history.load(@filename.rpartition('/').insert(2,@backups).join) if @backups
+		@buffer_history.load(@file.name.rpartition('/').insert(2,@backups).join) if @backups
 		# save up info about screen to detect changes
 		@colfeed_old = 0
 		@marked_old = false
@@ -345,32 +452,15 @@ class FileBuffer
 
 
 
-	# Determine the primary indentation string of the text.
-	def update_indentation
-		a = @text.map{|line|
-			if line[0] != nil && !line[0].is_a?(String)
-				line[0].chr
-			end
-		}
-		@nleadingtabs = a.count("\t")
-		@nleadingspaces = a.count(" ")
-		if @nleadingtabs < (@nleadingspaces-4)
-			@fileindentchar = " "
-		elsif @nleadingtabs > (@nleadingspaces+4)
-			@fileindentchar = "\t"
-		else
-			@fileindentchar = nil
-		end
-	end
-
-
 	# Set the file type from the filename.
-	def set_filetype(filename)
+	def get_filetype(filename)
+		filetype = nil
 		$filetypes.each{|k,v|
 			if filename.match(k) != nil
-				@filetype = v
+				filetype = v
 			end
 		}
+		return filetype
 	end
 
 
@@ -429,57 +519,18 @@ class FileBuffer
 	end
 
 
-	# Read into buffer array.
-	# Called by initialize -- shouldn't need to call
-	# this directly.
-	def read_file(update=true)
-		if @filename == ""
-			@text.replace([""])
-			return
-		else
-			if File.exists? @filename
-				begin
-					text = File.open(@filename,"rb:UTF-8"){|f| f.read}
-				rescue
-					text = File.open(@filename,"r"){|f| f.read}
-				end
-			else
-				@text.replace([""])
-				return
-			end
-		end
-		# get rid of crlf
-		temp = text.gsub!(/\r\n/,"\n")
-		if temp == nil
-			@eol = "\n"
-		else
-			@eol = "\r\n"
-		end
-		text.gsub!(/\r/,"\n")
-		text = text.split("\n",-1)
-		if update
-			@text.replace(text)
-			if @text.empty?
-				@text[0] = ""
-			end
-			update_indentation
-			@indentchar = @fileindentchar
-		else
-			return text
-		end
-	end
 
-	# Save buffer to a file.
+
 	def save
 
 		# Ask the user for a file.
 		# Defaults to current file.
-		ans = @window.ask("save to:",[@filename],:display_last_answer=>true,:file=>true)
+		ans = @window.ask("save to:",[@file.name],:display_last_answer=>true,:file=>true)
 		if ans == nil
 			@window.write_message("Cancelled")
 			return
 		end
-		if ans == "" then ans = @filename end
+		if ans == "" then ans = @file.name end
 		if ans == ""
 			@window.write_message("Cancelled")
 			return
@@ -487,75 +538,59 @@ class FileBuffer
 
 		# If name is different from current file name,
 		# ask for verification.
-		if ans != @filename
+		if ans != @file.name
 			yn = @window.ask_yesno("save to different file:"+ans+" ? [y/n]")
 			if yn == "yes"
-				@filename = ans
-				set_filetype(@filename)
+				@file.name = ans
+				set_filetype(@file.name)
 			else
 				@window.write_message("aborted")
 				return
 			end
 		end
 
-		# Dump the text to the file.
-		begin
-			text = @text.join(@eol)
-			if @fileindentstring != @indentstring
-				text = text.split(@eol,-1)
-				text.each{|line|
-					@eis = Regexp.escape(@indentstring)
-					after = line.split(/^(#{@eis})+/).last
-					next if after.nil?
-					ni = (line.length - after.length)/(@indentstring.length)
-					line.slice!(0..-1)
-					line << @fileindentstring * ni
-					line << after
-				}
-				text = text.join(@eol)
-			end
-			begin
-				File.open(@filename,"w:UTF-8"){|file|
-					file.write(text)
-				}
-			rescue
-				File.open(@filename,"w"){|file|
-					file.write(text)
-				}
-			end
-		rescue
-			if $!.to_s.index('incompatible character encodings:')
-				if fix_encoding('mixed char encodings')
-					retry
-				else
-					@window.write_message('cancelled')
+		@text.swap_indent_string(@indentstring,@file.indentstring)
+		if @file.save(@text).to_s.index('incompatible character encodings')
+			if fix_encoding('mixed char encodings')
+				if @file.save(@text)
+					@window.write_message('Cannot save! ')
 					return
 				end
 			else
-				@window.write_message($!.to_s)
+				@window.write_message('cancelled')
 				return
 			end
 		end
+		@text.swap_indent_string(@file.indentstring,@indentstring)
 
 		# Let the undo/redo history know that we have saved,
 		# for revert-to-saved purposes.
 		@buffer_history.save
 
 		# Store file history in a backup file.
-		@buffer_history.backup(@filename.rpartition('/').insert(2,@backups).join) if @backups
+		@buffer_history.backup(@file.name.rpartition('/').insert(2,@backups).join) if @backups
 
 		# Save the command/search histories.
 		$histories.save
 
-		update_indentation
-		@indentchar = @fileindentchar
-		@window.write_message("saved to: "+@filename)
+		@indentchar = @file.indentchar
+		@window.write_message("saved to: "+@file.name)
 
 	end
 
+	# re-open current buffer from file
+	def reload
+		if modified?
+			ans = @window.ask_yesno("Buffer has been modified. Continue anyway?")
+			return unless ans == 'yes'
+		end
+		@file.reload
+	end
+
+
 
 	def fix_encoding(msg)
-		ans = @window.ask_yesno(msg+'. convert to unicode? ')
+		ans = $screen.ask_yesno(msg+'. convert to unicode? ')
 		if ans == 'yes'
 			text.each_index{|k|
 				@text[k] = @text[k].force_encoding('UTF-8')
@@ -567,20 +602,6 @@ class FileBuffer
 	end
 
 
-	# re-open current buffer from file
-	def reload
-		if modified?
-			ans = @window.ask_yesno("Buffer has been modified. Continue anyway?")
-			return unless ans == 'yes'
-		end
-		text = read_file(false)
-		if @text.text != text
-			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
-			if ans == 'yes'
-				@text.replace(text)
-			end
-		end
-	end
 
 	# make sure file position is valid
 	def sanitize
@@ -1657,11 +1678,11 @@ class FileBuffer
 		status += "  " + @editmode.to_s
 		# report on number of open buffers
 		if $buffers.npage <= 1
-			lstr = @filename
+			lstr = @file.name
 		else
 			nb = $buffers.npage
 			ib = $buffers.ipage
-			lstr = sprintf("%s (%d/%d)",@filename,ib+1,nb)
+			lstr = sprintf("%s (%d/%d)",@file.name,ib+1,nb)
 		end
 		@window.write_info_line(lstr,status,position)
 	end
@@ -1974,7 +1995,7 @@ class FileBuffer
 
 		# If we have already set up a facade, we must remove it
 		# before continuing.
-		if @fileindentstring != @indentstring
+		if @file.indentstring != @indentstring
 			ans = @window.ask_yesno("Reset indentation change?")
 			return unless ans == "yes"
 			indentation_real
@@ -2000,7 +2021,7 @@ class FileBuffer
 		# First the current one, then the desired one.
 		fileindentstring = @window.ask("File indent string:")
 		return if fileindentstring == "" || fileindentstring == nil
-		if @fileindentchar != nil && fileindentstring[0] != @fileindentchar[0]
+		if @file.indentchar != nil && fileindentstring[0] != @file.indentchar[0]
 			ans = @window.ask_yesno("That seems wrong. Continue at your own risk?")
 			return unless ans == "yes"
 		end
@@ -2009,9 +2030,9 @@ class FileBuffer
 		return if indentstring == fileindentstring
 
 		# Replace one indentation with the other.
-		@fileindentstring = fileindentstring
+		@file.indentstring = fileindentstring
 		@indentstring = indentstring
-		@text.swap_indent_string(@fileindentstring, @indentstring)
+		@text.swap_indent_string(@file.indentstring, @indentstring)
 
 		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
@@ -2025,11 +2046,11 @@ class FileBuffer
 
 	# Remove the indentation facade.
 	def indentation_real
-		return if @indentstring == @fileindentstring
-		@text.swap_indent_string(@indentstring, @fileindentstring)
-		@indentchar = @fileindentchar
-		@indentstring = @fileindentstring
-		@tabchar = @fileindentstring
+		return if @indentstring == @file.indentstring
+		@text.swap_indent_string(@indentstring, @file.indentstring)
+		@indentchar = @file.indentchar
+		@indentstring = @file.indentstring
+		@tabchar = @file.indentstring
 		dump_to_screen(true)
 		@window.write_message("Indentation facade disabled")
 	end
