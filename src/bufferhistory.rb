@@ -242,6 +242,42 @@ class BufferHistory
 		return(copy)
 	end
 
+
+
+	# Change indentation string in text buffers.
+	def swap_indent_string(str1, str2)
+		e1 = Regexp.escape(str1)
+		texts = @hist.map{|text| text.text}
+		ids = texts.flatten.map{|line| line.object_id}
+		require 'set'
+		s = Set.new(ids)
+		s.each{|id|
+			line = ObjectSpace._id2ref(id)
+			if line.is_a?(Array)
+				line.map{|sline|
+					after = sline.split(/^#{e1}+/).last
+					next if after.nil?
+					ni = (sline.length - after.length)/(str1.length)
+					sline.slice!(0..-1)
+					sline << str2 * ni
+					sline << after
+				}
+			else
+				after = line.split(/^#{e1}+/).last
+				next if after.nil?
+				ni = (line.length - after.length)/(str1.length)
+				line.slice!(0..-1)
+				line << str2 * ni
+				line << after
+			end
+		}
+	rescue
+		$screen.write_message($!.to_s)
+	end
+
+
+
+
 end
 
 # end of BufferHistory class

@@ -188,23 +188,19 @@ class TextBuffer
 	# Change indentation string in text buffer.
 	def swap_indent_string(str1, str2)
 		e1 = Regexp.escape(str1)
-		@text.map{|line|
+		@text.map!{|line|
 			if line.is_a?(Array)
-				line.map{|sline|
+				line.map!{|sline|
 					after = sline.split(/^#{e1}+/).last
 					next if after.nil?
 					ni = (sline.length - after.length)/(str1.length)
-					sline.slice!(0..-1)
-					sline << str2 * ni
-					sline << after
+					sline == str2 * ni + after
 				}
 			else
 				after = line.split(/^#{e1}+/).last
 				next if after.nil?
 				ni = (line.length - after.length)/(str1.length)
-				line.slice!(0..-1)
-				line << str2 * ni
-				line << after
+				line = str2 * ni + after
 			end
 		}
 	rescue
@@ -239,13 +235,14 @@ end
 
 class FileAccessor
 
-	attr_accessor :name, :indentchar, :indentstring
+	attr_accessor :name, :indentchar, :indentstring, :bufferindentstring
 
 	def initialize(filename)
 		@name = filename
 		@eol = "\n"
 		@indentchar = nil
 		@indentstring = nil
+		@bufferindentstring = nil
 	end
 
 
@@ -290,12 +287,24 @@ class FileAccessor
 		text = text.split("\n",-1)
 		update_indentation(text)
 
+		if @indentstring != @bufferindentstring
+			textb = TextBuffer.new(text)
+			textb.swap_indent_string(@indentstring,@bufferindentstring)
+			text = textb.text
+		end
+
 		return(text)
 
 	end
 
 	# Save buffer to a file.
 	def save(text)
+
+		if @bufferindentstring != @indentstring
+			textb = TextBuffer.new(text.dup)
+			textb.swap_indent_string(@bufferindentstring,@indentstring)
+			text = textb.text
+		end
 
 		# Dump the text to the file.
 		begin
@@ -313,18 +322,6 @@ class FileAccessor
 			return $!
 		end
 
-		update_indentation(text)
-
-	end
-
-	def reload
-		text = read_file(false)
-		if @text.text != text
-			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
-			if ans == 'yes'
-				@text.replace(text)
-			end
-		end
 	end
 
 
@@ -549,8 +546,7 @@ class FileBuffer
 			end
 		end
 
-		@text.swap_indent_string(@indentstring,@file.indentstring)
-		if @file.save(@text).to_s.index('incompatible character encodings')
+		if @file.save(@text.text).to_s.index('incompatible character encodings')
 			if fix_encoding('mixed char encodings')
 				if @file.save(@text)
 					@window.write_message('Cannot save! ')
@@ -561,7 +557,6 @@ class FileBuffer
 				return
 			end
 		end
-		@text.swap_indent_string(@file.indentstring,@indentstring)
 
 		# Let the undo/redo history know that we have saved,
 		# for revert-to-saved purposes.
@@ -584,7 +579,13 @@ class FileBuffer
 			ans = @window.ask_yesno("Buffer has been modified. Continue anyway?")
 			return unless ans == 'yes'
 		end
-		@file.reload
+		text = @file.read
+		if @text.text != text
+			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
+			if ans == 'yes'
+				@text.replace(text)
+			end
+		end
 	end
 
 
@@ -2030,8 +2031,9 @@ class FileBuffer
 
 		# Replace one indentation with the other.
 		@file.indentstring = fileindentstring
+		@file.bufferindentstring = indentstring
 		@indentstring = indentstring
-		@text.swap_indent_string(@file.indentstring, @indentstring)
+		@buffer_history.swap_indent_string(@file.indentstring, @indentstring)
 
 		# Set the tab-insert character to reflect new indentation.
 		@indentchar = @indentstring[0].chr
@@ -2046,9 +2048,10 @@ class FileBuffer
 	# Remove the indentation facade.
 	def indentation_real
 		return if @indentstring == @file.indentstring
-		@text.swap_indent_string(@indentstring, @file.indentstring)
+		@buffer_history.swap_indent_string(@indentstring, @file.indentstring)
 		@indentchar = @file.indentchar
 		@indentstring = @file.indentstring
+		@file.bufferindentstring = @file.indentstring
 		@tabchar = @file.indentstring
 		dump_to_screen(true)
 		@window.write_message("Indentation facade disabled")
