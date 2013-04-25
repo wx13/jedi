@@ -1012,10 +1012,9 @@ class FileBuffer
 		end
 	end
 	def undo(method=:undo)
-		if @buffer_history.send(method)
+		changed,@row,@col = @buffer_history.send(method,@row,@col)
+		if changed
 			@text.text = @buffer_history.copy
-			@row = @buffer_history.row
-			@col = @buffer_history.col
 			better_cursor_position
 		end
 	end

@@ -103,21 +103,25 @@ class BufferHistory
 		@hist[@idx].text.dup
 	end
 
-	def undo
+	def undo(r,c)
 		if @idx == 0
-			return(false)
+			return false, r, c
+		elsif r!=@hist[@idx].row
+			return false, @hist[@idx].row, @hist[@idx].col
 		else
 			@idx -= 1
-			return(true)
+			return true, @hist[@idx+1].row, @hist[@idx+1].col
 		end
 	end
 
-	def redo
+	def redo(r,c)
 		if @idx == @hist.length-1
-			return(false)
+			return false, r, c
+		elsif r!=@hist[@idx+1].row
+			return false, @hist[@idx+1].row, @hist[@idx+1].col
 		else
 			@idx += 1
-			return(true)
+			return true, @hist[@idx].row, @hist[@idx].col
 		end
 	end
 
