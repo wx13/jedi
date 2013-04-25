@@ -1015,8 +1015,8 @@ class FileBuffer
 		changed,@row,@col = @buffer_history.send(method,@row,@col)
 		if changed
 			@text.text = @buffer_history.copy
-			better_cursor_position
 		end
+		better_cursor_position
 	end
 	def redo
 		undo(:redo)
