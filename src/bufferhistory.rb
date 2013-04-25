@@ -17,6 +17,9 @@ class BufferHistory
 		@saved_idx = 0
 		@last_saved = @hist[@idx]
 		@maxlength = 1000
+		@maxbytes = 1e8
+		@maxlength_saved = 100
+		@maxbytes_saved = 1e6
 	end
 
 	def current
@@ -38,7 +41,8 @@ class BufferHistory
 	def prune
 
 		# First prune the saved buffer history.
-		if @saved.length > @maxlength/4
+		bs = @saved.length * @hist[@idx].text.inspect.length
+		if @saved.length > @maxlength_saved || bs > @maxbytes_saved
 			n0 = @saved_idx/2
 			n1 = (@saved.length-@saved_idx)/2
 			@saved.slice!(-n1..-1) if n1 > 0
@@ -48,7 +52,8 @@ class BufferHistory
 
 
 		# Now prune the full buffer history.
-		if @hist.length > @maxlength
+		bs = @hist.length * @hist[@idx].text.inspect.length
+		if @hist.length > @maxlength || bs > @maxbytes
 			n0 = @idx/2
 			n1 = (@hist.length-@idx)/2
 			@idx -= n0
