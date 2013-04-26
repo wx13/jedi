@@ -6,39 +6,27 @@
 # maintains the text.
 #---------------------------------------------------------------------
 
-class TextBuffer
-
-	attr_accessor :text
-
-	# The text buffer is an array of strings.
-	def initialize(text=[""])
-		@text = text.dup
-	end
-
-	# Pass undefined methods on to the raw array of strings.
-	def method_missing(method,*args,&block)
-		@text.send method, *args, &block
-	end
+class TextBuffer < Array
 
 	# Replace the text buffer with a whole new array of strings.
 	# This is different than an assignment (which should never be
 	# done) because it keeps the array intact, and only replaces
 	# the strings.
 	def replace(text)
-		@text.slice!(1..-1)
+		self.slice!(1..-1)
 		text.each_index{|k|
-			@text[k] = text[k]
+			self[k] = text[k]
 		}
 	end
 
 	# Delete a character at a (row,col) location.
 	def delchar(row,col)
-		return if @text[row].kind_of?(Array)
-		if col == @text[row].length
+		return if self[row].kind_of?(Array)
+		if col == self[row].length
 			mergerows(row,row+1)
 		else
-			@text[row] = @text[row].dup
-			@text[row][col] = ""
+			self[row] = self[row].dup
+			self[row][col] = ""
 		end
 	end
 
@@ -46,96 +34,96 @@ class TextBuffer
 	# If insertmode is true, the character is inserted,
 	# otherwise it replaces the current character.
 	def insertchar(row,col,c,insertmode=true)
-		return if @text[row].kind_of?(Array)
+		return if self[row].kind_of?(Array)
 		return if c.is_a?(String) == false
-		return if col > @text[row].length
-		if @text[row] == nil
-			@text[row] = c
+		return if col > self[row].length
+		if self[row] == nil
+			self[row] = c
 			return
 		end
-		@text[row] = @text[row].dup
-		if insertmode || col == @text[row].length
-			@text[row].insert(col,c)
+		self[row] = self[row].dup
+		if insertmode || col == self[row].length
+			self[row].insert(col,c)
 		else
-			@text[row][col] = c
+			self[row][col] = c
 		end
 	end
 
 	# Delete a row.
 	def delrow(row)
-		@text.delete_at(row)
+		self.delete_at(row)
 	end
 
 	# Delete a range of rows (inclusive).
 	def delrows(row1,row2)
-		@text[row1..row2] = []
+		self[row1..row2] = []
 	end
 
 	# Merge two consecutive rows.
 	def mergerows(row1,row2)
 
-		return if @text[row1] == nil || @text[row2] == nil
+		return if self[row1] == nil || self[row2] == nil
 
 		# Special case: one of the rows is empty.
 		# This is special, because the other row is unmodified, and
 		# we don't want to dup the string.
 		case
-			when @text[row1]==''
-				@text.delete_at(row1)
+			when self[row1]==''
+				self.delete_at(row1)
 				return
-			when @text[row1]==''
-				@text.delete_at(row2)
+			when self[row1]==''
+				self.delete_at(row2)
 				return
 		end
 
 		# We can merge a folded block with an empty line, but not with
 		# non-full lines.
-		return if @text[row1].kind_of?(Array)
-		return if @text[row2].kind_of?(Array)
+		return if self[row1].kind_of?(Array)
+		return if self[row2].kind_of?(Array)
 
 		# Normal merge
-		col = @text[row1].length
-		@text[row1] = @text[row1].dup + @text[row2]
-		@text.delete_at(row2)
+		col = self[row1].length
+		self[row1] = self[row1].dup + self[row2]
+		self.delete_at(row2)
 
 	end
 
 	# Split a row into two.
 	def splitrow(row,col)
-		return if @text[row].kind_of?(Array)
-		text = @text[row].dup
-		@text[row] = text[(col)..-1]
+		return if self[row].kind_of?(Array)
+		text = self[row].dup
+		self[row] = text[(col)..-1]
 		insertrow(row,text[0..(col-1)])
 	end
 
 	# Insert a new row.
 	def insertrow(row,text)
-		@text.insert(row,text)
+		self.insert(row,text)
 	end
 
 	# Insert a string at a (row,col) position).
-	def insert(row,col,text)
-		return if @text[row].kind_of?(Array)
-		@text[row] = @text[row].dup
-		@text[row].insert(col,text)
+	def insertstr(row,col,text)
+		return if self[row].kind_of?(Array)
+		self[row] = self[row].dup
+		self[row].insert(col,text)
 	end
 
 	# Delete a column of text.
 	def column_delete(row1,row2,col)
 		for r in row1..row2
-			next if @text[r].kind_of?(Array)  # Skip folded text.
-			next if @text[r].length < -col    # Skip too short lines.
-			next if col >= @text[r].length    # Can't delete past end of line.
-			@text[r] = @text[r].dup
-			@text[r][col] = ""
+			next if self[r].kind_of?(Array)  # Skip folded text.
+			next if self[r].length < -col    # Skip too short lines.
+			next if col >= self[r].length    # Can't delete past end of line.
+			self[r] = self[r].dup
+			self[r][col] = ""
 		end
 	end
 
 	# Hide the text from srow to erow.
 	def hide_lines_at(srow,erow)
-		text = @text[srow..erow]  # grab the chosen lines
-		@text[srow] = [text].flatten  # current row = array of marked text
-		@text[(srow+1)..erow] = [] if srow < erow  # technically, can hide a single line, but why?
+		text = self[srow..erow]  # grab the chosen lines
+		self[srow] = [text].flatten  # current row = array of marked text
+		self[(srow+1)..erow] = [] if srow < erow  # technically, can hide a single line, but why?
 		return text.length
 	end
 
@@ -143,16 +131,16 @@ class TextBuffer
 	# Do it for all matches.
 	def hide_by_pattern(pstart,pend)
 		i = -1
-		n = @text.length
+		n = self.length
 		while i < n
 			i += 1
-			line = @text[i]
+			line = self[i]
 			next if line.kind_of?(Array)
 			if line =~ pstart
 				j = i
 				while j < n
 					j += 1
-					line = @text[j]
+					line = self[j]
 					next if line.kind_of?(Array)
 					if ((pend==//) && !(line=~pstart)) || ((pend!=//) && (line =~ pend))
 						if pend == //
@@ -170,43 +158,112 @@ class TextBuffer
 
 	# Unhide the lines folded into row 'row'.
 	def unhide_lines(row)
-		hidden_text = @text[row]
+		hidden_text = self[row]
 		return if hidden_text.kind_of?(String)
-		text = @text.dup
-		@text.delete_if{|x|true}
-		@text.concat(text[0,row])
-		@text.concat(hidden_text)
-		@text.concat(text[(row+1)..-1])
+		text = self.dup
+		self.delete_if{|x|true}
+		self.concat(text[0,row])
+		self.concat(hidden_text)
+		self.concat(text[(row+1)..-1])
 	end
 
 	# Unhide all folded lines.
 	def unhide_all
-		@text.flatten!
+		self.flatten!
+	end
+
+	def swap_indent_string(str1,str2)
+		self.map{|line| line.swap_indent_string(str1,str2)}
 	end
 
 
-	# Change indentation string in text buffer.
-	def swap_indent_string(str1, str2)
-		e1 = Regexp.escape(str1)
-		@text.map!{|line|
-			if line.is_a?(Array)
-				line.map!{|sline|
-					after = sline.split(/^#{e1}+/).last
-					next if after.nil?
-					ni = (sline.length - after.length)/(str1.length)
-					sline == str2 * ni + after
-				}
-			else
-				after = line.split(/^#{e1}+/).last
-				next if after.nil?
-				ni = (line.length - after.length)/(str1.length)
-				line = str2 * ni + after
+	# Figure out leading "whitespace", where "whitespace"
+	# now includes non-whitespace leading characters which are
+	# the same on the last few lines.
+	def get_leading_whitespace(row)
+		ws = ""
+		if row > 1
+			s0 = self[row-2].dup
+			s1 = self[row-1].dup
+			s2 = self[row].dup
+			ml = [s0.length,s1.length,s2.length].min
+			s0 = s0[0,ml]
+			s1 = s1[0,ml]
+			s2 = s2[0,ml]
+			until (s1==s2)&&(s0==s1)
+				s0.chop!
+				s1.chop!
+				s2.chop!
 			end
-		}
-	rescue
-		$screen.write_message($!.to_s)
+			ws = s2
+		end
+		a = self[row].match(/^\s*/)
+		if a != nil
+			ws2 = a[0]
+		end
+		ws = [ws,ws2].max
+		return(ws)
 	end
 
+
+	def justify(row0,row1,width,linewrap)
+
+		# If first line is indented, make all lines indented.
+		indent = self[row0].gsub(/[^\s].*$/,'')
+
+		# make one long line out of multiple lines
+		text = self[row0..row1].join(" ")
+		for r in row0..row1
+			self.delrow(row0)
+		end
+		# Strip out multiple spaces or tabs
+		text.gsub!(/\t/,' ')
+		text.gsub!(/   */,'  ')
+		text.gsub!(/^[\s]*/,'')
+		text = indent + text
+
+		# loop through words and check length
+		c = 0
+		r = row0
+		loop do
+			c2 = text.index(/([^\s]\s)|($)/,c)  # end of next word
+			break if c2.nil?  # end, if no more words
+			# if we are past the edge, then put it in the next row
+			# Otherwise, keep going.
+			if c2 >= (width-1)
+				c = c2+1 if c==0  # careful about long words
+				self.insertrow(r,text[0,c])
+				text = text[c..-1]
+				text = "" if text==nil
+				text.lstrip!
+				text = indent + text
+				r += 1
+				c = 0
+			else
+				c = c2+1
+			end
+			if text == nil || text == ""
+				text = ""
+				break
+			end
+		end
+		# If we are linewrapping, then stick the overflow at the start
+		# of the following line, and justify that line (recursive).
+		# Otherwise, create a new row for the overflow.
+		if linewrap && self[r].is_a?(String)
+			if self[r] == nil || self[r] == ""
+				self.insertrow(r,text)
+			else
+				self[r] = indent + text + " " + self[r]
+				self.justify(row1+1,row1+1,width,linewrap)
+			end
+		else
+			self.insertrow(r,text)
+		end
+
+		return r, indent
+
+	end
 
 end
 
@@ -290,7 +347,7 @@ class FileAccessor
 		if @indentstring != @bufferindentstring
 			textb = TextBuffer.new(text)
 			textb.swap_indent_string(@indentstring,@bufferindentstring)
-			text = textb.text
+			text = textb
 		end
 
 		return(text)
@@ -303,7 +360,7 @@ class FileAccessor
 		if @bufferindentstring != @indentstring
 			textb = TextBuffer.new(text.dup)
 			textb.swap_indent_string(@bufferindentstring,@indentstring)
-			text = textb.text
+			text = textb
 		end
 
 		# Dump the text to the file.
@@ -414,7 +471,7 @@ class FileBuffer
 		@enforce_ascii = $enforce_ascii[@filetype]
 
 		# undo-redo history
-		@buffer_history = BufferHistory.new(@text.text,@row,@col)
+		@buffer_history = BufferHistory.new(@text,@row,@col)
 		@buffer_history.load(@file.name.rpartition('/').insert(2,@backups).join) if @backups
 		# save up info about screen to detect changes
 		@colfeed_old = 0
@@ -546,7 +603,7 @@ class FileBuffer
 			end
 		end
 
-		if @file.save(@text.text).to_s.index('incompatible character encodings')
+		if @file.save(@text).to_s.index('incompatible character encodings')
 			if fix_encoding('mixed char encodings')
 				if @file.save(@text)
 					@window.write_message('Cannot save! ')
@@ -580,7 +637,7 @@ class FileBuffer
 			return unless ans == 'yes'
 		end
 		text = @file.read
-		if @text.text != text
+		if @text != text
 			ans = @window.ask_yesno("Buffer differs from file. Continue anyway?")
 			if ans == 'yes'
 				@text.replace(text)
@@ -643,8 +700,8 @@ class FileBuffer
 
 	# If changed, take a snapshot of the new buffer.
 	def snapshot
-		if @buffer_history.text != @text.text
-			@buffer_history.add(@text.text,@row,@col)
+		if @buffer_history.text != @text
+			@buffer_history.add(@text,@row,@col)
 		end
 	end
 
@@ -683,16 +740,13 @@ class FileBuffer
 			if @cursormode == :col
 				c = (mark_row==row)?(0):(@col-backspace)
 				@text.column_delete(mark_row,row,c)
-				cursor_left(backspace)
 			elsif @cursormode == :row
 				@text.column_delete(mark_row,row,0)
-				cursor_left(backspace)
 			elsif @cursormode == :loc
 				n = @text[@row][@col..-1].length + backspace
 				if n > 0
 					@text.column_delete(mark_row,row,-n)
 				end
-				cursor_left(backspace)
 			else
 				mark_list.each{|row,cols|
 					# Loop over column positions starting from end,
@@ -711,8 +765,8 @@ class FileBuffer
 						}
 					}
 				}
-				cursor_left(backspace)
 			end
+			cursor_left(backspace)
 		else
 			if backspace == 1
 				return if (@col+@row)==0
@@ -825,32 +879,10 @@ class FileBuffer
 			if @autoindent
 
 				# snap shot, so we can undo auto-indent
-				@buffer_history.add(@text.text,@row+1,0)
+				@buffer_history.add(@text,@row+1,0)
 
-				# Figure out leading "whitespace", where "whitespace"
-				# now includes non-whitespace leading characters which are
-				# the same on the last few lines.
-				ws = ""
-				if @row > 1
-					s0 = @text[@row-2].dup
-					s1 = @text[@row-1].dup
-					s2 = @text[@row].dup
-					ml = [s0.length,s1.length,s2.length].min
-					s0 = s0[0,ml]
-					s1 = s1[0,ml]
-					s2 = s2[0,ml]
-					until (s1==s2)&&(s0==s1)
-						s0.chop!
-						s1.chop!
-						s2.chop!
-					end
-					ws = s2
-				end
-				a = @text[@row].match(/^\s*/)
-				if a != nil
-					ws2 = a[0]
-				end
-				ws = [ws,ws2].max
+				ws = @text.get_leading_whitespace(@row)
+
 				# If current line is just whitespace, remove it.
 				# Rule #1: no trailing whitespace.
 				if @text[@row].match(/^\s*$/)
@@ -861,7 +893,7 @@ class FileBuffer
 					next if w.nil? || w.length==0
 					@text.insertchar(@row+1,c,w)
 					c += w.length
-					@buffer_history.add(@text.text,@row+1,c)
+					@buffer_history.add(@text,@row+1,c)
 				}
 			end
 			@col = ws.length
@@ -914,60 +946,8 @@ class FileBuffer
 		end
 		nl = row - mark_row + 1
 
-		# If first line is indented, make all lines indented.
-		indent = @text[mark_row].gsub(/[^\s].*$/,'')
+		r, indent = @text.justify(mark_row,row,cols,linewrap)
 
-		# make one long line out of multiple lines
-		text = @text[mark_row..row].join(" ")
-		for r in mark_row..row
-			@text.delrow(mark_row)
-		end
-		# Strip out multiple spaces or tabs
-		text.gsub!(/\t/,' ')
-		text.gsub!(/   */,'  ')
-		text.gsub!(/^[\s]*/,'')
-		text = indent + text
-
-		# loop through words and check length
-		c = 0
-		r = mark_row
-		loop do
-			c2 = text.index(/([^\s]\s)|($)/,c)  # end of next word
-			if c2 == nil then break end  # end, if no more words
-			# if we are past the edge, then put it in the next row
-			# Otherwise, keep going.
-			if c2 >= (cols-1)
-				c = c2+1 if c==0  # careful about long words
-				@text.insertrow(r,text[0,c])
-				text = text[c..-1]
-				text = "" if text==nil
-				text.lstrip!
-				text = indent + text
-				r += 1
-				c = 0
-			else
-				c = c2+1
-			end
-			if text == nil || text == ""
-				text = ""
-				break
-			end
-		end
-		# If we are linewrapping, then stick the overflow at the start
-		# of the following line, and justify that line (recursive).
-		# Otherwise, create a new row for the overflow.
-		if linewrap && @text[r].is_a?(String)
-			if @text[r] == nil || @text[r] == ""
-				@text.insertrow(r,text)
-			else
-				@text[r] = indent + text + " " + @text[r]
-				@row += 1
-				justify(true,false)
-				@row -= 1
-			end
-		else
-			@text.insertrow(r,text)
-		end
 
 		# If we are line-wrapping, we must be careful to place the cursor
 		# at the correct position.
@@ -1015,7 +995,7 @@ class FileBuffer
 	def undo(method=:undo)
 		changed,@row,@col = @buffer_history.send(method,@row,@col)
 		if changed
-			@text.text = @buffer_history.copy
+			@text = @buffer_history.copy
 		end
 		better_cursor_position
 	end
@@ -1607,7 +1587,7 @@ class FileBuffer
 			if $copy_buffer.text[0].kind_of?(String)
 				@text[@row] = @text[@row][0,@col] + $copy_buffer.text[0] + @text[@row][@col..-1]
 			else
-				@text.insert(@row,$copy_buffer.text)
+				@text.insertstr(@row,$copy_buffer.text)
 			end
 		end
 

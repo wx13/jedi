@@ -7,6 +7,7 @@ require './syntaxcolors.rb'
 require './bufferslist.rb'
 require './bufferhistory.rb'
 require './compatibility.rb'
+require './utils.rb'
 
 #---------------------------------------------------------------------
 # Run the editor
