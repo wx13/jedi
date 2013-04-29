@@ -30,6 +30,27 @@ class String
 		self.replace(str2*ni + after)
 	end
 
+	def search_string(token,dir=:forward,pos=nil)
+		return nil if pos && pos >= self.length
+		if dir == :forward
+			pos = 0 unless pos
+			a,b,c = self[pos..-1].partition(token)
+		else
+			pos = self.length - 1 unless pos
+			a,b,c = self[0..pos].rpartition(token)
+		end
+		if b.length > 0
+			if dir == :forward
+				return([pos+a.length,b.length])
+			else
+				return([a.length,b.length])
+			end
+		else
+			return nil
+		end
+	end
+
+
 end
 
 

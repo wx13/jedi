@@ -60,7 +60,7 @@ class TextBuffer < Array
 	end
 
 	# Merge two consecutive rows.
-	def mergerows(row1,row2)
+	def mergerows(row1,row2,joiner="")
 
 		return if self[row1] == nil || self[row2] == nil
 
@@ -70,8 +70,9 @@ class TextBuffer < Array
 		case
 			when self[row1]==''
 				self.delete_at(row1)
+				self[row1] = joiner + self[row1]
 				return
-			when self[row1]==''
+			when self[row2]==''
 				self.delete_at(row2)
 				return
 		end
@@ -83,7 +84,7 @@ class TextBuffer < Array
 
 		# Normal merge
 		col = self[row1].length
-		self[row1] = self[row1].dup + self[row2]
+		self[row1] = self[row1].dup + joiner + self[row2]
 		self.delete_at(row2)
 
 	end
@@ -210,65 +211,86 @@ class TextBuffer < Array
 
 		# If first line is indented, make all lines indented.
 		indent = self[row0].gsub(/[^\s].*$/,'')
+		self[row0].gsub!(/^\s+/,'')
 
 		# make one long line out of multiple lines
 		text = self[row0..row1].join(" ")
-		for r in row0..row1
-			self.delrow(row0)
-		end
-		# Strip out multiple spaces or tabs
-		if !linewrap
-			text.gsub!(/\t/,' ')
-			text.gsub!(/   */,'  ')
-			text.gsub!(/^[\s]*/,'')
-			text = indent + text
-		end
+		self[row0..row1] = []
 
-		# loop through words and check length
-		c = 0
 		r = row0
-		loop do
-			c2 = text.index(/([^\s]\s)|($)/,c)  # end of next word
-			break if c2.nil?  # end, if no more words
-			# if we are past the edge, then put it in the next row
-			# Otherwise, keep going.
-			if c2 >= (width-1)
-				if c==0
-					c = c2+1
-					next
-				end
-				self.insertrow(r,text[0,c])
-				text = text[c..-1]
-				text = "" if text==nil
-				text.lstrip!
-				text = indent + text
-				r += 1
-				c = 0
-			else
-				c = c2+1
-			end
-			if text == nil || text == ""
-				text = ""
-				break
-			end
+		while text.length >= width
+			k = text[0,width].index(/\s+[^\s]*$/)
+			t1 = text[0,k]
+			text = text[k..-1].gsub(/^\s+/,'')
+			self.insertrow(r,indent+t1)
+			r += 1
 		end
-		# If we are linewrapping, then stick the overflow at the start
-		# of the following line, and justify that line (recursive).
-		# Otherwise, create a new row for the overflow.
-		if linewrap && self[r].is_a?(String)
-			if self[r] == nil || self[r] == ""
-				self.insertrow(r,text)
-			else
-				self[r] = indent + text + " " + self[r]
-				self.justify(row1+1,row1+1,width,linewrap)
+		self.insertrow(r,indent+text)
+		r += 1
+
+		if linewrap && self[r] && self[r].length > 0
+			r -= 1
+			self.mergerows(r,r+1," ")
+			if self[r].length >= width
+				r, junk = self.justify(r,r,width,linewrap)
 			end
-		else
-			self.insertrow(r,text)
 		end
 
 		return r, indent
 
 	end
+
+	def search_string(token,pos=0)
+		return nil
+	end
+
+
+	def next_match(row,col,token,params)
+		dir = (params[:dir])?(params[:dir]):(:forward)
+		rows = params[:rows]
+
+		row = row % (self.length)
+		col = [col,self[row].length-1].min
+
+		if rows
+			if rows[0] < rows[1]
+				text = self[row..rows[1]]
+			else
+				text = self[row..-1] + self[0..rows[1]]
+				text = [] if (row < rows[0]) && (row > rows[1])
+				text = self[row,1] if (row == rows[1])
+			end
+			return(["No match",row,col,0]) if text.length == 0
+			offset = row
+		else
+			offset = row
+			text = self[row..-1] + self[0..row]
+		end
+
+		# is it a regexp
+		if token.match(/^\/.*\/$/) != nil
+			token = string2regexp(token)
+			return(["Cancelled",row,col,0]) if token.nil?
+		end
+
+		# First line
+		if a = text[0].search_string(token,dir,col+1)
+			return(["Found match",offset,a[0],a[1]])
+		end
+
+		# Rest of the lines
+		text = text[1..-1]
+		offset += 1
+		text.each_index{|k|
+			if a = text[k].search_string(token,dir)
+				return(["Found match", (k+offset)%self.length, a[0], a[1]])
+			end
+		}
+
+		return(["No match",row,col,0])
+
+	end
+
 
 end
 
@@ -718,15 +740,17 @@ class FileBuffer
 	# -----------------------------------------------
 
 	# sort row & mark_row
-	def ordered_mark_rows
-		if @row < @mark_row
-			row = @mark_row
-			mark_row = @row
-		else
-			row = @row
-			mark_row = @mark_row
+	def ordered_marks
+		mark_row,row,mark_col,col = @mark_row,@row,@mark_col,@col
+		if @row == @mark_row
+			if @col < @mark_col
+				mark_col,col = @col, @mark_col
+			end
+		elsif @row < @mark_row
+			mark_row,row = @row,@mark_row
+			mark_col,col = @col,@mark_col
 		end
-		return mark_row,row
+		return mark_row,row, mark_col, col
 	end
 
 	# Delete a character.
@@ -741,7 +765,7 @@ class FileBuffer
 		return if @multimarkmode
 		if @marked
 			return if backspace==1 && @col==0
-			mark_row,row = ordered_mark_rows
+			mark_row,row = ordered_marks()
 			if @cursormode == :col
 				c = (mark_row==row)?(0):(@col-backspace)
 				@text.column_delete(mark_row,row,c)
@@ -814,7 +838,7 @@ class FileBuffer
 			@text.insertchar(@row,@col,c,@insertmode)
 		else
 
-			mark_row,row = ordered_mark_rows
+			mark_row,row = ordered_marks()
 
 			# Construct list of cursor positions, depending on mark mode.
 			if @cursormode == :multi
@@ -944,7 +968,7 @@ class FileBuffer
 
 		# set start & end rows
 		if @marked
-			mark_row, row = ordered_mark_rows
+			mark_row, row = ordered_marks()
 		else
 			mark_row = @row
 			row = @row
@@ -1175,6 +1199,7 @@ class FileBuffer
 	# search
 	#
 	def search(mode=:ask)
+
 		if mode == :ask
 			# get search string from user
 			token = @window.ask("Search:",$histories.search)
@@ -1186,51 +1211,18 @@ class FileBuffer
 			@window.write_message("Cancelled")
 			return
 		end
-		# is it a regexp
-		if token.match(/^\/.*\/$/) != nil
-			token = string2regexp(token)
-			return if token.nil?
-		end
-		nlines = @text.length
-		row = @row
-		if mode == :forward
-			# find first match from this line down
-			# start with current line
-			idx = nil
-			idx = @text[row].index(token,@col+1) if @text[row].kind_of?(String)
-			while(idx==nil)
-				row = (row+1).modulo(nlines)  # next line
-				idx = nil
-				idx = @text[row].index(token) if @text[row].kind_of?(String)
-				if (row == @row) && (idx==nil)  # stop if we wrap back around
-					@window.write_message("No matches")
-					return
-				end
-			end
-		else
-			if @col > 0 && @text[row].kind_of?(String)
-				idx = @text[row].rindex(token,@col-1)
-			else
-				idx = nil
-			end
-			while(idx==nil)
-				row = (row-1)
-				if row < 0 then row = nlines-1 end
-				idx = nil
-				idx = @text[row].rindex(token) if @text[row].kind_of?(String)
-				if (row == @row) && (idx==nil)
-					@window.write_message("No matches")
-					return
-				end
-			end
-		end
-		@window.write_message("Found match")
+
+		status, row, col = @text.next_match(@row,@col,token,:dir=>mode)
+
+		@window.write_message(status)
 		@row = row
-		@col = idx
+		@col = col
+
 		# recenter screen, when we have gone off page
 		if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
 			center_screen(@row)
 		end
+
 	end
 
 
@@ -1248,11 +1240,6 @@ class FileBuffer
 			@window.write_message("Cancelled")
 			return
 		end
-		# Is it a regexp?
-		if token.match(/^\/.*\/$/) != nil
-			token = string2regexp(token)
-			return if token.nil?
-		end
 
 		# Get the replace string from the user.
 		replacement = @window.ask("Replace:",$histories.replace,:return_empty=>true)
@@ -1265,31 +1252,46 @@ class FileBuffer
 
 		# Start at current position.
 		if @marked
-			row,sr = @mark_row,@row
-			col,sc = @mark_col,@col
+			rows = [@mark_row,@row]
+			@row = @mark_row
 			@marked = false
-			if row == sr
-				search_and_replace_single_line(token,replacement,row,col,sc)
-				return
-			end
 		else
-			row = @row
-			col = @col
-			sr = @row
-			sc = @col
+			rows = [@row,(@row-1)%@text.length]
 		end
+
 		loop do
-			nlines = @text.length
-			a = search_and_replace_single_line(token,replacement,row,col)
-			break if a==-1
-			row = (row+1).modulo(nlines)
-			if row == sr
-				# When we return to the original line, do the start of the
-				# line (which we missed the first time around).
-				search_and_replace_single_line(token,replacement,row,col,sc)
-				break
+
+			params = {:rows=>rows}
+			status, @row, @col, len = @text.next_match(@row,@col,token,params)
+			break if status != "Found match"
+
+			# Recenter screen, when we have gone off page
+			if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
+				center_screen(@row)
 			end
-			col = 0
+
+			# Highlight the match, and ask for confirmation.
+			if @yes_to_all
+				yn = 'yes'
+			else
+				dump_to_screen(true)
+				highlight(@row,@col,@col+len-1)
+				yn = @window.ask_yesno("Replace this occurance?")
+				if yn == "all"
+					yn = 'yes'
+					@yes_to_all = true
+				end
+			end
+
+			# Do the replacement.
+			if yn == "yes"
+				@text[@row] = @text[@row][0,@col] + @text[@row][@col..-1].sub(token,replacement)
+				@col += replacement.length
+			elsif yn == "cancel"
+				break
+			else
+				@col += 1
+			end
 		end
 	ensure
 		@row = row0
@@ -1299,70 +1301,6 @@ class FileBuffer
 		dump_to_screen(true)
 		@window.write_message("Done.")
 	end
-
-
-
-	# Execute a search and replace on a single line.
-	def search_and_replace_single_line(token,replacement,row,col,endcol=nil)
-
-		# Watch out for folded lines.
-		return if @text[row].kind_of?(Array)
-
-		# Loop over occurances in this line.
-		idx = @text[row].index(token,col)
-		while(idx!=nil)
-
-			# Let user optionally specify the end of the line.
-			return if endcol!=nil && idx >= endcol
-
-			# Get the matching string (since we might be looking for a regexp).
-			str = @text[row][idx..-1].scan(token)[0]
-			str = str.join if str.is_a?(Array)
-
-			# Recenter sreen, when we have gone off page
-			@row = row
-			@col = idx
-			if ((@row - @linefeed) > (@window.rows - 1)) || ((@row - @linefeed) < (0))
-				center_screen(@row)
-			end
-
-			# Highlight the match, and ask for confirmation.
-			dump_to_screen(true)
-			highlight(row,idx,idx+str.length-1)
-			if @yes_to_all
-				yn = 'yes'
-			else
-				yn = @window.ask_yesno("Replace this occurance?")
-				if yn == "all"
-					yn = 'yes'
-					@yes_to_all = true
-				end
-			end
-
-			# Do the replacement.
-			l = str.length
-			if yn == "yes"
-				temp = @text[row].dup
-				if token.is_a?(Regexp)
-					@text[row] = temp[0,idx]+temp[idx..-1].sub(token,replacement)
-				else
-					@text[row] = temp[0,idx]+replacement+temp[(idx+l)..-1]
-				end
-				col = idx+replacement.length
-			elsif yn == "cancel"
-				return -1
-			else
-				col = idx+replacement.length
-			end
-
-			if col > @text[row].length
-				break
-			end
-			idx = @text[row].index(token,col)
-		end
-	end
-
-
 
 
 
@@ -1439,7 +1377,9 @@ class FileBuffer
 	end
 
 	def copy(cut=0)
+
 		return if @cursormode == :multi
+
 		# if this is continuation of a line by line copy
 		# then we add to the copy buffer
 		if @marked
@@ -1459,79 +1399,70 @@ class FileBuffer
 			@col = @text[@row].length
 		end
 
-		# rectify row, mark_row order
-		if @row == @mark_row
-			if @col < @mark_col
-				@mark_col,@col = @col, @mark_col
-			end
-		elsif @row < @mark_row
-			@mark_row,@row = @row,@mark_row
-			@mark_col,@col = @col,@mark_col
-		end
+		@mark_row,@row,@mark_col,@col = ordered_marks()
 
-
-
-		#
-		#	add to copy buffer
-		#
 		if @mark_row == @row
-
-			# single line cut/copy
-
-			line = @text[@row] # the line of interest
-
-			if line.kind_of?(Array)  # folded text
-				$copy_buffer.text += [line] + ['']
-				if cut == 1
-					@text[@row] = ''
-					@text.mergerows(@row,@row+1)
-				end
-			else  # regular text
-				@text[@row] = line[0,@mark_col] if cut == 1
-				if @col < line.length
-					@text[@mark_row] += line[@col+1..-1] if cut == 1
-					$copy_buffer.text += [line[@mark_col..@col]]
-				else
-					# include line ending in cut/copy
-					$copy_buffer.text += [line[@mark_col..@col]] + ['']
-					@text.mergerows(@row,@row+1) if cut == 1
-				end
-			end
-
+			single_line_copy(cut)
 		else
-
-			# multi-line cut/copy
-
-			firstline = @text[@mark_row]
-			if firstline.kind_of?(Array)
-				$copy_buffer.text += [firstline]
-				@text[@mark_row] = '' if cut == 1
-			else
-				$copy_buffer.text += [firstline[@mark_col..-1]]
-				@text[@mark_row] = firstline[0,@mark_col] if cut == 1
-			end
-			$copy_buffer.text += @text[@mark_row+1..@row-1]
-			lastline = @text[@row]
-			if lastline.kind_of?(Array)
-				$copy_buffer.text += [lastline]
-				@text[@mark_row] += '' if cut == 1
-			else
-				$copy_buffer.text += [lastline[0..@col]]
-				tail = lastline[@col+1..-1]
-				@text[@mark_row] += tail if cut == 1 && tail != nil
-			end
-			@text.delrows(@mark_row+1,@row) if cut == 1
-
+			multi_line_copy(cut)
 		end
 
 		# position cursor
 		if cut == 1
-			@row = @mark_row
-			@col = @mark_col
+			@row,@col = @mark_row,@mark_col
 		else
-			@row = @mark_row + 1
-			@col = 0
+			@row,@col = @mark_row + 1, 0
 		end
+
+	end
+
+
+	def single_line_copy(cut)
+
+		line = @text[@row] # the line of interest
+
+		if line.kind_of?(Array)  # folded text
+			$copy_buffer.text += [line] + ['']
+			if cut == 1
+				@text[@row] = ''
+				@text.mergerows(@row,@row+1)
+			end
+		else  # regular text
+			@text[@row] = line[0,@mark_col] if cut == 1
+			if @col < line.length
+				@text[@mark_row] += line[@col+1..-1] if cut == 1
+				$copy_buffer.text += [line[@mark_col..@col]]
+			else
+				# include line ending in cut/copy
+				$copy_buffer.text += [line[@mark_col..@col]] + ['']
+				@text.mergerows(@row,@row+1) if cut == 1
+			end
+		end
+
+	end
+
+
+	def multi_line_copy(cut)
+
+		firstline = @text[@mark_row]
+		if firstline.kind_of?(Array)
+			$copy_buffer.text += [firstline]
+			@text[@mark_row] = '' if cut == 1
+		else
+			$copy_buffer.text += [firstline[@mark_col..-1]]
+			@text[@mark_row] = firstline[0,@mark_col] if cut == 1
+		end
+		$copy_buffer.text += @text[@mark_row+1..@row-1]
+		lastline = @text[@row]
+		if lastline.kind_of?(Array)
+			$copy_buffer.text += [lastline]
+			@text[@mark_row] += '' if cut == 1
+		else
+			$copy_buffer.text += [lastline[0..@col]]
+			tail = lastline[@col+1..-1]
+			@text[@mark_row] += tail if cut == 1 && tail != nil
+		end
+		@text.delrows(@mark_row+1,@row) if cut == 1
 
 	end
 
@@ -1547,54 +1478,12 @@ class FileBuffer
 
 		return if @text[@row].kind_of?(Array)
 		return if $copy_buffer.text.empty?
-
-		if $copy_buffer.text.length > 1  # multi-line paste
-
-			# text up to cursor
-			text = @text[0,@row]
-			if @col > 0
-				text += [@text[@row][0,@col]]
-			else
-				text += ['']
-			end
-
-			# inserted text
-			firstline = $copy_buffer.text[0]
-			if firstline.kind_of?(Array)
-				if text[-1] == ''
-					text[-1] = firstline
-				else
-					text += [firstline]
-				end
-			else
-				text[-1] += firstline
-			end
-			text += $copy_buffer.text[1..-2] if $copy_buffer.text.length > 2
-			lastline = $copy_buffer.text[-1]
-			text += [lastline]
-
-			# text from cursor on
-			if @text[@row].kind_of?(Array)
-				text[-1] =  @text[@row]
-			else
-				text[-1] += @text[@row][@col..-1]
-			end
-
-			# Copy new text to @text, but do so in a way
-			# which keeps the pointer the same. This is in case
-			# we are editing the file in multiple windows.
-			@text.slice!(0,@row+1)
-			text.reverse.each{|line|
-				@text.unshift(line)
-			}
-
-		else  # single line paste
-			if $copy_buffer.text[0].kind_of?(String)
-				@text[@row] = @text[@row][0,@col] + $copy_buffer.text[0] + @text[@row][@col..-1]
-			else
-				@text.insertstr(@row,$copy_buffer.text)
-			end
-		end
+		copy_string = $copy_buffer.text.join("\n")
+		text = @text[@row][0,@col] + copy_string + @text[@row][@col..-1]
+		@text.delete_at(@row)
+		text.split("\n",-1).reverse.each{|line|
+			@text.insert(@row,line)
+		}
 
 		@row += $copy_buffer.text.length - 1
 		@col += $copy_buffer.text[-1].length
@@ -1689,6 +1578,77 @@ class FileBuffer
 	end
 
 
+	def get_buffer_marks
+		buffer_marks = {}
+		return buffer_marks unless @marked
+		mark_row,row = @mark_row,@row
+		mark_row,row = row,mark_row if mark_row > row
+		if @cursormode == :col && mark_row != row
+			for j in mark_row..row
+				buffer_marks[j] = [[@col,@col]] unless j==@row
+			end
+		elsif @cursormode == :loc && mark_row != row
+			n =  @text[@row][@col..-1].length
+			for j in mark_row..row
+				m = @text[j].length - n
+				buffer_marks[j] = [[m,m]] unless j==@row
+			end
+		elsif @cursormode == :row || ((@cursormode!=:row)&&(mark_row==row))
+			# Start with 'internal' rows (not first nor last.
+			# Easy: do the whole row.
+			for j in (mark_row+1)..(row-1)
+				buffer_marks[j] = [[0,@text[j].length]]
+			end
+			if @row > @mark_row
+				buffer_marks[@mark_row] = [[@mark_col,@text[@mark_row].length]]
+				buffer_marks[@row] = [[0,@col-1]] unless @col == 0
+			elsif @row == @mark_row
+				if @col > @mark_col
+					buffer_marks[@row] = [[@mark_col,@col-1]]
+				elsif @col < @mark_col
+					buffer_marks[@row] = [[@col+1,@mark_col]]
+				end
+			else
+				buffer_marks[@mark_row] = [[0,@mark_col]]
+				buffer_marks[@row] = [[@col+1,@text[@row].length]] unless @col==@text[@row].length
+			end
+		else  # multicursor mode
+			mark_list.each{|r,v|
+				v.each{|c|
+					if buffer_marks[r] == nil
+						buffer_marks[r] = [[c,c]] unless r==@row && c==@col
+					else
+						buffer_marks[r] << [c,c] unless r==@row && c==@col
+					end
+				}
+			}
+		end
+		return(buffer_marks)
+	end
+
+
+	def write_line(text,r)
+		line = text[r]
+		return if line.nil?
+		if line.kind_of?(String)
+			line = line.bytes.to_a.map{|b|[b,126].min.chr}.join if @enforce_ascii
+			if @syntax_color
+				aline = $syntax_colors.syntax_color(line,@filetype,@tabchar)
+			else
+				aline = line + $color[:normal]
+			end
+			aline = tabs2spaces(aline)
+		else
+			bline = tabs2spaces(line[0])
+			descr = "[[" + line.length.to_s + " lines: "
+			tail = "]]"
+			aline = $color[:hiddentext] + descr + \
+				bline[0,(@window.cols-descr.length-tail.length).floor] + \
+				tail + $color[:normal]
+		end
+		@window.write_line(r,@colfeed,aline)
+	end
+
 	#
 	# just dump the buffer text to the screen
 	#
@@ -1725,51 +1685,7 @@ class FileBuffer
 		# Populate buffer_marks = {} with a list of start
 		# and end points for highlighting, so that we
 		# will know what needs to be updated.
-		buffer_marks = {}
-		if @marked
-			mark_row,row = @mark_row,@row
-			mark_row,row = row,mark_row if mark_row > row
-			if @cursormode == :col && mark_row != row
-				for j in mark_row..row
-					buffer_marks[j] = [[@col,@col]] unless j==@row
-				end
-			elsif @cursormode == :loc && mark_row != row
-				n =  @text[@row][@col..-1].length
-				for j in mark_row..row
-					m = @text[j].length - n
-					buffer_marks[j] = [[m,m]] unless j==@row
-				end
-			elsif @cursormode == :row || ((@cursormode!=:row)&&(mark_row==row))
-				# Start with 'internal' rows (not first nor last.
-				# Easy: do the whole row.
-				for j in (mark_row+1)..(row-1)
-					buffer_marks[j] = [[0,@text[j].length]]
-				end
-				if @row > @mark_row
-					buffer_marks[@mark_row] = [[@mark_col,@text[@mark_row].length]]
-					buffer_marks[@row] = [[0,@col-1]] unless @col == 0
-				elsif @row == @mark_row
-					if @col > @mark_col
-						buffer_marks[@row] = [[@mark_col,@col-1]]
-					elsif @col < @mark_col
-						buffer_marks[@row] = [[@col+1,@mark_col]]
-					end
-				else
-					buffer_marks[@mark_row] = [[0,@mark_col]]
-					buffer_marks[@row] = [[@col+1,@text[@row].length]] unless @col==@text[@row].length
-				end
-			else  # multicursor mode
-				mark_list.each{|r,v|
-					v.each{|c|
-						if buffer_marks[r] == nil
-							buffer_marks[r] = [[c,c]] unless r==@row && c==@col
-						else
-							buffer_marks[r] << [c,c] unless r==@row && c==@col
-						end
-					}
-				}
-			end
-		end
+		buffer_marks = get_buffer_marks()
 		if buffer_marks != @buffer_marks
 			buffer_marks.merge(@buffer_marks).each_key{|k|
 				if buffer_marks[k] != @buffer_marks[k]
@@ -1782,25 +1698,7 @@ class FileBuffer
 
 		# write out text
 		for r in rows_to_update
-			line = text[r]
-			next if line == nil
-			if line.kind_of?(String)
-				line = line.bytes.to_a.map{|b|[b,126].min.chr}.join if @enforce_ascii
-				if @syntax_color
-					aline = $syntax_colors.syntax_color(line,@filetype,@tabchar)
-				else
-					aline = line + $color[:normal]
-				end
-				aline = tabs2spaces(aline)
-			else
-				bline = tabs2spaces(line[0])
-				descr = "[[" + line.length.to_s + " lines: "
-				tail = "]]"
-				aline = $color[:hiddentext] + descr + \
-					bline[0,(@window.cols-descr.length-tail.length).floor] + \
-					tail + $color[:normal]
-			end
-			@window.write_line(r,@colfeed,aline)
+			write_line(text,r)
 		end
 
 		# now highlight text
@@ -1936,7 +1834,7 @@ class FileBuffer
 	def hide_lines
 		return if !@marked  # need multiple lines for folding
 		return if @cursormode == :multi
-		mark_row,row = ordered_mark_rows
+		mark_row,row = ordered_marks()
 		oldrow = mark_row  # so we can reposition the cursor
 		@text.hide_lines_at(mark_row,row)
 		@marked = false

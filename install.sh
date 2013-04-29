@@ -14,7 +14,7 @@ config_dir=$HOME/.jedi
 doc_dir=$HOME/local/share/
 
 # Construct single file
-bash make_jedi.sh > jedi.rb
+ruby make_jedi.rb
 
 # Copy files
 mkdir -p $exec_dir

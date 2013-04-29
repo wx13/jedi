@@ -485,33 +485,16 @@ class Screen
 					# chop off a character, and search for a new match
 					token.chop!
 					ih = hist.rindex{|x|x.match(/#{token}/)}
-					if ih != nil
-						mline = hist[ih]
-					end
+					mline = hist[ih] if ih
 				when :ctrl_r
 					# get next match in reverse list
-					if ih == 0
-						next
-					end
+					next if ih == 0
 					ih = hist[0..(ih-1)].rindex{|x|x.match(/#{token}/)}
 				when :ctrl_c, :ctrl_g
 					# 0 return value = cancelled search
 					return 0
-				when :enter,:ctrl_m,:ctrl_j
-					# non-zero return value is index of the match.
-					# We've been searching backwards, so must invert index.
-					if hist.length > 0
-						return hist.length - ih
-					else
-						return 0
-					end
-				when :up, :down, :left, :right
-					# up/down treated same as enter
-					if hist.length > 0
-						return hist.length - ih
-					else
-						return 0
-					end
+				when :enter,:ctrl_m,:ctrl_j, :up, :down, :left, :right
+					return [0,hist.length-ih].max
 				else
 					# regular character
 					token += c if c.is_a?(String)
