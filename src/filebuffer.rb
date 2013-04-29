@@ -217,10 +217,12 @@ class TextBuffer < Array
 			self.delrow(row0)
 		end
 		# Strip out multiple spaces or tabs
-		text.gsub!(/\t/,' ')
-		text.gsub!(/   */,'  ')
-		text.gsub!(/^[\s]*/,'')
-		text = indent + text
+		if !linewrap
+			text.gsub!(/\t/,' ')
+			text.gsub!(/   */,'  ')
+			text.gsub!(/^[\s]*/,'')
+			text = indent + text
+		end
 
 		# loop through words and check length
 		c = 0
@@ -231,7 +233,10 @@ class TextBuffer < Array
 			# if we are past the edge, then put it in the next row
 			# Otherwise, keep going.
 			if c2 >= (width-1)
-				c = c2+1 if c==0  # careful about long words
+				if c==0
+					c = c2+1
+					next
+				end
 				self.insertrow(r,text[0,c])
 				text = text[c..-1]
 				text = "" if text==nil
