@@ -52,7 +52,7 @@ class SyntaxColors
 		rules.each{|sc,ec|
 			if cline.index(sc)==0
 				a,b,c = cline.partition(sc)
-				unless c.match(ec)
+				unless c.index(ec)
 					bline += b
 					cline = c
 					next
