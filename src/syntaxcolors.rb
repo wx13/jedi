@@ -7,7 +7,7 @@
 
 class SyntaxColors
 
-	attr_accessor :lc, :bc, :regex
+	attr_accessor :comments, :strings, :regex
 
 	def initialize
 

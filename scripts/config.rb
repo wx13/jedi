@@ -74,6 +74,10 @@ $color[:message] = :yellow    # messages at the bottom of the screen
 $color[:status] = :underline  # status bar at the top of the screen
 $color[:regex] = :normal
 
+# Define a new file type for coloring
+$filetypes[/\.foobar$/] = :foobar
+$syntax_colors.comments[:foobar] = {'//'=>/$/, '/*'=>'*/'}
+
 #-----------------------------------------------------------
 
 
