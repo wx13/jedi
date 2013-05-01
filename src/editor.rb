@@ -90,6 +90,7 @@ class Editor
 			/\.pl$/ => :perl,
 			/\.tex$/ => :latex,
 			/\.html?$/ => :html,
+			/\.java$/ => :java,
 		}
 		return filetypes
 	end
