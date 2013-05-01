@@ -390,6 +390,8 @@ class FileAccessor
 			text = textb
 		end
 
+		update_indentation(text)
+
 		# Dump the text to the file.
 		begin
 			text = text.join(@eol)
@@ -1633,7 +1635,7 @@ class FileBuffer
 		if line.kind_of?(String)
 			line = line.bytes.to_a.map{|b|[b,126].min.chr}.join if @enforce_ascii
 			if @syntax_color
-				aline = $syntax_colors.syntax_color(line,@filetype,@tabchar)
+				aline = $syntax_colors.syntax_color(line,@filetype,@indentchar)
 			else
 				aline = line + $color[:normal]
 			end
