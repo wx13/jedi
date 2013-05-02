@@ -257,7 +257,7 @@ class TextBuffer < Array
 		row = row % (self.length)
 		col = [col,self[row].length-1].min
 
-		# If we ar limiting the rows to search, then create a text
+		# If we are limiting the rows to search, then create a text
 		# array containing just the desired lines.
 		if rows
 			if rows[0] < rows[1]
@@ -286,11 +286,13 @@ class TextBuffer < Array
 		end
 
 		# Rest of the lines
+		text.reverse! if dir != :forward
 		text = text[1..-1]
-		offset += 1
+		offset += (dir==:forward)?(1):(-1)
 		text.each_index{|k|
 			if a = text[k].search_string(token,dir)
-				return(["Found match", (k+offset)%self.length, a[0], a[1]])
+				r = (dir==:forward)?(k+offset):(offset-k)
+				return(["Found match", r%self.length, a[0], a[1]])
 			end
 		}
 
