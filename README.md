@@ -73,7 +73,7 @@ The code is split into multiple files to simplify development.  The
 install script creates a single file script from those files.  To
 create the single file script without installing, run
 
-    bash make_jedi.sh > jedi.rb
+    ruby make_jedi.rb
 
 The resulting file is entirely self contained, and may be executed
 anywhere ruby is installed.

@@ -1,3 +1,7 @@
+#---------------------------------------------------------------------
+# Runs the editor for testing purposes.
+#---------------------------------------------------------------------
+
 require './src/editor.rb'
 require './src/antsy.rb'
 require './src/filebuffer.rb'

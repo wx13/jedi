@@ -240,18 +240,25 @@ class TextBuffer < Array
 
 	end
 
+	# Blank for now, which means we don't search
+	# folded lines.  Ultimately, this should call next_match
+	# in its lines.
 	def search_string(token,pos=0)
 		return nil
 	end
 
 
+	# Search for the next occurance.
 	def next_match(row,col,token,params)
 		dir = (params[:dir])?(params[:dir]):(:forward)
 		rows = params[:rows]
 
+		# Handle bad cursor positions.
 		row = row % (self.length)
 		col = [col,self[row].length-1].min
 
+		# If we ar limiting the rows to search, then create a text
+		# array containing just the desired lines.
 		if rows
 			if rows[0] < rows[1]
 				text = self[row..rows[1]]

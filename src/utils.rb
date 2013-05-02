@@ -25,11 +25,14 @@ class String
 		self << str
 	end
 
+	# Swap out leading occurances of one string for another.
 	def swap_indent_string(str1,str2)
 		ni, after = self.leading_occurances(str1)
 		self.replace(str2*ni + after)
 	end
 
+	# Find the next match within a string.
+	# Handle both forward and backward searches.
 	def search_string(token,dir=:forward,pos=nil)
 		return nil if pos && pos >= self.length
 		if dir == :forward
