@@ -84,7 +84,8 @@ class Terminal
 			"\e[H"  => :home,
 			"\eOH"  => :home2,
 			"\e[F"  => :end,
-			"\eOF"  => :end2,
+			"\eOF"  => :end,
+			"\e[4"   => :end,
 
 			"\e[2D" => :shift_left,
 			"\e[2C" => :shift_right,
@@ -139,7 +140,7 @@ class Terminal
 			2.times{c += STDIN.getc.chr}
 		end
 		# Don't accept raw escape characters.
-		if c == "\e" || c == "\e\e" || c == "\e\e\e" || c == "\e\e\e\e"
+		if ["\e","\e\e","\e\e\e","\e\e\e\e","\e[","\e[\e]"].index(c)
 			return nil
 		end
 		# Return the user-friendly key name, if possible.
