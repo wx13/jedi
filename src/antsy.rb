@@ -452,6 +452,7 @@ class Screen
 
 	# Write a message at the bottom (centered, partial line).
 	def write_message(message)
+		message = message.inspect unless message.is_a?(String)
 		@terminal.save_cursor
 		xpos = (@cols - message.length)/2
 		clear_line(@rows)
