@@ -405,7 +405,10 @@ Then run
 	jedi -s my_extension.rb ...
 
 All we did was rewrite the suspend method in a separate file.  This new
-method overwrites the old one on start-up.
+method overwrites the old one on start-up.  An alternative to using the
+'-s' flag, is to place the extension file in the src directory.  Then
+running 'run_jedi.rb' or 'make_jedi.rb' will automatically include this
+files.  One caveat is that the files are loaded in alphabeticall order.
 
 
 
@@ -417,7 +420,7 @@ files are combined by a simple script upon installation.  This way the
 code can be carried around as a single file, for ultimate portability.
 The files are:
 
-- jedi.rb
+- run_jedi.rb (in the root directory)
 	+ Creates an instance of the Editor class and runs it.
 - editor.rb
 	+ Creates instances of Screen, BuffersList, KeyMap, etc, and runs

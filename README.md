@@ -76,7 +76,10 @@ create the single file script without installing, run
     ruby make_jedi.rb
 
 The resulting file is entirely self contained, and may be executed
-anywhere ruby is installed.
+anywhere ruby is installed.  To include extension scripts, you can use
+the flags mentioned in the "Manual Install" section; or just place the
+scripts in the src directory before running the make_jedi command.  The
+only caveat is that files are included in alphabetical order.
 
 
 A note about portability

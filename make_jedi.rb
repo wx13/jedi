@@ -4,15 +4,15 @@
 # them into the file.  Then stick in the code that runs the editor.
 #---------------------------------------------------------------------
 
-File.open('jedi.rb','w'){|file|
-	File.read('run_jedi.rb').split("\n").grep(/^require/).each{|line|
-		line.strip!
-		line.sub!(/^require '/,'')
-		line.sub!(/'$/,'')
-		file.puts File.read(line)
-		file.puts "\n"*12
+File.open('jedi.rb','w'){|jedi_file|
+
+	# Require all the files in 'src'.
+	Dir[File.dirname(__FILE__) + '/src/*.rb'].each{|src_file|
+		jedi_file.puts File.read(src_file)
+		jedi_file.puts "\n"*10
 	}
-	file.puts <<-EOF
+
+	jedi_file.puts <<-EOF
 
 #---------------------------------------------------------------------
 # Run the editor
@@ -24,3 +24,4 @@ File.open('jedi.rb','w'){|file|
 	EOF
 
 }
+

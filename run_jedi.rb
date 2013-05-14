@@ -2,20 +2,12 @@
 # Runs the editor for testing purposes.
 #---------------------------------------------------------------------
 
-require './src/editor.rb'
-require './src/antsy.rb'
-require './src/filebuffer.rb'
-require './src/keymap.rb'
-require './src/histories.rb'
-require './src/syntaxcolors.rb'
-require './src/bufferslist.rb'
-require './src/bufferhistory.rb'
-require './src/compatibility.rb'
-require './src/utils.rb'
+# Require all the files in 'src'.
+Dir[File.dirname(__FILE__) + '/src/*.rb'].each{|file|
+	require file
+}
 
-#---------------------------------------------------------------------
 # Run the editor
-#---------------------------------------------------------------------
 $editor = Editor.new
 $editor.go
 
