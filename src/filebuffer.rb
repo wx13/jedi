@@ -634,7 +634,7 @@ class FileBuffer
 			yn = @window.ask_yesno("save to different file:"+ans+" ? [y/n]")
 			if yn == "yes"
 				@file.name = ans
-				set_filetype(@file.name)
+				@filetype = get_filetype(@file.name)
 			else
 				@window.write_message("aborted")
 				return
