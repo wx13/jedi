@@ -1,3 +1,45 @@
+0.4.3
+-----
+
+Bug fixes:
+
+  + Update nmuloc mode to behave like column mode for single-line stuff.
+  + Fix two mistakes in recently introduced compatiblity code.
+  + Better cursor position in some situations
+  + Handle long words in justify/linewrap.
+    - If word was longer than the wrap length, weird things happened.
+  + Made syntax color rules accessible outside syntax colors class, so
+    things can be set from a config script.
+  + Use index instead of match (in syntax colors) to avoid regex
+    weirdness.
+  + Run update_indentation on save.
+  + write_message can now handle non-strings.
+  + Better handling of unknown keypresses
+
+Clean up:
+
+  + Created FileAccessor class
+    - Handles interactions with the file.
+    - Lightens the load of the FileBuffer class
+  + Created utils.rb to handle some basic string/array stuff. Lightens
+    the load on FileBuffer class.
+  + Simplified some complex methods:
+    - copy/paste
+    - search/replace
+  + Code organization
+    - moved jedi to run_jedi in root dir
+    - automatically include all files in src directory
+
+Features:
+
+  + Better cursor position for undo/redo
+    - Move cursor to changed line before making the change.
+  + Indentations string swapping using object ids
+    - For indentation facade, swap indentation strings throughout history,
+      so that undo/redo is seamless
+  + Shorten saved history length for large files, for speedup.
+
+
 0.4.2
 -----
 
