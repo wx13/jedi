@@ -39,9 +39,13 @@ class Histories
 			"start_folding" => @start_folding.last(1000),
 			"end_folding" => @end_folding.last(1000)
 		}
-		File.open(@file,"w"){|file|
-			YAML.dump(hists,file)
-		}
+		begin
+			File.open(@file,"w"){|file|
+				YAML.dump(hists,file)
+			}
+		rescue
+			$screen.write_message("Unable to save histories.")
+		end
 	end
 
 	# Read histories from the file.
