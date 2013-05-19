@@ -35,9 +35,6 @@ class Array
 		self.slice_orig!(*args)
 		self.delete_if{|x|x.nil?}
 	end
-	def count(pattern)
-		self.grep(pattern).length
-	end
 end
 end
 

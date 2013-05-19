@@ -7,19 +7,35 @@
 
 class String
 
-	# Given a two strings, find leading occurances of
-	# the second string in the first, and return:
-	#   - number of occurances
-	#   - string that comes after leading occurances
+	#
+	# Find leading occurances of one string in another.
+	#
+	# INPUT:
+	# self    the string to search.
+	# str     the string to find.
+	#
+	# RETURNS:
+	# num     number of occurances
+	# after   string that follows the leading occurances
+	#
+	# EXAMPLE:
+	# "foo foo foo bar baz".leading_occurances("foo ")
+	# returns: 3, "bar baz"
+	#
 	def leading_occurances(str)
 		pattern = Regexp.escape(str)
-		after = self.split(/^#{pattern}+/).last
-		after = "" if after.nil?
-		num = (self.length - after.length)/(str.length)
+		a,b,c = self.partition(/^(#{pattern})+/)
+		if a.length > 0
+			num = 0
+			after = a
+		else
+			after = c
+			num = (self.length - after.length)/str.length
+		end
 		return num, after
 	end
 
-	# Replace the contents of a string in-place.
+	# Replace the contents of a string in-place (same memory location).
 	def replace(str)
 		self.slice!(0..-1)
 		self << str
@@ -57,4 +73,8 @@ class String
 end
 
 
-
+class Array
+	def count(pattern)
+		self.grep(pattern).length
+	end
+end

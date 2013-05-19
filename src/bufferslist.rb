@@ -84,18 +84,18 @@ class BuffersList
 
 	# Read in all input files into buffers.
 	# One buffer for each file.
-	def initialize(files)
+	def initialize(files=[])
 
 		@pages = []  # big list of buffers (stored per page)
 		@npage = 0   # number of pages
 		@ipage = 0   # current page number
 
 		# For each file on the command line, put text on its own page
-		for filename in files
+		files.each{|filename|
 			next if File.directory?(filename)
 			@pages[@npage] = Page.new([FileBuffer.new(filename)])
 			@npage += 1
-		end
+		}
 		# If no pages exist, then open a blank file.
 		if @npage == 0
 			@pages[@npage] = Page.new([FileBuffer.new("")])
@@ -335,7 +335,7 @@ class BuffersList
 			ibuf = 0
 			page.buffers.each{|buffer|
 				number = [ipage,ibuf].join('.')
-				name = buffer.filename
+				name = buffer.file.name
 				list << [number,name]
 				ibuf += 1
 			}

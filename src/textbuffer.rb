@@ -249,7 +249,7 @@ class TextBuffer < Array
 
 
 	# Search for the next occurance.
-	def next_match(row,col,token,params)
+	def next_match(row,col,token,params={})
 		dir = (params[:dir])?(params[:dir]):(:forward)
 		rows = params[:rows]
 

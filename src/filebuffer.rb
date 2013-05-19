@@ -11,7 +11,7 @@
 class FileBuffer
 
 	attr_accessor \
-		:filename, :text, :editmode, :buffer_history, :extramode, \
+		:file, :text, :editmode, :buffer_history, :extramode, \
 		:cutscore, :window, :sticky_extramode, :row, :col
 
 	def initialize(filename)

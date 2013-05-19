@@ -44,30 +44,43 @@ class SyntaxColors
 
 
 
-	def apply_rules(bline,cline,rules,color)
+	#
+	# Apply syntax color rules to a string.
+	#
+	# INPUT:
+	# prestr        Part of the string that has already been processed.
+	# str           Part that needs processing.
+	# rules         The rules to follow (hash of start and end patterns).
+	# color         Color to apply when rules are matched.
+	#
+	# OUTPUT:
+	# prestr        Part of the string that has been processed.
+	# str           Part that remains to be processed.
+	# flag          True if we found a match.
+	def apply_rules(prestr,str,rules,color)
 
 		flag = false
 		ere = $screen.escape_regexp
 
 		rules.each{|sc,ec|
-			if cline.index(sc)==0
-				a,b,c = cline.partition(sc)
+			if str.index(sc)==0
+				a,b,c = str.partition(sc)
 				unless c.index(ec)
-					bline += b
-					cline = c
+					prestr += b
+					str = c
 					next
 				end
-				bline += $color[color]
-				bline += b
+				prestr += $color[color]
+				prestr += b
 				a,b,c = c.partition(ec)
-				bline += a.gsub(ere,'') + b + $color[:normal]
-				cline = c
+				prestr += a.gsub(ere,'') + b + $color[:normal]
+				str = c
 				flag = true
 				break
 			end
 		}
 
-		return bline, cline, flag
+		return prestr, str, flag
 
 	end
 
