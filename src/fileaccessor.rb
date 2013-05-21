@@ -57,6 +57,7 @@ class FileAccessor
 		end
 		text.gsub!(/\r/,"\n")
 		text = text.split("\n",-1)
+		text = [""] if text.empty?
 		update_indentation(text)
 
 		if @indentstring != @bufferindentstring
