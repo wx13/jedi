@@ -4,14 +4,22 @@
 #   3. create a one-line shell script which tells jedi.rb where
 #      to find the config files and where to place the history file.
 
-# User configuration
-# Set the executable and config directories,
-# and set the executable name (you can call the editor
-# anything you want).
-exec_dir=$HOME/local/bin/
+# Set the default installation prefix here.
+prefix="$HOME/local/"
+
+# Set the default config directory.
+config_dir='$HOME/.jedi'
+
+# Set the name of the excutable here.
 exec_name=jedi
-config_dir=$HOME/.jedi
-doc_dir=$HOME/local/share/
+
+# First item on commandline overrides the default prefix.
+if [ -n "$1" ]
+then
+	prefix="$1"
+fi
+exec_dir=$prefix/bin/
+doc_dir=$prefix/share/
 
 # Construct single file
 ruby make_jedi.rb
@@ -19,7 +27,7 @@ ruby make_jedi.rb
 # Copy files
 mkdir -p $exec_dir
 cp jedi.rb ${exec_dir}/
-mkdir -p ${config_dir}
+eval "mkdir -p ${config_dir}"
 mkdir -p ${doc_dir}/man/man1
 mkdir -p ${doc_dir}/doc/jedi
 cp doc/manual.md ${doc_dir}/doc/jedi/manual.md
