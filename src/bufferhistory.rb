@@ -201,7 +201,7 @@ class BufferHistory
 				end
 				r,c = s[0,2]
 				text = s[2..-1].map{|x|a[x]}
-				b << State.new(text,r,c)
+				b << State.new(TextBuffer.new(text),r,c)
 			}
 
 			# Create the buffer history list.
