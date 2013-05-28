@@ -1,3 +1,20 @@
+0.4.4
+-----
+
+Bug fixes:
+
+  + Reading an empty file should result in [""], not [].
+
+Clean up:
+
+  + Added a bunch of test code.
+  + Moved some stuff around, due to test code structure.
+
+Features:
+
+  + Can use install.sh to install globally as root.
+
+
 0.4.3
 -----
 
