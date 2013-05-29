@@ -857,7 +857,7 @@ class FileBuffer
 			# Do the replacement.
 			if yn == "yes"
 				@text[@row] = @text[@row][0,@col] + @text[@row][@col..-1].sub(token,replacement)
-				@col += replacement.length
+				@col += replacement.length - 1
 			elsif yn == "cancel"
 				break
 			else
