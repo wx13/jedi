@@ -181,6 +181,8 @@ class KeyMap
 			"d" => "@enforce_ascii = false",
 			"B" => "@backups = $backup_prefix",
 			"b" => "@backups = false",
+			"L" => "@horiz_scroll = :line",
+			"l" => "@horiz_scroll = :screen",
 		}
 		@togglelist.default = ""
 

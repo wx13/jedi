@@ -25,6 +25,7 @@ class Editor
 		$linelength = Hash.new(0)        # 0 = terminal width
 		$backups = Hash.new(false)
 		$enforce_ascii = Hash.new(false)
+		$horiz_scroll = Hash.new(:screen)  # :line or :screen
 
 		# Define the key mapping and colors up front, so that they
 		# can be modified by config files and start-up scripts.
@@ -188,6 +189,12 @@ class Editor
 			}
 			opts.on('-e', '--no-edit', 'Start in view mode'){
 				$editmode = Hash.new(:view)
+			}
+			opts.on('-L', '--line-scroll', 'Single line horizontal scroll'){
+				$horiz_scroll = Hash.new(:line)
+			}
+			opts.on('-l', '--screen-scroll', 'Full screen horizontal scroll'){
+				$horiz_scroll = Hash.new(:screen)
 			}
 			opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
 				$linewrap = Hash.new(true)

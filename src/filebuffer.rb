@@ -67,6 +67,7 @@ class FileBuffer
 		@syntax_color = $syntax_color[@filetype]
 		@backups = $backups[@filetype]
 		@enforce_ascii = $enforce_ascii[@filetype]
+		@horiz_scroll = $horiz_scroll[@filetype]
 
 		# undo-redo history
 		@buffer_history = BufferHistory.new(@text,@row,@col)
@@ -1217,7 +1218,11 @@ class FileBuffer
 				bline[0,(@window.cols-descr.length-tail.length).floor] + \
 				tail + $color[:normal]
 		end
-		@window.write_line(r,@colfeed,aline)
+		if @horiz_scroll==:screen || r==@row
+			@window.write_line(r,@colfeed,aline)
+		else
+			@window.write_line(r,0,aline)
+		end
 	end
 
 	#
