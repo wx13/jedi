@@ -36,6 +36,7 @@ class Editor
 		$filetypes = define_filetypes
 		$mouse = false
 		$backup_prefix = '.~'
+		$suspend = true
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
@@ -218,6 +219,12 @@ class Editor
 			}
 			opts.on('-M', '--mouse', 'Enable mouse interaction'){
 				$mouse = true
+			}
+			opts.on('-z', '--disable-suspend', 'Disable suspend'){
+				$suspend = false
+			}
+			opts.on('-Z', '--suspend', 'Enable suspend'){
+				$suspend = true
 			}
 			opts.on('-B', '--backups', 'Enable file backupts'){
 				$backups = Hash.new($backup_prefix)

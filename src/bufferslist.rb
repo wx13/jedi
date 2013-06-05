@@ -113,6 +113,7 @@ class BuffersList
 	end
 
 	def suspend
+		return unless $suspend
 		$screen.suspend
 		update_screen_size
 	end
