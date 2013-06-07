@@ -40,7 +40,7 @@ class FileAccessor
 	# Read file into an array.
 	def read
 
-		return([""]) if @name=="" || !File.exists?(@name)
+		return([""]) if @name=="" || !File.exists?(@name) || File.directory?(@name)
 
 		begin
 			text = File.open(@name,"rb:UTF-8"){|f| f.read}
