@@ -1218,7 +1218,7 @@ class FileBuffer
 				bline[0,(@window.cols-descr.length-tail.length).floor] + \
 				tail + $color[:normal]
 		end
-		if @horiz_scroll==:screen || r==@row
+		if @horiz_scroll==:screen || r==(@row-@linefeed)
 			@window.write_line(r,@colfeed,aline)
 		else
 			@window.write_line(r,0,aline)
