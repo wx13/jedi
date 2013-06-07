@@ -1251,8 +1251,15 @@ class FileBuffer
 		@window.buffer = text.dup
 
 		# if colfeed changed, must update whole screen
-		if @colfeed != @colfeed_old || refresh || @linefeed != @linefeed_old
+		full_screen_update = (@colfeed != @colfeed_old)&&(@horiz_scroll==:screen)
+		full_screen_update ||= refresh
+		full_screen_update ||= @linefeed != @linefeed_old
+		line_update = (@colfeed != @colfeed_old) && (@horiz_scroll==:line)
+		if full_screen_update
 			rows_to_update = Array(0..(text.length-1))
+			@buffer_marks = {}
+		elsif line_update
+			rows_to_update = [@row-@linefeed]
 			@buffer_marks = {}
 		end
 
