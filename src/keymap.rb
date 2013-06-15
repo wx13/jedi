@@ -98,6 +98,7 @@ class KeyMap
 			"I" => "buffer.indentation_real",
 			"x" => "buffer.multimark",
 			"C" => "$screen.set_cursor_color",
+			"t" => "buffer.set_tabchar",
 			:ctrl_n => "$buffers.menu",
 			:up => "buffer.cursor_up",
 			:down => "buffer.cursor_down",

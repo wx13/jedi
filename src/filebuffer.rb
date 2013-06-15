@@ -1523,6 +1523,15 @@ class FileBuffer
 		@window.write_message("Indentation facade disabled")
 	end
 
+	def set_tabchar
+		ans = @window.ask("set the tab character:")
+		if ans.nil? || ans.empty?
+			@window.write_message("Cancelled.")
+		else
+			@tabchar = ans
+			@window.write_message("New indent char: " + @tabchar.inspect)
+		end
+	end
 
 end
 
