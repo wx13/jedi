@@ -10,8 +10,9 @@ Contents
 --------
 
 1. [Getting started](#tutorial)
-	1. [Installation](#install)
-	2. [Basic usage](#usage)
+	1. [Quick Start](#quickstart)
+	2. [Installation](#install)
+	3. [Basic Usage](#usage)
 2. [Configuration](#config)
 3. [Advanced usage](#advanced)
 4. [Hacking the code](#hacking)
@@ -26,36 +27,36 @@ Contents
 
 This section will get you up-and-running quickly.
 
+<a id="quickstart"></a>
+### Quick Start
+
+Grab the `jedi.rb` file from here
+[http://jedi.wx13.com/releases/latest/jedi.rb](http://jedi.wx13.com/releases/latest/jedi.rb)
+and run it:
+
+	ruby jedi.rb
 
 
 <a id="install"></a>
 ### Installation
 
-One the major design goals of the editor is to be completely portable.
-Thus no installation is required.  You can just type
+Grab the source code and run
 
-	ruby editor.rb
+	sh install.sh
 
-(optionally followed by a list of files and/or option flags) to run the editor.
-By default, it will not save any history.  See the README file for
-other installation options.
-
-Typically, you would want to have configuration and history saved
-somewhere. The `-s` flag tells the editor to load and execute a script
-file at start-up, and the `-y` flag tells the editor to store history
-in a file.  A sensible way to structure things is to create a
-directory, say $HOME/.jedi.  Then run
-
-	ruby jedi.rb -s $HOME/.jedi -y $HOME/.jedi/history.yaml
-
-This will run at start-up any file in $HOME/.editor/ with the ".rb"
-extension.  The script `install.sh` will automate this process.
+optionally followed by an installation prefix (default is
+`$HOME/local`)
 
 For development purposes, the code is split into multiple files.  The
-install script calls `make_jedi.sh` which constructs a single file
+install script calls `ruby make_jedi.rb` which constructs a single file
 code.  This is useful if you want to the single file, without doing an
 install.
 
+To uninstall, just remove the following files:
+
+	$prefix/bin/jedi
+	$prefix/share/man/man1/jedi.1
+	$prefix/share/doc/jedi/
 
 
 <a id="usage"></a>

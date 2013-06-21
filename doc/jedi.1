@@ -10,6 +10,8 @@ designed to be portable and hackable.
 
 
 .SH OPTIONS
+For each command-line flag, the equivalent configuration script code
+is shown.
 
 .TP
 .B \-v
@@ -24,66 +26,113 @@ Prints usage information
 Runs the named script file on startup.  All code will be run by the
 ruby interpreter in the scope of the main text editor class.
 
+	run_script(FILE)
+
+.TP
+.B \-P --portable
+Turns on portable mode. Jedi will not search for startup scripts
+or save history in a history file. Options specified after this
+can overwrite these changes.
+
 .TP
 .B \-t --tabsize N
 Sets the tab character display width to N spaces.
+
+	$tabsize = Hash.new(N)
 
 .TP
 .B \-T --tabchar C
 Sets the tab character to C.  Whenever the tab key is entered, the
 character C is inserted into the text buffer.
 
+	$tabchar = Hash.new(C)
+
 .TP
 .B \-a --no-autoindent
 Turn off autoindent.
+
+	$autoindent = Hash.new(false)
 
 .TP
 .B \-A --autoindent
 Turn on autoindent.
 
+	$autoindent = Hash.new(true)
+
 .TP
 .B \-y --save-hist FILE
 Save command/search/etc history in file FILE.
+
+	$histories_file = FILE
 
 .TP
 .B \-e --no-edit
 Start in view/navigation mode.
 
+	$editmode = Hash.new(:view)
+
 .TP
 .B \-E --edit
 Start in edit mode [Default]
+
+	$editmode = Hash.new(:edit)
 
 .TP
 .B \-w --no-linewrap
 Turn off line-wrapping.
 
+	$linewrap = Hash.new(false)
+
 .TP
 .B \-W --linewrap
 Turn on line-wrapping.
+
+	$linewrap = Hash.new(true)
 
 .TP
 .B \-c --no-color
 Turn off syntax coloring.
 
+	$syntax_color = Hash.new(false)
+
 .TP
 .B \-C --color
 Turn on syntax coloring.
+
+	$syntax_color = Hash.new(true)
 
 .TP
 .B \-m --no-mouse
 Turn off mouse interaction. [Default]
 
+	$mouse = false
+
 .TP
 .B \-M --mouse
 Turn on mouse interaction.
+
+	$mouse = true
 
 .TP
 .B \-b --no-backups
 Disable backup file. [Default]
 
+	$backups = Hash.new(false)
+
 .TP
 .B \-B --backups
 Enable backup file.
+
+	$backup_prefix = '.~'
+
+	$backups = Hash.new($backup_prefix)
+
+.TP
+.B \-z --disable-suspend
+Ignore the suspend keypress. Useful when running in a non-unix
+enviroment, which has no job control.
+
+	$suspend = false
 
 .TP
 .B [files]
