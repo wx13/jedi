@@ -101,6 +101,9 @@ $cursormode[:markdown] = :row
 # Turn on backups
 $backups = Hash.new('.~')
 
+# Turn on histories
+$histories_file = ENV['HOME'] + "/.jedi/history.yaml"
+
 #-----------------------------------------------------------
 
 #-----------------------------------------------------------

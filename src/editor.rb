@@ -37,11 +37,17 @@ class Editor
 		$mouse = false
 		$backup_prefix = '.~'
 		$suspend = true
+		$search_for_scripts = true
+		$startup_script = nil
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
 		# modify the screen/buffer/etc classes on start-up.
 		parse_options
+
+		# Run startup scripts.
+		search_for_startup_scripts if $search_for_scripts
+		run_script($startup_script) if $startup_script
 
 		# Initialize the interactive screen environment, and set the color
 		# global to point to the one that screen defines.  This will keep
@@ -112,6 +118,24 @@ class Editor
 	end
 
 
+	# Search for startup scripts, starting in the root directory,
+	# and moving to the current directory.
+	def search_for_startup_scripts
+		require 'pathname'
+		homedir = Pathname.new(ENV['HOME'])
+		cwd = Pathname.getwd
+		relpath = cwd.relative_path_from(homedir)
+		run_script((homedir+".jedi").to_s)
+		if relpath.to_s[0,2] == '..'
+			relpath = cwd
+			homedir = Pathname.new('')
+		end
+		relpath.descend{|x|
+			run_script((homedir+x+".jedi").to_s)
+		}
+	end
+
+
 	# This is a function which runs an arbitrary ruby script.
 	# It can read from a file or from user input.
 	def run_script(file=nil)
@@ -140,11 +164,6 @@ class Editor
 			if $screen
 				$screen.write_message("done")
 			end
-		# Complain if the file doesn't exist.
-		else
-			puts "Script file #{file} doesn't exist."
-			puts "Press any key to continue anyway."
-			STDIN.getc
 		end
 	rescue
 		if $screen
@@ -164,7 +183,11 @@ class Editor
 		optparse = OptionParser.new{|opts|
 			opts.banner = "Usage: editor [options] file1 file2 ..."
 			opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
-				run_script(file)
+				$startup_script = file
+			}
+			opts.on('-P', '--portable', 'Portable mode'){
+				$search_for_scripts = false
+				$histories_file = nil
 			}
 			opts.on('-h', '--help', 'Display this screen'){
 				puts opts
