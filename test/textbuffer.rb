@@ -124,6 +124,13 @@ $tester.test("TextBuffer.justify, linewrap"){
 	t == ["foo bar baz","buz foo bar", "baz buz"]
 }
 
+$tester.test("TextBuffer.justify, linewrap, long word"){
+	t = TextBuffer.new(["-"*50])
+	t2 = t.dup
+	t.justify(0,0,25,true)
+	t == t2
+}
+
 $tester.test("TextBuffer.next_match"){
 	t = TextBuffer.new([
 		"foo bar baz buz",

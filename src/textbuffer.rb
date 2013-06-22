@@ -220,6 +220,8 @@ class TextBuffer < Array
 		r = row0
 		while text.length >= width
 			k = text[0,width].index(/\s+[^\s]*$/)
+			k = text.index(/\s+[^\s]*$/) if k.nil?
+			break if k.nil?
 			t1 = text[0,k]
 			text = text[k..-1].gsub(/^\s+/,'')
 			self.insertrow(r,indent+t1)
