@@ -276,12 +276,6 @@ class TextBuffer < Array
 			text = self[row..-1] + self[0..row]
 		end
 
-		# is it a regexp
-		if token.match(/^\/.*\/$/) != nil
-			token = string2regexp(token)
-			return(["Cancelled",row,col,0]) if token.nil?
-		end
-
 		# First line
 		if a = text[0].search_string(token,dir,col+1)
 			return(["Found match",offset,a[0],a[1]])

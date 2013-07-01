@@ -759,13 +759,6 @@ class FileBuffer
 	end
 
 
-	def string2regexp(string)
-		return(eval(string))
-	rescue SyntaxError => se
-		@window.write_message("Invalid Regex")
-		return(nil)
-	end
-
 
 	#
 	# search
@@ -808,6 +801,9 @@ class FileBuffer
 
 		# Get the search string from the user.
 		token = @window.ask("Search:",$histories.search)
+		if token.match(/^\/.*\/$/) != nil
+			token = token.to_regexp
+		end
 		if token == nil
 			@window.write_message("Cancelled")
 			return
