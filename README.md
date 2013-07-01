@@ -37,7 +37,7 @@ Stick the jedi.rb file in your path.
 *Option 2:*
 
 Grab the full source code from
-http://github.com/wx13/editor, and run
+http://github.com/wx13/jedi, and run
 
     sh install.sh [prefix]
 

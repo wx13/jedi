@@ -181,15 +181,15 @@ standard mouse wheel key codes.  Putting the following code into your
 		Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage) \n\
 		Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)
 
-will let you toggle between xterm scrolling and editor.rb scrolling by
+will let you toggle between xterm scrolling and jedi scrolling by
 hitting the F1 key.  Enable mouse mode with the -M flag or by hitting
-`^TM`.  Then hit F1 to scroll the editor.rb screen.  Hit F1 again to
-scroll the xterm window. And hit F1 to go back to editor.rb scrolling.
+`^TM`.  Then hit F1 to scroll the jedi screen.  Hit F1 again to
+scroll the xterm window. And hit F1 to go back to jedi scrolling.
 
 
 ### Syntax Coloring
 
-Syntax coloring in editor.rb is very simplistic.  It is only done on a
+Syntax coloring in jedi is very simplistic.  It is only done on a
 single line, and uses no parsing of the code structure (only regular
 expressions). The colors are inserted into the text (just before
 rendering) as special characters. The coloring of elements is set in
@@ -356,7 +356,7 @@ The third mode is 'loc' (backwards 'col').  It is exactly the same as
 cursor appears.  Type `^6x` again to exit cursor selection mode.  Now
 you will have a set of cursors which act as one.This tutorial is designed to get you up and running quickly, and
 demonstrate some of the editor's basic capabilities. For more details
-about running, configuring, and modifying editor.rb, see the manual.
+about running, configuring, and modifying jedi, see the manual.
 
 
 
