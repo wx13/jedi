@@ -84,21 +84,22 @@ class Editor
 
 	def define_filetypes
 		filetypes = {
-			/\.(sh|csh)$/ => :shell,
-			/\.(rb)$/ => :ruby,
-			/\.(py)$/ => :python,
-			/\.([cCh]|cpp)$/ => :c,
-			"COMMIT_EDITMSG" => :git,
-			/\.m$/ => :octave,
-			/\.pro$/ => :idl,
-			/\.[fF]$/ => :fortran,
-			/\.yaml$/ => :yaml,
-			/\.md$/ => :markdown,
-			/\.txt$/ => :text,
-			/\.pl$/ => :perl,
-			/\.tex$/ => :latex,
-			/\.html?$/ => :html,
-			/\.java$/ => :java,
+			/\.(sh|csh)$/     => :shell,
+			/\.(rb)$/         => :ruby,
+			/\.(py)$/         => :python,
+			/\.([cCh]|cpp)$/  => :c,
+			"COMMIT_EDITMSG"  => :git,
+			/\.m$/            => :octave,
+			/\.pro$/          => :idl,
+			/\.[fF]$/         => :fortran,
+			/\.yaml$/         => :yaml,
+			/\.md$/           => :markdown,
+			/\.txt$/          => :text,
+			/\.pl$/           => :perl,
+			/\.tex$/          => :latex,
+			/\.html?$/        => :html,
+			/\.java$/         => :java,
+			/\.awk$/          => :awk,
 		}
 		return filetypes
 	end

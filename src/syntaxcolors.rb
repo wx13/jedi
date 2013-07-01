@@ -14,7 +14,7 @@ class SyntaxColors
 		# Comments and strings are different than other regex's,
 		# because they block each other.
 		@strings = {}
-		@strings.default = {'"'=>'"', "'"=>"'", '/'=>'/'}
+		@strings.default = {'"'=>'"', "'"=>"'"}
 
 		@comments = {
 			:shell   => {'#'=>/$/},
@@ -29,6 +29,7 @@ class SyntaxColors
 			:latex   => {'%'=>/$/},
 			:octave  => {'#'=>/$/,'%'=>/$/},
 			:html    => {'<!--'=>'-->'},
+			:awk     => {'#'=>/$/},
 		}
 		@comments.default = {}
 
@@ -36,7 +37,13 @@ class SyntaxColors
 		@regex = {
 			# Colorize long lines in fortran.
 			:fortran => {/^[^cC][^!]{71,}.*$/=>:magenta},
+			# Colorize latex escapes
 			:latex => {/\\[^\s\{\\\[]*/ => :green},
+			# Some markdown coloring
+			:markdown => {
+				/^[-=]{3,}/ => :green,
+				/^#+.*/ => :green,
+			},
 		}
 		@regex.default = {}
 
