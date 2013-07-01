@@ -1,46 +1,173 @@
-jedi users manual
-=================
+jedi(1) -- a portable, hackable text editor
+===========================================
+
+## SYNOPSIS
+
+`jedi` [_options_] _files_
 
 
-Jedi is a text editor written in ruby for the unix console.  It is
-designed to be portable and hackable.
+## DESCRIPTION
+
+Jedi (J's EDItor) is a text editor written in ruby for the unix
+console. It is designed to be portable and hackable.
 
 
-Contents
---------
+## OPTIONS
 
-1. [Getting started](#tutorial)
-	1. [Quick Start](#quickstart)
-	2. [Installation](#install)
-	3. [Basic Usage](#usage)
-2. [Configuration](#config)
-3. [Advanced usage](#advanced)
-4. [Hacking the code](#hacking)
-	1. [Writing extensions](#extend)
-	2. [Code structure](#code_structure)
-	3. [Algorithm details](#algo)
+In general, upper-case flags turn things on, and lower-case flags
+turn things off. For each command-line flag, the equivalent
+configuration script code is shown.
+
+  * `-v` `--version`:
+    Prints version information to standard output, then exits.
+
+  * `-h` `--help`:
+    Prints usage information
+
+  * `-s` _file_, `--script` _file_ | `run_scipt(`_file_`)`:
+    Runs the named script file on startup.  All code will be run by the
+    ruby interpreter in the scope of the main text editor class.
+
+  * `-P`, `--portable`:
+    Turns on portable mode. Jedi will not search for startup scripts
+    or save history in a history file. Options specified after this
+    can overwrite these changes.
+
+  * `-t` _N_, `--tabsize` _N_, `$tabsize = Hash.new(`_N`)`:
+    Sets the tab character display width to N spaces.  Within a single
+    buffer, this is set by the `@tabsize` variable.
+
+  * `-T` _C_, `--tabchar` _C_, `$tabchar = Hash.new(`_C_`)`:
+    Sets the tab character to C.  Whenever the tab key is entered, the
+    character C is inserted into the text buffer.  Use `@tabchar` to
+    set this inside a single buffer.
+
+  * `-a`, `--no-autoindent`, `$autoindent = Hash.new(false)`:
+    Turn off autoindent.
+
+  * `-A`, `--autoindent`, `$autoindent = Hash.new(true)`:
+    Turn on autoindent.
+
+  * `-y` _file_, `--save-hist` _file_, `$histories_file =` _file_:
+    Save command/search/etc history in file FILE.
+
+  * `-e`, `--no-edit`, `$editmode = Hash.new(:view)`:
+    Start in view/navigation mode.
+
+  * `-E`, `--edit`, `$editmode = Hash.new(:edit)`:
+    Start in edit mode [Default]
+
+  * `-w, `--no-linewrap`, `$linewrap = Hash.new(false)`:
+    Turn off line-wrapping.
+
+  * `-W`, `--linewrap`, `$linewrap = Hash.new(true)`:
+    Turn on line-wrapping.
+
+  * `-c`, `--no-color`, `$syntax_color = Hash.new(false)`:
+    Turn off syntax coloring.
+
+  * `-C`, `--color`, `$syntax_color = Hash.new(true)`:
+    Turn on syntax coloring.
+
+  * `-m`, `--no-mouse`, `$mouse = false`:
+    Turn off mouse interaction. [Default]
+
+  * `-M`, `--mouse`, `$mouse = true`:
+    Turn on mouse interaction.
+
+  * `-b`, `--no-backups`, `$backups = Hash.new(false)`:
+    Disable backup file. [Default]
+
+  * `-B`, `--backups`, `$backups = Hash.new($backup_prefix)`:
+    Enable backup file.
+
+  * `-z`, `--disable-suspend`, `$suspend = false`:
+    Ignore the suspend keypress. Useful when running in a non-unix
+    enviroment, which has no job control.
 
 
+## USAGE
 
-<a id="tutorial"></a>
-## Getting Started
+Jedi is a modeless editor, and all the normal editing commands work:
+backspace, arrow keys, page-up/down, and so on.  The available keyboard
+commands are numerous, and change depending on state. This section
+describes some of the basic editing commands.  The `^` character
+represents the control key and the 'S' character represents the SHIFT.
 
-This section will get you up-and-running quickly.
+  * `^q`:
+    Close the current file, and exit the editor if all files are closed.
 
-<a id="quickstart"></a>
-### Quick Start
+  * `^x`:
+    Mark text for copy/paste.
 
-Grab the `jedi.rb` file from here
-[http://jedi.wx13.com/releases/latest/jedi.rb](http://jedi.wx13.com/releases/latest/jedi.rb)
-and run it:
+  * `^k`:
+    Cut marked text (or current line if text is unmarked).
 
-	ruby jedi.rb
+  * `^p`:
+    Copy marked text (or current line if text is unmarked).
+
+  * `^u`:
+    Paste copied text.
+
+  * `S-ARROW`:
+    Shift the screen up/down/left/right
+
+  * `^LEFT`, `^RIGHT`:
+    Undo/redo
+
+  * `^S-LEFT`, `^S-RIGHT`:
+    Macroscopic undo/redo: jumps between saved snapshots. Snapshots are
+    made whenever the file is saved.
+
+  * `^o`:
+    Save file.
+
+  * `^n`, `^b`:
+    Switch to next/previous open file.
+
+  * `^f`:
+    Open a new file for editing.
+
+  * `^t`:
+    Toggle. Subsequently, hit 'tab' to see toggle options.
+
+  * `^6`:
+    Extramode.  Subsequently, hit 'tab' to see additional commands.
+
+  * `^s`:
+    Enter a ruby command to be run in the scope of the text buffer.
+
+  * `^a`, `^e`:
+    Go to start/end of the line.
+
+  * `^w`, `^r`:
+    Search and search/replace.
+
+  * `^g`:
+    Go to line number.
+
+  * `^d`:
+    Delete the character under the cursor.
+
+  * `^l`:
+    switch between buffers on a split screen.
+
+  * `^z`:
+    Suspend the job (unix only).
+
+  * `^x`:
+    Start/stop marking text.
 
 
-<a id="install"></a>
-### Installation
+### INSTALLATION
 
-Grab the source code and run
+The jedi text editor is a stand-alone, single file program, which
+requires only a ruby interpreter to run.  As such, no installation is
+necessary.  One can just execute:
+
+	ruby jedi.rb _files_
+
+Alternatively, grab the source code (http://github.com/jedi) and run
 
 	sh install.sh
 
@@ -59,79 +186,7 @@ To uninstall, just remove the following files:
 	$prefix/share/doc/jedi/
 
 
-<a id="usage"></a>
-### Basic usage
-
-Basic editing commands are similar (but not identical) to the gnu-nano
-text editor.
-
-The obvious things work in the obvious ways: Arrow keys move the cursor
-around. Page up/down move the cursor a longer distance up or down.
-
-#### Level one commands
-
-	^k                 cut (marked text if marked, otherwise current line)
-	^p                 copy (ditto)
-	^u                 paste
-	^a                 go to start of line
-	^e                 go to end of line
-	^w                 search
-	^r                 search and replace
-	^o                 save
-	^q                 quit
-	^g                 go to line (it will ask for a line number)
-	^s                 run a ruby command on the text
-	^d                 delete current character
-	^l                 switch between buffers on a split screen
-	^z                 suspend
-	^x                 mark
-	^n                 switch to next page
-	^b                 switch to previous page
-	^t                 toggle a state (hit 'tab' to see choices)
-	^6                 access extra commands (b/c there aren't enough keys)
-	shift-arrow        scroll the buffer
-	^left/right        undo/redo
-	^shift-left/right  undo/redo to last saved state
-
-
-
-#### Some handy tricks
-
-##### Indent a block of text
-
-1. Set the cursor mode to column: `^tc` (default for editing code)
-2. Mark the first (last) line of the block: `^x`
-3. Navigate to the last (first) line.
-4. Now you have a long vertical cursor which you can use to add or
-remove any text you want.
-
-To add stuff to the end of a set of lines, do the same as above, but
-put the cursor mode to nmuloc (`^tC`).  Then the long vertical cursor
-is positioned with respect to the end of the line.
-
-
-##### Fold some text
-
-1. Mark the first (last) line: `^x`
-2. Navigate to the last (first) line and type `^6h`
-
-Unfold with `^6u`. To fold all the classes in a ruby file
-
-1. type `^6H`
-2. enter the start pattern: `^class`  (literal carat, not control)
-3. enter the end pattern: `^end`  (literal carat, not control)
-
-To unfold all folded lines, type `^6U`. To fold all comments
-
-1. type `^6H`
-2. enter the start pattern `^\s*#`
-3. enter the end pattern `^n`  (control-n)
-
-
-
-
-<a id="config"></a>
-## Configuration
+## CONFIGURATION
 
 
 ### Key Bindings
@@ -221,16 +276,6 @@ Syntax coloring is toggle on by the flag `-C` or by the command `^tS`,
 and off by the flag `-c` or by the command `^ts`.
 
 
-### Indentation
-
-The tab key can be configure to insert something other than the literal
-tab character.  This can be accomplished on the command line with the
-`-T` flag, which takes a string as a parameter.  It can also be set in
-a configuration file by setting the `$tabchar` variable.  It can be set
-on the fly (for the current buffer only) by setting the `@tabchar`
-variable. The width of a literal tab character is set by `-t`,
-`$tabsize`, or `@tabsize` respectively.
-
 
 ### Cursor color
 
@@ -278,8 +323,39 @@ file and quit the editor; then start it up again later, and be able to
 undo prior changes.
 
 
-<a id="advanced"></a>
-## Advanced Editing
+
+## ADVANCED USAGE
+
+### Indent a block of text
+
+  1. Set the cursor mode to column: `^tc` (default for editing code)
+  2. Mark the first (last) line of the block: `^x`
+  3. Navigate to the last (first) line.
+  4. Now you have a long vertical cursor which you can use to add or
+     remove any text you want.
+
+To add stuff to the end of a set of lines, do the same as above, but
+put the cursor mode to nmuloc (`^tC`).  Then the long vertical cursor
+is positioned with respect to the end of the line.
+
+
+### Fold some text
+
+  1. Mark the first (last) line: `^x`
+  2. Navigate to the last (first) line and type `^6h`
+
+Unfold with `^6u`. To fold all the classes in a ruby file
+
+  1. type `^6H`
+  2. enter the start pattern: `^class`  (literal carat, not control)
+  3. enter the end pattern: `^end`  (literal carat, not control)
+
+To unfold all folded lines, type `^6U`. To fold all comments
+
+  1. type `^6H`
+  2. enter the start pattern `^\s*#`
+  3. enter the end pattern `^n`  (control-n)
+
 
 ### Undo and Redo
 
@@ -303,9 +379,9 @@ set of changes to the tip of the change history.
 
 You can edit multiple files in one of three ways
 
-1. speficy them on the command line
-2. open a new file with `^f`
-3. open a duplicate window on the current file with `^6f`
+  1. speficy them on the command line
+  2. open a new file with `^f`
+  3. open a duplicate window on the current file with `^6f`
 
 Initially each buffer is on its own screen.  If multiple buffers are
 open, the status bar will show how many are open and which (number)
@@ -315,11 +391,11 @@ next and previous pages.
 Multiple buffers can be displayed on the same screen with one of the
 following:
 
-1. move all buffers onto one screen: `^60` (if all buffers are already
-on one screen, this will spread them out onto their own screens).
-2. move the current buffer to another screen: `^6#` where `#` is a
-number from 1-9. It is possible to have more than 9 screens (it is
-unlimited, actually), but only 1-9 are available for this operation.
+  1. move all buffers onto one screen: `^60` (if all buffers are already
+     on one screen, this will spread them out onto their own screens).
+  2. move the current buffer to another screen: `^6#` where `#` is a
+     number from 1-9. It is possible to have more than 9 screens (it is
+     unlimited, actually), but only 1-9 are available for this operation.
 
 Typing `^t-` will set vertical stacking (buffers aligned above one
 another) and `^t|` will set horizontal stacking (side-by-side buffers).
@@ -360,31 +436,30 @@ about running, configuring, and modifying jedi, see the manual.
 
 
 
-<a id="hacking"></a>
-## Hacking the code
+## HACKING
 
 Jedi is designed to be hackable.  Thanks to ruby, jedi has the
 following properties:
 
-- Low-level string handling is hidden away
-	+ Ruby's powerful and flexible built-in string handling allow us to
-	  focus on high-level processing.  This keeps the code cleaner and
-	  easier to read.
-- Ruby's meta-programming allows the editor to be modified on the fly.
-	+ Configuration and extension are one-and-the-same.  Any valid ruby
-	  code can be evaluated at start-up or during run-time.
-	+ Local code modifications can live in a separate file, making version
-	  updates and code testing simple.
-- Interpreted code with no third-party libraries makes the code
-  portable
-	+ No building or linking necessary to test modifications.  Change
-	  something and run it, to see if it works.
+  * Low-level string handling is hidden away. Ruby's powerful and
+    flexible built-in string handling allow us to focus on
+    high-level processing.  This keeps the code cleaner and
+    easier to read.
+
+  * Ruby's meta-programming allows the editor to be modified on the fly.
+    Configuration and extension are one-and-the-same.  Any valid ruby
+    code can be evaluated at start-up or during run-time. Local
+    code modifications can live in a separate file, making version
+    updates and code testing simple.
+
+  * Interpreted code with no third-party libraries makes the code
+    portable.  No building or linking necessary to test modifications.
+    Change something and run it, to see if it works.
 
 
-<a id="extend"></a>
-### Writing extensions
+## EXTENSIONS
 
-As described above, writing extensions is simple.  This is probably
+Writing extensions is simple.  This is probably
 best described with an example.  Suppose you want jedi to confirm with
 the user before suspending the editor.  Create a file called something
 like 'my_extension.rb' and put in it:
@@ -413,48 +488,45 @@ files.  One caveat is that the files are loaded in alphabeticall order.
 
 
 
-<a id="code_structure"></a>
-### Code structure
+## CODE STRUCTURE
 
 The code is split into multiple files for ease of development.  The
 files are combined by a simple script upon installation.  This way the
 code can be carried around as a single file, for ultimate portability.
 The files are:
 
-- run_jedi.rb (in the root directory)
-	+ Creates an instance of the Editor class and runs it.
-- editor.rb
-	+ Creates instances of Screen, BuffersList, KeyMap, etc, and runs
-	  startup stuff.
-- ansty.rb
-	+ Contains everything related to terminal/screen/window interaction.
-- keymap.rb
-	+ Defines the keymapping
-- bufferslist.rb
-	+ Manages multiple file buffers, including moving them around from
-	  screen to screen, opening and closing, etc.
-- filebuffer.rb
-	+ Contains everything related to storing and processing text.
-- bufferhistory.rb
-	+ Manages a list of text buffer states for undo/redo.
-- histories.rb
-	+ Stores, saves, and reads histories for: search terms, commands,
-	  autofolding, etc.
-- syntaxcolors.rb
-	+ Everything related to syntax coloring
-- compatibility.rb
-	+ Some backported string and array functionality for ruby versions
-	  1.8.6 or below.
+  * editor.rb: Creates instances of Screen, BuffersList, KeyMap, etc, and
+    runs startup stuff.
+
+  * ansty.rb: Contains everything related to terminal/screen/window
+  interaction.
+
+  * keymap.rb: Defines the keymapping
+
+  * bufferslist.rb: Manages multiple file buffers, including moving them
+  around from screen to screen, opening and closing, etc.
+
+  * filebuffer.rb: Contains everything related to storing and processing
+  text.
+
+  * bufferhistory.rb: Manages a list of text buffer states for undo/redo.
+
+  * histories.rb: Stores, saves, and reads histories for: search terms,
+  commands, autofolding, etc.
+
+  * syntaxcolors.rb: Everything related to syntax coloring
+
+  * compatibility.rb: Some backported string and array functionality for
+  ruby versions  1.8.6 or below.
 
 
-<a id="algo"></a>
-### Algorithm details
+## ALGORITHM DETAILS
 
 This section describes some details about how the editor does its thing.
 It is not yet comprehensive.
 
 
-#### The text buffer
+### The text buffer
 
 The actual file text is stored as an array of strings.  Each line from
 the input file becomes an element.  Any combination of line-ending
@@ -500,16 +572,16 @@ line of the current buffer *and* the previous buffer (because they are
 the same in memory), and is thus not undo-able.
 
 
-#### Buffer history
+### Buffer history
 
-As alluded to above, history snapshots of the text buffer are shallow
+History snapshots of the text buffer are shallow
 copies.  This is one of the advantages of using ruby, in that we can
 take a snapshot with `@text.dup`.  This duplicates the *array*, but the
 elements of the array are identical in memory.  Thus we create a new
 array containing all the old strings.
 
 
-#### Multiple editing of the same file
+### Multiple editing of the same file
 
 Sometimes it is convenient to edit the same file in multiple windows.
 We do this by:
@@ -522,7 +594,7 @@ histories and text are linked together.  Each buffer thinks it is
 independent, but the information is shared behind the scenes.
 
 
-#### Text folding/hiding
+### Text folding/hiding
 
 Text folding is almost trivial in this buffer model.  We just replace
 the folded lines (elements in the array) with an array of strings.  So
@@ -534,7 +606,7 @@ copy/paste don't care if they are moving strings or arrays around in
 the buffer.
 
 
-#### Indentation facade
+### Indentation facade
 
 One of the cool features of this editor is the indentation facade,
 where the actual (file) indentation strings differ from the apparent
