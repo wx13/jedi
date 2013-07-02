@@ -1,0 +1,264 @@
+body#manpage {
+	margin:0;
+	width: 75%;
+	overflow: hidden;
+}
+.mp {
+	max-width:100ex;
+	padding:0 9ex 1ex 4ex;
+}
+
+.mp p, .mp pre, .mp ul, .mp ol, .mp dl {
+	margin:0 0 20px 0;
+}
+.mp h2 {
+	margin:10px 0 0 0;
+}
+
+.mp > p, .mp > pre, .mp > ul, .mp > ol, .mp > dl {
+	margin-left:8ex;
+}
+.mp h3 {
+	margin:0 0 0 4ex;
+}
+
+.mp dt {
+	margin:0;
+	clear:left;
+}
+.mp dt.flush {
+	float:left;
+	width:8ex;
+}
+.mp dd {
+	margin:0 0 0 9ex;
+}
+.mp h1, .mp h2, .mp h3, .mp h4 {
+	clear:left;
+}
+
+.mp pre {
+	margin-bottom:20px;
+}
+.mp pre+h2, .mp pre+h3 {
+	margin-top:22px;
+}
+.mp h2+pre, .mp h3+pre {
+	margin-top:5px;
+}
+
+.mp img {
+	display:block;margin:auto;
+}
+.mp h1.man-title {
+	display:none;
+}
+
+/* FONTS */
+
+.mp, .mp code, .mp pre, .mp tt,
+.mp kbd, .mp samp, .mp h3, .mp h4 {
+	font-family:monospace;
+	font-size:14px;
+	line-height:1.42857142857143;
+}
+.mp h2 {
+	font-size:16px;
+	line-height:1.25;
+}
+.mp h1 {
+	font-size:20px;
+	line-height:2;
+}
+
+/* TEXT STYLES */
+
+.mp {
+	text-align:justify;
+	background:#fff;
+}
+.mp, .mp code, .mp pre,
+.mp pre code, .mp tt, .mp kbd,
+.mp samp                            { color:#131211 }
+.mp h1, .mp h2, .mp h3, .mp h4      { color:#030201 }
+.mp u                               { text-decoration:underline; }
+
+.mp code, .mp strong, .mp b {
+	font-weight:bold;
+	color:#131211;
+}
+
+.mp em, .mp var {
+	font-style:italic;
+	color:#232221;
+	text-decoration:none;
+}
+
+/* LINKS */
+
+.mp a, .mp a:link, .mp a:hover,
+.mp a code, .mp a pre, .mp a tt,
+.mp a kbd, .mp a samp              { color:#0000ff }
+
+.mp b.man-ref                      { font-weight:normal;color:#434241 }
+
+/* PREFORMATTED BLOCKS */
+
+.mp pre                            { padding:0 4ex }
+.mp pre code                       { font-weight:normal;color:#434241 }
+.mp h2+pre, h3+pre                 { padding-left:0 }
+
+/* DOCUMENT HEADER AND FOOTER AREAS */
+
+ol.man-decor, ol.man-decor li {
+	margin:3px 0 10px 0;
+	padding:0;
+	float:left;
+	width:33%;
+	list-style-type:none;
+	text-transform:uppercase;
+	color:#999;
+	letter-spacing:1px;
+}
+ol.man-decor                  { width:100% }
+ol.man-decor li.tl            { text-align:left }
+ol.man-decor li.tc            { text-align:center; letter-spacing:4px }
+ol.man-decor li.tr            { text-align:right; float:right }
+.mp { max-width:none }
+.man-navigation { display:none !important }
+.mp a[href]:not([href^="#"]):not([data-bare-link]):after {
+	content:" " attr(href);
+}
+/* STRUCTURE, INDENT, MARGINS */
+
+body                                { margin:0 }
+#man                                { max-width:88ex; padding:0 2ex 1ex 2ex }
+
+#man p, #man pre,
+#man ul, #man ol, #man dl           { margin:0 0 20px 0 }
+#man h2                             { margin:10px 0 0 0 }
+
+#man > p, #man > pre,
+#man > ul, #man > ol, #man > dl     { margin-left:8ex }
+#man h3                             { margin:0 0 0 4ex }
+
+#man dt                             { margin:0; clear:left }
+#man dt.flush                       { float:left; width:8ex }
+#man dd                             { margin:0 0 0 9ex }
+#man h1, #man h2, #man h3, #man h4  { clear:left }
+
+#man pre                            { margin-bottom:20px }
+#man pre+h2, #man pre+h3            { margin-top:22px }
+#man h2+pre, #man h3+pre            { margin-top:5px }
+
+#man img                            { display:block;margin:auto }
+#man h1.man-title                   { display:none }
+
+/* FONTS */
+
+#man, #man code, #man pre,
+#man tt, #man kbd, #man samp,
+#man h3, #man h4 {
+	font-family:monospace;
+	font-size:14px;
+	line-height:1.42857142857143;
+}
+#man h2, #man ol.man {
+	font-size:16px;
+	line-height:1.25
+}
+#man h1 {
+	font-size:20px;
+	line-height:2;
+}
+
+/* TEXT STYLES */
+
+#man {
+  text-align:justify;
+  background:#fff;
+}
+#man, #man code, #man pre, #man pre code,
+#man tt, #man kbd, #man samp            { color:#131211 }
+#man h1, #man h2, #man h3, #man h4      { color:#030201 }
+#man ol.man, #man ol.man li             { color:#636261 }
+
+#man code, #man strong, #man b {
+	font-weight:bold;
+	color:#131211;
+}
+
+#man em, #man var, #man u {
+	font-style:italic;
+	color:#434241;
+	text-decoration:none;
+}
+
+#man pre {
+	background:#edeceb;
+	padding:5px 1ex;
+	border-left:1ex solid #ddd;
+}
+#man pre code {
+	font-weight:normal;
+	background:inherit;
+}
+
+/* DOCUMENT HEADER AND FOOTER AREAS */
+
+#man ol.man, #man ol.man li {
+	margin:3px 0 10px 0;
+	padding:0;
+	float:left;
+	width:33%;
+	list-style-type:none;
+	text-transform:uppercase;
+	color:#999;
+	letter-spacing:1px;
+}
+#man ol.man                  { width:100% }
+#man ol.man li.tl            { text-align:left }
+#man ol.man li.tc            { text-align:center; letter-spacing:4px }
+#man ol.man li.tr            { text-align:right; float:right }
+
+/* SECTION TOC NAVIGATION */
+
+#man div.man-navigation {
+	position:fixed;
+	top:0;
+	left: 75%;
+	height:100%;
+	width:100%;
+	padding:3ex 0 0 2%;
+	border-left:0.25ex solid #DCDCDC;
+	background-color: #F5F5F5;
+}
+#man div.man-navigation a { display:block; margin-bottom:1.5ex }
+/* toc.css - enable table of contents */
+
+.man-navigation {
+	display:block !important;
+	position:fixed;
+	top:0;
+	left:113ex; /* .mp width + padding */
+	left:50ex;
+	height:100%;
+	width:100%;
+	padding:48px 0 0 0;
+	border-left:1px solid #dbdbdb;
+	background:#eee;
+}
+.man-navigation a,
+.man-navigation a:hover,
+.man-navigation a:link,
+.man-navigation a:visited {
+	display:block;
+	margin:0;
+	padding:5px 2px 5px 5px;
+	color:#999;
+	text-decoration:none;
+}
+.man-navigation a:hover {
+	color:#111;
+	text-decoration:underline;
+}
