@@ -1213,8 +1213,9 @@ class FileBuffer
 			bline = tabs2spaces(line[0])
 			descr = "[[" + line.length.to_s + " lines: "
 			tail = "]]"
-			aline = $color[:hiddentext] + descr + \
-				bline[0,(@window.cols-descr.length-tail.length).floor] + \
+			sample_text =  bline[0,(@window.cols-descr.length-tail.length).floor]
+			sample_text = "" if sample_text.nil?
+			aline = $color[:hiddentext] + descr + sample_text + \
 				tail + $color[:normal]
 		end
 		if @horiz_scroll==:screen || r==(@row-@linefeed)
