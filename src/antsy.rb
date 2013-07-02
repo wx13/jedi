@@ -417,7 +417,14 @@ class Screen
 			k -= a.length
 			break if b.length == 0
 		end
-		write_string(row,col,code + pline)
+
+		# Find escape sequences chopped off at end, as well.
+		code2 = ""
+		line.scan(esc){|e|
+			code2 += e
+		}
+
+		write_string(row,col,code + pline + code2)
 
 	end
 

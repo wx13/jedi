@@ -69,6 +69,21 @@ class String
 		end
 	end
 
+	# "normal string"        => /normal string/
+	# "special/chars"        => /special\/chars/
+	# "/regex/", escape=nil  => /regex/
+	# "/regex/", escape=true => /\/regex\//
+	def to_regexp(escape)
+		if self[0]=="/" && self[-1]=="/" && escape.nil?
+			begin
+				return(eval(self))
+			rescue SyntaxError => se
+				return(nil)
+			end
+		else
+			return Regexp.new(Regexp.escape(self))
+		end
+	end
 
 end
 
@@ -76,5 +91,15 @@ end
 class Array
 	def count(pattern)
 		self.grep(pattern).length
+	end
+	# Convert all elements of the array to regexp
+	def to_regexp(escape)
+		self.map{|x| x.to_regexp(escape)}
+	end
+end
+
+class Regexp
+	def to_regexp(escape)
+		self
 	end
 end

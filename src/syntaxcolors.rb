@@ -112,7 +112,7 @@ class SyntaxColors
 		while (cline)&&(cline.length>0) do
 
 			# find first occurance of special character
-			all = Regexp.union(*([strings.keys,comments.keys,ere].flatten))
+			all = Regexp.union([strings.keys,comments.keys,ere].flatten.to_regexp(true))
 			a,b,c = cline.partition(all)
 
 			# Add uninteresting part to bline.
@@ -133,7 +133,7 @@ class SyntaxColors
 			bline,cline,flag = apply_rules(bline,cline,strings,:string)
 
 		end
-		aline = bline + $color[:normal]
+		aline = bline
 		return aline
 	end
 
@@ -162,10 +162,10 @@ class SyntaxColors
 
 		# trailing whitespace
 		ere = Regexp.escape($color[:normal])
-		re = Regexp.new /\s+/.source + "\(" + ere + "\)+" + /$/.source
+		re = Regexp.new /\s+/.source + "\(" + ere + "\)*" + /$/.source
 		aline.gsub!(re,$color[:whitespace]+"\\0"+$color[:normal])
 
-		return(aline)
+		return(aline + $color[:normal])
 
 	end
 
