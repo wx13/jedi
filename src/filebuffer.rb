@@ -801,7 +801,7 @@ class FileBuffer
 
 		# Get the search string from the user.
 		token = @window.ask("Search:",$histories.search)
-		if token.match(/^\/.*\/$/) != nil
+		if token && token.match(/^\/.*\/$/) != nil
 			token = token.to_regexp
 		end
 		if token == nil
