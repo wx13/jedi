@@ -772,6 +772,9 @@ class FileBuffer
 		else
 			token = $histories.search[-1]
 		end
+		if token && token.match(/^\/.*\/$/)
+			token = token.to_regexp
+		end
 		if token == nil || token == ""
 			@window.write_message("Cancelled")
 			return
@@ -801,10 +804,10 @@ class FileBuffer
 
 		# Get the search string from the user.
 		token = @window.ask("Search:",$histories.search)
-		if token && token.match(/^\/.*\/$/) != nil
+		if token && token.match(/^\/.*\/$/)
 			token = token.to_regexp
 		end
-		if token == nil
+		if token == nil || token == ""
 			@window.write_message("Cancelled")
 			return
 		end
