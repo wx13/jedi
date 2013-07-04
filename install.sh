@@ -17,6 +17,5 @@ cp jedi.rb ${exec_dir}/jedi
 chmod a+x ${exec_dir}/jedi
 mkdir -p ${doc_dir}/man/man1
 mkdir -p ${doc_dir}/doc/jedi
-cp doc/manual.md ${doc_dir}/doc/jedi/manual.md
 cp doc/jedi.1 ${doc_dir}/man/man1/jedi.1
 

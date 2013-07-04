@@ -159,7 +159,7 @@ represents the control key and the 'S' character represents the SHIFT.
     Start/stop marking text.
 
 
-### INSTALLATION
+## INSTALLATION
 
 The jedi text editor is a stand-alone, single file program, which
 requires only a ruby interpreter to run.  As such, no installation is
