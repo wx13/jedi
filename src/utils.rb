@@ -73,7 +73,7 @@ class String
 	# "special/chars"        => /special\/chars/
 	# "/regex/", escape=nil  => /regex/
 	# "/regex/", escape=true => /\/regex\//
-	def to_regexp(escape)
+	def to_regexp(escape=nil)
 		if self[0]=="/" && self[-1]=="/" && escape.nil?
 			begin
 				return(eval(self))
