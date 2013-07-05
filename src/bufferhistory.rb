@@ -133,7 +133,11 @@ class BufferHistory
 	# else has changed it).
 	def save
 		return if !modified?
-		@saved = @saved[0..@saved_idx] + [@idx] + @saved[@saved_idx+1..-1]
+#		@saved = @saved[0..@saved_idx] + [@idx] + @saved[@saved_idx+1..-1]
+		@saved = @saved[0..@saved_idx] + [@idx]
+		if @saved_idx < @saved.length
+			@saved += @saved[@saved_idx+1..-1]
+		end
 		@saved_idx += 1
 		@last_saved = @hist[@idx]
 	end
@@ -205,7 +209,7 @@ class BufferHistory
 			}
 
 			# Create the buffer history list.
-			if @hist[@idx].text.flatten == b[k].text.flatten
+			if @hist[@idx] && b[k] && @hist[@idx].text.flatten == b[k].text.flatten
 				@idx = k
 				@hist = b.dup
 			else
