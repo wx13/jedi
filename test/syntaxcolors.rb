@@ -24,5 +24,5 @@ $tester.test("SyntaxColors.syntax_color_string_comment"){
 	sc = SyntaxColors.new
 	a = sc.syntax_color_string_comment("foo bar baz", {/f/,/r/}, {/b/,/$/})
 	a == $color[:string]+"foo bar"+$color[:normal]+" "+$color[:comment]\
-		+ "baz" + $color[:normal]*2
+		+ "baz" + $color[:normal]
 }
