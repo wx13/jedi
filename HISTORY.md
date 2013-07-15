@@ -1,3 +1,29 @@
+0.4.5
+-----
+
+Bug fixes:
+
+  + When loading backups, must turn array into TextBuffer array
+  + Search/replace: jump length-1 columns to ensure we catch an adjacent
+    match
+  + Option to turn off suspending, for systems without unix job control.
+  + Create an empty buffer when opening a directory.
+  + Justify can now handle very long words.
+  + Fixed a few syntax coloring bugs.
+  + Fixed handling of regex search terms
+  + Fixed handling of folded text for very narrow screens
+
+Clean up:
+
+  + Moved documentation to ronn
+
+Features:
+
+  + Horizontal scroll option: entire screen or single line.
+  + Easier to change the tab character
+  + Support for local config files (local to a directory tree)
+
+
 0.4.4
 -----
 
