@@ -59,7 +59,7 @@ class KeyMap
 			:ctrlshift_left => "buffer.revert_to_saved",
 			:ctrlshift_right => "buffer.unrevert_to_saved",
 			:left_click => "$buffers.mouse_select",
-			:middle_click => "$buffers.mouse_mark",
+			:right_click => "$buffers.mouse_mark",
 			:scroll_up => "buffer.screen_up(4)",
 			:scroll_down => "buffer.screen_down(4)",
 			:ctrl_scroll_up => "$buffers.screen_up(4)",

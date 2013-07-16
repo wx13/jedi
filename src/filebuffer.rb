@@ -1389,9 +1389,11 @@ class FileBuffer
 	def src2brc(sr,sc)
 		@row = sr - @window.pos_row - 1 + @linefeed
 		@col = sc2bc(@row,sc-@window.pos_col) + @colfeed
+		@row = [[@row,0].max,@text.length-1].min
+		@col = [[@col,0].max,@text[@row].length].min
 	end
 	def tabs2spaces(line)
-		return line if line == nil || line.length == 0
+		return line if line == nil || line.empty?
 		a = line.split("\t",-1)
 		ans = a[0]
 		a = a[1..-1]
