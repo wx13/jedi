@@ -102,6 +102,7 @@ class Terminal
 
 			"\e[M32" => :left_click,
 			"\e[M33" => :middle_click,
+			"\e[M34" => :right_click,
 			"\e[M96" => :scroll_down,
 			"\e[M97" => :scroll_up,
 			"\e[M112" => :ctrl_scroll_down,
@@ -111,6 +112,14 @@ class Terminal
 
 	def set_cursor_color(color)
 		print "\e]12;#{color}\007"
+	end
+
+	def get_mouse_code
+		c = STDIN.getc
+		if !c.is_a?(Fixnum)
+			c = c.unpack('C')[0].to_s
+		end
+		return c.to_s
 	end
 
 	# Read a character from stdin. Handle escape codes.
@@ -126,9 +135,9 @@ class Terminal
 		end
 		# Mouse
 		if c[2,1] == "M"
-			c += STDIN.getc.to_s
-			@mouse_x = STDIN.getc - 33
-			@mouse_y = STDIN.getc - 33
+			c += get_mouse_code
+			@mouse_x = get_mouse_code.to_i - 33
+			@mouse_y = get_mouse_code.to_i - 33
 		end
 		# Some sequences are extra long.
 		if c == "\e[5" || c == "\e[6"
