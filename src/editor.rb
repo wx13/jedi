@@ -182,32 +182,26 @@ class Editor
 	# Parse the command line inputs.
 	def parse_options
 		optparse = OptionParser.new{|opts|
+
 			opts.banner = "Usage: editor [options] file1 file2 ..."
-			opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
-				$startup_script = file
-			}
-			opts.on('-P', '--portable', 'Portable mode'){
-				$search_for_scripts = false
-				$histories_file = nil
-			}
-			opts.on('-h', '--help', 'Display this screen'){
-				puts opts
-				exit
-			}
-			opts.on('-t', '--tabsize N', Integer, 'Set tabsize'){|n|
-				$tabsize = Hash.new(n)
-			}
-			opts.on('-T', '--tabchar c', 'Set tab character'){|c|
-				$tabchar = Hash.new(c)
-			}
+
 			opts.on('-A', '--autoindent', 'Turn on autoindent'){
 				$autoindent = Hash.new(true)
 			}
 			opts.on('-a', '--no-autoindent', 'Turn off autoindent'){
 				$autoindent = Hash.new(false)
 			}
-			opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
-				$histories_file = file
+			opts.on('-B', '--backups', 'Enable file backupts'){
+				$backups = Hash.new($backup_prefix)
+			}
+			opts.on('-b', '--no-backups', 'Disable file backupts'){
+				$backups = Hash.new(false)
+			}
+			opts.on('-C', '--color', 'Turn on syntax coloring'){
+				$syntax_color = Hash.new(true)
+			}
+			opts.on('-c', '--no-color', 'Turn off syntax coloring'){
+				$syntax_color = Hash.new(false)
 			}
 			opts.on('-E', '--edit', 'Start in edit mode'){
 				$editmode = Hash.new(:edit)
@@ -215,11 +209,38 @@ class Editor
 			opts.on('-e', '--no-edit', 'Start in view mode'){
 				$editmode = Hash.new(:view)
 			}
+			opts.on('-h', '--help', 'Display this screen'){
+				puts opts
+				exit
+			}
 			opts.on('-L', '--line-scroll', 'Single line horizontal scroll'){
 				$horiz_scroll = Hash.new(:line)
 			}
 			opts.on('-l', '--screen-scroll', 'Full screen horizontal scroll'){
 				$horiz_scroll = Hash.new(:screen)
+			}
+			opts.on('-M', '--mouse', 'Enable mouse interaction'){
+				$mouse = true
+			}
+			opts.on('-m', '--no-mouse', 'Disable mouse support'){
+				$mouse = false
+			}
+			opts.on('-P', '--portable', 'Portable mode'){
+				$search_for_scripts = false
+				$histories_file = nil
+			}
+			opts.on('-s', '--script FILE', 'Run this script at startup'){|file|
+				$startup_script = file
+			}
+			opts.on('-T', '--tabchar c', 'Set tab character'){|c|
+				$tabchar = Hash.new(c)
+			}
+			opts.on('-t', '--tabsize N', Integer, 'Set tabsize'){|n|
+				$tabsize = Hash.new(n)
+			}
+			opts.on('-v', '--version', 'Print version number'){
+				puts $version
+				exit
 			}
 			opts.on('-W', '--linewrap [n]', Integer, 'Turn on linewrap'){|n|
 				$linewrap = Hash.new(true)
@@ -232,33 +253,14 @@ class Editor
 			opts.on('-w', '--no-linewrap', 'Turn off linewrap'){
 				$linewrap = Hash.new(false)
 			}
-			opts.on('-C', '--color', 'Turn on syntax coloring'){
-				$syntax_color = Hash.new(true)
-			}
-			opts.on('-c', '--no-color', 'Turn off syntax coloring'){
-				$syntax_color = Hash.new(false)
-			}
-			opts.on('-m', '--no-mouse', 'Disable mouse support'){
-				$mouse = false
-			}
-			opts.on('-M', '--mouse', 'Enable mouse interaction'){
-				$mouse = true
+			opts.on('-y', '--save-hist FILE', 'Save history in this file'){|file|
+				$histories_file = file
 			}
 			opts.on('-z', '--disable-suspend', 'Disable suspend'){
 				$suspend = false
 			}
 			opts.on('-Z', '--suspend', 'Enable suspend'){
 				$suspend = true
-			}
-			opts.on('-B', '--backups', 'Enable file backupts'){
-				$backups = Hash.new($backup_prefix)
-			}
-			opts.on('-b', '--no-backups', 'Disable file backupts'){
-				$backups = Hash.new(false)
-			}
-			opts.on('-v', '--version', 'Print version number'){
-				puts $version
-				exit
 			}
 		}
 		begin

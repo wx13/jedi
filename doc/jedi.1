@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "JEDI" "1" "July 2013" "version 0.4.5" "Jedi Manual"
+.TH "JEDI" "1" "August 2013" "version 0.4.5" "Jedi Manual"
 .
 .SH "NAME"
 \fBjedi\fR \- a portable, hackable text editor
@@ -16,12 +16,56 @@ Jedi (J\'s EDItor) is a text editor written in ruby for the unix console\. It is
 In general, upper\-case flags turn things on, and lower\-case flags turn things off\. For each command\-line flag, the equivalent configuration script code is shown\.
 .
 .TP
-\fB\-v\fR \fB\-\-version\fR
-Prints version information to standard output, then exits\.
+\fB\-A\fR, \fB\-\-autoindent\fR | \fB$autoindent = Hash\.new(true)\fR
+Turn on autoindent\.
+.
+.TP
+\fB\-a\fR, \fB\-\-no\-autoindent\fR | \fB$autoindent = Hash\.new(false)\fR
+Turn off autoindent\.
+.
+.TP
+\fB\-B\fR, \fB\-\-backups\fR | \fB$backups = Hash\.new($backup_prefix)\fR
+Enable backup file\.
+.
+.TP
+\fB\-b\fR, \fB\-\-no\-backups\fR | \fB$backups = Hash\.new(false)\fR
+Disable backup file\. [Default]
+.
+.TP
+\fB\-C\fR, \fB\-\-color\fR | \fB$syntax_color = Hash\.new(true)\fR
+Turn on syntax coloring\.
+.
+.TP
+\fB\-c\fR, \fB\-\-no\-color\fR | \fB$syntax_color = Hash\.new(false)\fR
+Turn off syntax coloring\.
+.
+.TP
+\fB\-E\fR, \fB\-\-edit\fR | \fB$editmode = Hash\.new(:edit)\fR
+Start in edit mode [Default]
+.
+.TP
+\fB\-e\fR, \fB\-\-no\-edit\fR | \fB$editmode = Hash\.new(:view)\fR
+Start in view/navigation mode\.
 .
 .TP
 \fB\-h\fR \fB\-\-help\fR
 Prints usage information
+.
+.TP
+\fB\-L\fR, \fB\-\-line\-scroll\fR | \fB$horiz_scroll = Hash\.new(:line)\fR
+Single line horizontal scroll
+.
+.TP
+\fB\-l\fR, \fB\-\-screen\-scroll\fR | \fB$horiz_scroll = Hash\.new(:screen)\fR
+Full screen horizontal scroll
+.
+.TP
+\fB\-M\fR, \fB\-\-mouse\fR | \fB$mouse = true\fR
+Turn on mouse interaction\.
+.
+.TP
+\fB\-m\fR, \fB\-\-no\-mouse\fR | \fB$mouse = false\fR
+Turn off mouse interaction\. [Default]
 .
 .TP
 \fB\-s\fR \fIfile\fR, \fB\-\-script\fR \fIfile\fR | \fBrun_scipt(\fR\fIfile\fR\fB)\fR
@@ -32,67 +76,31 @@ Runs the named script file on startup\. All code will be run by the ruby interpr
 Turns on portable mode\. Jedi will not search for startup scripts or save history in a history file\. Options specified after this can overwrite these changes\.
 .
 .TP
-\fB\-t\fR \fIN\fR, \fB\-\-tabsize\fR \fIN\fR, \fB$tabsize = Hash\.new(\fR_N\fB)\fR
-Sets the tab character display width to N spaces\. Within a single buffer, this is set by the \fB@tabsize\fR variable\.
-.
-.TP
-\fB\-T\fR \fIC\fR, \fB\-\-tabchar\fR \fIC\fR, \fB$tabchar = Hash\.new(\fR\fIC\fR\fB)\fR
+\fB\-T\fR \fIC\fR, \fB\-\-tabchar\fR \fIC\fR | \fB$tabchar = Hash\.new(\fR\fIC\fR\fB)\fR
 Sets the tab character to C\. Whenever the tab key is entered, the character C is inserted into the text buffer\. Use \fB@tabchar\fR to set this inside a single buffer\.
 .
 .TP
-\fB\-a\fR, \fB\-\-no\-autoindent\fR, \fB$autoindent = Hash\.new(false)\fR
-Turn off autoindent\.
+\fB\-t\fR \fIN\fR, \fB\-\-tabsize\fR \fIN\fR | \fB$tabsize = Hash\.new(\fR_N\fB)\fR
+Sets the tab character display width to N spaces\. Within a single buffer, this is set by the \fB@tabsize\fR variable\.
 .
 .TP
-\fB\-A\fR, \fB\-\-autoindent\fR, \fB$autoindent = Hash\.new(true)\fR
-Turn on autoindent\.
+\fB\-v\fR \fB\-\-version\fR
+Prints version information to standard output, then exits\.
 .
 .TP
-\fB\-y\fR \fIfile\fR, \fB\-\-save\-hist\fR \fIfile\fR, \fB$histories_file =\fR \fIfile\fR
-Save command/search/etc history in file FILE\.
-.
-.TP
-\fB\-e\fR, \fB\-\-no\-edit\fR, \fB$editmode = Hash\.new(:view)\fR
-Start in view/navigation mode\.
-.
-.TP
-\fB\-E\fR, \fB\-\-edit\fR, \fB$editmode = Hash\.new(:edit)\fR
-Start in edit mode [Default]
-.
-.TP
-\fB\-w,\fR\-\-no\-linewrap\fB,\fR$linewrap = Hash\.new(false)`
-Turn off line\-wrapping\.
-.
-.TP
-\fB\-W\fR, \fB\-\-linewrap\fR, \fB$linewrap = Hash\.new(true)\fR
+\fB\-W\fR, \fB\-\-linewrap\fR | \fB$linewrap = Hash\.new(true)\fR
 Turn on line\-wrapping\.
 .
 .TP
-\fB\-c\fR, \fB\-\-no\-color\fR, \fB$syntax_color = Hash\.new(false)\fR
-Turn off syntax coloring\.
+\fB\-w,\fR\-\-no\-linewrap\fB|\fR$linewrap = Hash\.new(false)`
+Turn off line\-wrapping\.
 .
 .TP
-\fB\-C\fR, \fB\-\-color\fR, \fB$syntax_color = Hash\.new(true)\fR
-Turn on syntax coloring\.
+\fB\-y\fR \fIfile\fR, \fB\-\-save\-hist\fR \fIfile\fR | \fB$histories_file =\fR \fIfile\fR
+Save command/search/etc history in file FILE\.
 .
 .TP
-\fB\-m\fR, \fB\-\-no\-mouse\fR, \fB$mouse = false\fR
-Turn off mouse interaction\. [Default]
-.
-.TP
-\fB\-M\fR, \fB\-\-mouse\fR, \fB$mouse = true\fR
-Turn on mouse interaction\.
-.
-.TP
-\fB\-b\fR, \fB\-\-no\-backups\fR, \fB$backups = Hash\.new(false)\fR
-Disable backup file\. [Default]
-.
-.TP
-\fB\-B\fR, \fB\-\-backups\fR, \fB$backups = Hash\.new($backup_prefix)\fR
-Enable backup file\.
-.
-.TP
-\fB\-z\fR, \fB\-\-disable\-suspend\fR, \fB$suspend = false\fR
+\fB\-z\fR, \fB\-\-disable\-suspend\fR | \fB$suspend = false\fR
 Ignore the suspend keypress\. Useful when running in a non\-unix enviroment, which has no job control\.
 .
 .SH "USAGE"
@@ -104,7 +112,7 @@ Close the current file, and exit the editor if all files are closed\.
 .
 .TP
 \fB^x\fR
-Mark text for copy/paste\.
+Start/stop marking text for copy/paste\.
 .
 .TP
 \fB^k\fR
@@ -178,10 +186,6 @@ switch between buffers on a split screen\.
 \fB^z\fR
 Suspend the job (unix only)\.
 .
-.TP
-\fB^x\fR
-Start/stop marking text\.
-.
 .SH "INSTALLATION"
 The jedi text editor is a stand\-alone, single file program, which requires only a ruby interpreter to run\. As such, no installation is necessary\. One can just execute:
 .
@@ -231,6 +235,15 @@ $prefix/share/doc/jedi/
 .
 .SH "CONFIGURATION"
 .
+.SS "Configuration File"
+On startup, jedi checks for a directory named \fB\.jedi\fR in the user\'s home directory\. If one is found, jedi executes any ruby scripts (anything with an \fB\.rb\fR extension) in the top level of that directory (not in subdirectories)\. Jedi also searches the current path for \fB\.jedi/*\.rb\fR scripts, to allow configurations local to a directory (and its subdirectories)\. Thus if you create a file \fB~/\.jedi/config\.rb\fR and a file \fB~/my_project/\.jedi/config\.rb\fR, jedi will execute the \fBmy_project\fR config file after running the main config file\.
+.
+.P
+Other script files can be run at startup using the \fB\-s\fR flag\. Any ruby code can be included in configuration files\. See the section on writing extensions for more information\.
+.
+.P
+The portable mode \fB\-P\fR disables configuration file searching\. This is designed for situations where a user doesn\'t want jedi to modify files on the file system\.
+.
 .SS "Key Bindings"
 Keybindings are very easy to change\. This section gives an overview of how to configure keybindings of your liking\. The key bindings are stored in an instance (\fB$keymap\fR) of the class \fBKeyMap\fR\. This class contains five hashes: \fBcommandlist\fR (global keys), \fBextramode_commandlist\fR (for keys that don\'t fit elsewhere), \fBeditmode_commandlist\fR (only work when editing), \fBviewmode_commandlist\fR (only work in view\-mode), and \fBtogglelist\fR (toggle various states)\.
 .
@@ -266,7 +279,7 @@ $keymap\.commandlist = {
 .IP "" 0
 .
 .P
-To see all the default keybindings, search for \fB/^class KeyMap/\fR in the file\.
+To see all the default keybindings, look at the keymap\.rb file\.
 .
 .SS "Mouse wheel"
 When mouse mode is enabled, scrolling the wheel should scroll the screen\. This does not work in an xterm, because xterm does not use the standard mouse wheel key codes\. Putting the following code into your \.Xdefaults file:
@@ -312,7 +325,6 @@ color = {
     :message => :yellow,
     :regex => :normal,
     :marked => [:reverse,:blue],
-    :message => :yellow,
 }
 .
 .fi
@@ -320,7 +332,7 @@ color = {
 .IP "" 0
 .
 .P
-Changing a color is as simple as:
+Changing a color is as simple as putting
 .
 .IP "" 4
 .
@@ -333,7 +345,7 @@ $color[:string] = :green
 .IP "" 0
 .
 .P
-In the config file\. To change colors on the fly is slightly different, because the colors list gets processed by the \fBScreen\fR class\. Hit \fB^s\fR and enter the script:
+in the config file\. To change colors on the fly is slightly different, because the colors list gets processed by the \fBScreen\fR class\. Hit \fB^s\fR and enter the script:
 .
 .IP "" 4
 .
@@ -346,10 +358,10 @@ $color[:string] = $color[:green]
 .IP "" 0
 .
 .P
-Syntax coloring is toggle on by the flag \fB\-C\fR or by the command \fB^tS\fR, and off by the flag \fB\-c\fR or by the command \fB^ts\fR\.
+Syntax coloring is toggled on by the flag \fB\-C\fR or by the command \fB^tS\fR, and off by the flag \fB\-c\fR or by the command \fB^ts\fR\.
 .
 .SS "Cursor color"
-On some terminals (notably gnome\-terminal), the cursor is set to be the the reverse of the text\. This can cause problems when the text in the editor is reversed, because the cursor can get hidden\. Some terminals support dynamic setting of the cursor color\. The configuration parameter \fB$cursor_color\fR can be set in the configuration file\. Or else \fB^6C\fR will prompt you for a color\.
+On some terminals (notably gnome\-terminal), the cursor color is set to be the the reverse of the text\. This can cause problems when the text in the editor is reversed (e\.g\. highlighting), because the cursor can get hidden\. Some terminals support dynamic setting of the cursor color\. The configuration parameter \fB$cursor_color\fR can be set in the configuration file\. Or else \fB^6C\fR will prompt you for a color\.
 .
 .P
 Note that this will change the cursor color for the terminal, and will remain in effect even after exiting the editor\. To change back, either use the same command within the editor, or type
@@ -504,12 +516,15 @@ Multiple buffers can be displayed on the same screen with one of the following:
 move all buffers onto one screen: \fB^60\fR (if all buffers are already on one screen, this will spread them out onto their own screens)\.
 .
 .IP "2." 4
-move the current buffer to another screen: \fB^6#\fR where \fB#\fR is a number from 1\-9\. It is possible to have more than 9 screens (it is unlimited, actually), but only 1\-9 are available for this operation\.
+move the current buffer to another screen: \fB^6#\fR where \fB#\fR is a number from 1\-9\. It is possible to have more than 9 screens (it is unlimited, actually), but only 1\-9 are available for this operation (due to a limited number of keys)\.
 .
 .IP "" 0
 .
 .P
 Typing \fB^t\-\fR will set vertical stacking (buffers aligned above one another) and \fB^t|\fR will set horizontal stacking (side\-by\-side buffers)\. To scroll only the current buffer up/down, use shift\-up/down\. To scroll all the buffers on the current screen up/down, use ctrl\-up/down\.
+.
+.P
+Hit \fB^6^n\fR to get a menu of open buffers\.
 .
 .SS "Indentation facade"
 If you like to use a different indentation character/string than is used the file, but you don\'t want to change every line of the file, then indentation facade is what you are looking for\. Type \fB^6i\fR and you will be prompted for the file indentation string\. This is the string the file currently uses for indentation\. Next it will prompt you for the desired indentation string\.
@@ -592,7 +607,13 @@ keymap\.rb: Defines the keymapping
 bufferslist\.rb: Manages multiple file buffers, including moving them around from screen to screen, opening and closing, etc\.
 .
 .IP "\(bu" 4
-filebuffer\.rb: Contains everything related to storing and processing text\.
+filebuffer\.rb: Responsible for managing a single file buffer\. This includes all information about cursor position, etc\.
+.
+.IP "\(bu" 4
+textbuffer\.rb: Responsible for managing the actually text buffer\.
+.
+.IP "\(bu" 4
+fileaccessor\.rb: Responsible for interacting with files\.
 .
 .IP "\(bu" 4
 bufferhistory\.rb: Manages a list of text buffer states for undo/redo\.
@@ -606,16 +627,19 @@ syntaxcolors\.rb: Everything related to syntax coloring
 .IP "\(bu" 4
 compatibility\.rb: Some backported string and array functionality for ruby versions 1\.8\.6 or below\.
 .
+.IP "\(bu" 4
+utils\.rb: Adds some useful functionality to base classes, such as String, Array, and Regexp\.
+.
 .IP "" 0
 .
 .SH "ALGORITHM DETAILS"
 This section describes some details about how the editor does its thing\. It is not yet comprehensive\.
 .
 .SS "The text buffer"
-The actual file text is stored as an array of strings\. Each line from the input file becomes an element\. Any combination of line\-ending characters ("\er","\en","\er\en") is considered to be then end of the line\. Which ever line\-ending sting is used is stored up for writing the text buffer to file\. If the line\-endings are mixed, then the output file will not be the same as the input file\. Hypothetically, we could store up the line\-ending characters for each line; but if you are using mixed line\-endings, then you probably don\'t care about line\-endings anyway\.
+The actual file text is stored as an array of strings\. Each line from the input file becomes an element\. Any combination of line\-ending characters ("\er","\en","\er\en") is considered to be the end of the line\. Which ever line\-ending string is used is stored up for writing the text buffer to file\. If the line\-endings are mixed, then the output file will not be the same as the input file\. Hypothetically, we could store up the line\-ending characters for each line; but if you are using mixed line\-endings, then you probably don\'t care about the line\-endings anyway\.
 .
 .P
-When modifying the text buffer, two important things must be kept in mind\. First, never replace the entire buffer\. For example to copy the buffer \fBtext\fR into \fB@text\fR, use
+When modifying the text buffer, some important things must be kept in mind\. First, never replace the entire buffer\. For example to copy the buffer \fBtext\fR into \fB@text\fR, use
 .
 .IP "" 4
 .
@@ -647,7 +671,7 @@ instead of
 The second form replaces the array entirely\. This causes two problems: 1) the buffer history becomes much less efficient in both space and time; 2) if the same file is open in two buffers, the buffers will diverge\. The first form leaves the array in place, but replaces its contents\.
 .
 .P
-The second thing to keep in mind is when modifying a single line, always replace the entire line\. For example do
+The opposite is true for lines of text\. When modifying a single line, always replace the entire line\. For example do
 .
 .IP "" 4
 .
@@ -696,25 +720,7 @@ This way we have a different window, but all the parameters and histories and te
 Text folding is almost trivial in this buffer model\. We just replace the folded lines (elements in the array) with an array of strings\. So unfolded lines are string elements of the text buffer array, and folded lines are array elements of the text buffer array\. The only complication, is that we must be careful to check if a line is a string or array before we modify or display it\. Other than that, things like copy/paste don\'t care if they are moving strings or arrays around in the buffer\.
 .
 .SS "Indentation facade"
-One of the cool features of this editor is the indentation facade, where the actual (file) indentation strings differ from the apparent indentation strings\. So you can edit a file indented by spaces, but pretend as if it is indented by tabs\. Most of the work is in checking that things are sane (e\.g\. no mixing of indentation strings) and getting input from the user\. The real work is done with
-.
-.IP "" 4
-.
-.nf
-
-@text\.map{|line|
-    efis = Regexp\.escape(@fileindentstring)
-    after = line\.split(/^(#{efis})+/)\.last
-    next if after\.nil?
-    ni = (line\.length \- after\.length)/(@fileindentstring\.length)
-    line\.slice!(0\.\.\-1)
-    line << @indentstring * ni
-    line << after
-}
-.
-.fi
-.
-.IP "" 0
+One of the cool features of this editor is the indentation facade, where the actual (file) indentation strings differ from the apparent indentation strings\. So you can edit a file indented by spaces, but pretend as if it is indented by tabs\. Most of the work is in checking that things are sane (e\.g\. no mixing of indentation strings) and getting input from the user\.
 .
 .P
-This simply swaps out one indentation string for another in the buffer text\. Notice that this violates the rule of not modifying the text buffer strings\. This is on purpose, to fool the buffer history into thinking that the file hasn\'t changed\. The only other thing, is to convert back the indentation on saving the file\.
+We simply swap out one indentation string for another in the buffer text\. Notice that this violates the rule of not modifying the text buffer strings\. This is on purpose, to fool the buffer history into thinking that the file hasn\'t changed\. The only other thing, is to convert back the indentation on saving the file\.

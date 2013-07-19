@@ -93,6 +93,8 @@ I periodically test it on the following platforms:
 More information
 ----------------
 
+http://jedi.wx13.com
+
 Feel free to email me (jason@wx13.com) with any questions or
 feedback.  I started this project to satisfy my own needs, and as far
 as I know, I am the only user.  So you if you find this useful or

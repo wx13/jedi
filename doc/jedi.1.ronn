@@ -18,11 +18,44 @@ In general, upper-case flags turn things on, and lower-case flags
 turn things off. For each command-line flag, the equivalent
 configuration script code is shown.
 
-  * `-v` `--version`:
-    Prints version information to standard output, then exits.
+  * `-A`, `--autoindent` | `$autoindent = Hash.new(true)`:
+    Turn on autoindent.
+
+  * `-a`, `--no-autoindent` | `$autoindent = Hash.new(false)`:
+    Turn off autoindent.
+
+  * `-B`, `--backups` | `$backups = Hash.new($backup_prefix)`:
+    Enable backup file.
+
+  * `-b`, `--no-backups` | `$backups = Hash.new(false)`:
+    Disable backup file. [Default]
+
+  * `-C`, `--color` | `$syntax_color = Hash.new(true)`:
+    Turn on syntax coloring.
+
+  * `-c`, `--no-color` | `$syntax_color = Hash.new(false)`:
+    Turn off syntax coloring.
+
+  * `-E`, `--edit` | `$editmode = Hash.new(:edit)`:
+    Start in edit mode [Default]
+
+  * `-e`, `--no-edit` | `$editmode = Hash.new(:view)`:
+    Start in view/navigation mode.
 
   * `-h` `--help`:
     Prints usage information
+
+  * `-L`, `--line-scroll` | `$horiz_scroll = Hash.new(:line)`:
+    Single line horizontal scroll
+
+  * `-l`, `--screen-scroll` | `$horiz_scroll = Hash.new(:screen)`:
+    Full screen horizontal scroll
+
+  * `-M`, `--mouse` | `$mouse = true`:
+    Turn on mouse interaction.
+
+  * `-m`, `--no-mouse` | `$mouse = false`:
+    Turn off mouse interaction. [Default]
 
   * `-s` _file_, `--script` _file_ | `run_scipt(`_file_`)`:
     Runs the named script file on startup.  All code will be run by the
@@ -33,55 +66,28 @@ configuration script code is shown.
     or save history in a history file. Options specified after this
     can overwrite these changes.
 
-  * `-t` _N_, `--tabsize` _N_, `$tabsize = Hash.new(`_N`)`:
-    Sets the tab character display width to N spaces.  Within a single
-    buffer, this is set by the `@tabsize` variable.
-
-  * `-T` _C_, `--tabchar` _C_, `$tabchar = Hash.new(`_C_`)`:
+  * `-T` _C_, `--tabchar` _C_ | `$tabchar = Hash.new(`_C_`)`:
     Sets the tab character to C.  Whenever the tab key is entered, the
     character C is inserted into the text buffer.  Use `@tabchar` to
     set this inside a single buffer.
 
-  * `-a`, `--no-autoindent`, `$autoindent = Hash.new(false)`:
-    Turn off autoindent.
+  * `-t` _N_, `--tabsize` _N_ | `$tabsize = Hash.new(`_N`)`:
+    Sets the tab character display width to N spaces.  Within a single
+    buffer, this is set by the `@tabsize` variable.
 
-  * `-A`, `--autoindent`, `$autoindent = Hash.new(true)`:
-    Turn on autoindent.
+  * `-v` `--version`:
+    Prints version information to standard output, then exits.
 
-  * `-y` _file_, `--save-hist` _file_, `$histories_file =` _file_:
-    Save command/search/etc history in file FILE.
-
-  * `-e`, `--no-edit`, `$editmode = Hash.new(:view)`:
-    Start in view/navigation mode.
-
-  * `-E`, `--edit`, `$editmode = Hash.new(:edit)`:
-    Start in edit mode [Default]
-
-  * `-w, `--no-linewrap`, `$linewrap = Hash.new(false)`:
-    Turn off line-wrapping.
-
-  * `-W`, `--linewrap`, `$linewrap = Hash.new(true)`:
+  * `-W`, `--linewrap` | `$linewrap = Hash.new(true)`:
     Turn on line-wrapping.
 
-  * `-c`, `--no-color`, `$syntax_color = Hash.new(false)`:
-    Turn off syntax coloring.
+  * `-w, `--no-linewrap` | `$linewrap = Hash.new(false)`:
+    Turn off line-wrapping.
 
-  * `-C`, `--color`, `$syntax_color = Hash.new(true)`:
-    Turn on syntax coloring.
+  * `-y` _file_, `--save-hist` _file_ | `$histories_file =` _file_:
+    Save command/search/etc history in file FILE.
 
-  * `-m`, `--no-mouse`, `$mouse = false`:
-    Turn off mouse interaction. [Default]
-
-  * `-M`, `--mouse`, `$mouse = true`:
-    Turn on mouse interaction.
-
-  * `-b`, `--no-backups`, `$backups = Hash.new(false)`:
-    Disable backup file. [Default]
-
-  * `-B`, `--backups`, `$backups = Hash.new($backup_prefix)`:
-    Enable backup file.
-
-  * `-z`, `--disable-suspend`, `$suspend = false`:
+  * `-z`, `--disable-suspend` | `$suspend = false`:
     Ignore the suspend keypress. Useful when running in a non-unix
     enviroment, which has no job control.
 
@@ -98,7 +104,7 @@ represents the control key and the 'S' character represents the SHIFT.
     Close the current file, and exit the editor if all files are closed.
 
   * `^x`:
-    Mark text for copy/paste.
+    Start/stop marking text for copy/paste.
 
   * `^k`:
     Cut marked text (or current line if text is unmarked).
@@ -155,9 +161,6 @@ represents the control key and the 'S' character represents the SHIFT.
   * `^z`:
     Suspend the job (unix only).
 
-  * `^x`:
-    Start/stop marking text.
-
 
 ## INSTALLATION
 
@@ -186,7 +189,28 @@ To uninstall, just remove the following files:
 	$prefix/share/doc/jedi/
 
 
+
 ## CONFIGURATION
+
+
+### Configuration File
+
+On startup, jedi checks for a directory named `.jedi` in the user's
+home directory.  If one is found, jedi executes any ruby scripts
+(anything with an `.rb` extension) in the top level of that directory
+(not in subdirectories).  Jedi also searches the current path for
+`.jedi/*.rb` scripts, to allow configurations local to a directory (and
+its subdirectories).  Thus if you create a file `~/.jedi/config.rb` and
+a file `~/my_project/.jedi/config.rb`, jedi will execute the
+`my_project` config file after running the main config file.
+
+Other script files can be run at startup using the `-s` flag.  Any ruby
+code can be included in configuration files.  See the section on
+writing extensions for more information.
+
+The portable mode `-P` disables configuration file searching.  This is
+designed for situations where a user doesn't want jedi to modify files
+on the file system.
 
 
 ### Key Bindings
@@ -212,7 +236,7 @@ Or to completely change all of them:
 		...
 	}
 
-To see all the default keybindings, search for `/^class KeyMap/` in the file.
+To see all the default keybindings, look at the keymap.rb file.
 
 
 ### Mouse wheel
@@ -259,32 +283,31 @@ the Editor class by the `define_colors` method like this:
 		:message => :yellow,
 		:regex => :normal,
 		:marked => [:reverse,:blue],
-		:message => :yellow,
 	}
 
-Changing a color is as simple as:
+Changing a color is as simple as putting
 
 	$color[:string] = :green
 
-In the config file.  To change colors on the fly is slightly different,
+in the config file.  To change colors on the fly is slightly different,
 because the colors list gets processed by the `Screen` class.  Hit `^s`
 and enter the script:
 
 	$color[:string] = $color[:green]
 
-Syntax coloring is toggle on by the flag `-C` or by the command `^tS`,
+Syntax coloring is toggled on by the flag `-C` or by the command `^tS`,
 and off by the flag `-c` or by the command `^ts`.
 
 
 
 ### Cursor color
 
-On some terminals (notably gnome-terminal), the cursor is set to be the
-the reverse of the text. This can cause problems when the text in the
-editor is reversed, because the cursor can get hidden.  Some terminals
-support dynamic setting of the cursor color.  The configuration
-parameter `$cursor_color` can be set in the configuration file.  Or
-else `^6C` will prompt you for a color.
+On some terminals (notably gnome-terminal), the cursor color is set to
+be the the reverse of the text. This can cause problems when the text
+in the editor is reversed (e.g. highlighting), because the cursor can
+get hidden. Some terminals support dynamic setting of the cursor color.
+The configuration parameter `$cursor_color` can be set in the
+configuration file.  Or else `^6C` will prompt you for a color.
 
 Note that this will change the cursor color for the terminal, and will
 remain in effect even after exiting the editor.  To change back, either
@@ -395,12 +418,15 @@ following:
      on one screen, this will spread them out onto their own screens).
   2. move the current buffer to another screen: `^6#` where `#` is a
      number from 1-9. It is possible to have more than 9 screens (it is
-     unlimited, actually), but only 1-9 are available for this operation.
+     unlimited, actually), but only 1-9 are available for this operation
+     (due to a limited number of keys).
 
 Typing `^t-` will set vertical stacking (buffers aligned above one
 another) and `^t|` will set horizontal stacking (side-by-side buffers).
 To scroll only the current buffer up/down, use shift-up/down.  To
 scroll all the buffers on the current screen up/down, use ctrl-up/down.
+
+Hit `^6^n` to get a menu of open buffers.
 
 
 ### Indentation facade
@@ -506,8 +532,12 @@ The files are:
   * bufferslist.rb: Manages multiple file buffers, including moving them
   around from screen to screen, opening and closing, etc.
 
-  * filebuffer.rb: Contains everything related to storing and processing
-  text.
+  * filebuffer.rb: Responsible for managing a single file buffer.  This
+  includes all information about cursor position, etc.
+
+  * textbuffer.rb: Responsible for managing the actually text buffer.
+
+  * fileaccessor.rb: Responsible for interacting with files.
 
   * bufferhistory.rb: Manages a list of text buffer states for undo/redo.
 
@@ -518,6 +548,9 @@ The files are:
 
   * compatibility.rb: Some backported string and array functionality for
   ruby versions  1.8.6 or below.
+
+  * utils.rb: Adds some useful functionality to base classes, such as
+  String, Array, and Regexp.
 
 
 ## ALGORITHM DETAILS
@@ -530,14 +563,15 @@ It is not yet comprehensive.
 
 The actual file text is stored as an array of strings.  Each line from
 the input file becomes an element.  Any combination of line-ending
-characters ("\r","\n","\r\n") is considered to be then end of the line.
-Which ever line-ending sting is used is stored up for writing the text
+characters ("\r","\n","\r\n") is considered to be the end of the line.
+Which ever line-ending string is used is stored up for writing the text
 buffer to file. If the line-endings are mixed, then the output file
 will not be the same as the input file.  Hypothetically, we could store
 up the line-ending characters for each line; but if you are using mixed
-line-endings, then you probably don't care about line-endings anyway.
+line-endings, then you probably don't care about the line-endings
+anyway.
 
-When modifying the text buffer, two important things must be kept in
+When modifying the text buffer, some important things must be kept in
 mind.  First, never replace the entire buffer.  For example to copy
 the buffer `text` into `@text`, use
 
@@ -556,7 +590,7 @@ time; 2) if the same file is open in two buffers, the buffers will
 diverge.  The first form leaves the array in place, but replaces its
 contents.
 
-The second thing to keep in mind is when modifying a single line,
+The opposite is true for lines of text. When modifying a single line,
 always replace the entire line.  For example do
 
     @text[@row] = @text[@row].gsub(/x/,'y')
@@ -574,11 +608,11 @@ the same in memory), and is thus not undo-able.
 
 ### Buffer history
 
-History snapshots of the text buffer are shallow
-copies.  This is one of the advantages of using ruby, in that we can
-take a snapshot with `@text.dup`.  This duplicates the *array*, but the
-elements of the array are identical in memory.  Thus we create a new
-array containing all the old strings.
+History snapshots of the text buffer are shallow copies.  This is one
+of the advantages of using ruby, in that we can take a snapshot with
+`@text.dup`.  This duplicates the *array*, but the elements of the
+array are identical in memory.  Thus we create a new array containing
+all the old strings.
 
 
 ### Multiple editing of the same file
@@ -613,19 +647,9 @@ where the actual (file) indentation strings differ from the apparent
 indentation strings.  So you can edit a file indented by spaces, but
 pretend as if it is indented by tabs.  Most of the work is in checking
 that things are sane (e.g. no mixing of indentation strings) and
-getting input from the user.  The real work is done with
+getting input from the user.
 
-	@text.map{|line|
-		efis = Regexp.escape(@fileindentstring)
-		after = line.split(/^(#{efis})+/).last
-		next if after.nil?
-		ni = (line.length - after.length)/(@fileindentstring.length)
-		line.slice!(0..-1)
-		line << @indentstring * ni
-		line << after
-	}
-
-This simply swaps out one indentation string for another in the buffer
+We simply swap out one indentation string for another in the buffer
 text.  Notice that this violates the rule of not modifying the text
 buffer strings.  This is on purpose, to fool the buffer history into
 thinking that the file hasn't changed.  The only other thing, is to
