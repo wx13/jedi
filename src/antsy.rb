@@ -165,6 +165,22 @@ class Terminal
 		return @rows,@cols
 	end
 
+	def get_cursor_row
+		print "\e[6n"
+		n = ''
+		c = ''
+		2.times{c = STDIN.getc}
+		while(c!=';')
+			c = STDIN.getc.chr
+			n += c
+		end
+		n.chop!
+		while(c!='R')
+			c = STDIN.getc.chr
+		end
+		return n.to_i
+	end
+
 	def set_raw
 		system('stty raw -echo')
 	end
@@ -314,7 +330,8 @@ class Screen
 	# When this exits, return screen to normal.
 	def start_screen
 		@terminal.set_raw
-		@terminal.roll_screen_up(@rows)
+		@nroll = @terminal.get_cursor_row
+		@terminal.roll_screen_up(@nroll)
 		@terminal.disable_linewrap
 		begin
 			yield
@@ -337,7 +354,8 @@ class Screen
 		@terminal.unset_raw
 		Process.kill("SIGSTOP",0)
 		@terminal.set_raw
-		@terminal.roll_screen_up(@rows)
+		@nroll = @terminal.get_cursor_row
+		@terminal.roll_screen_up(@nroll)
 		@terminal.disable_linewrap
 		update_screen_size
 	end
