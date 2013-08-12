@@ -73,7 +73,7 @@ class String
 	# "special/chars"        => /special\/chars/
 	# "/regex/", escape=nil  => /regex/
 	# "/regex/", escape=true => /\/regex\//
-	def to_regexp(escape=nil)
+	def to_regex(escape=nil)
 		if self[0]=="/" && self[-1]=="/" && escape.nil?
 			begin
 				return(eval(self))
@@ -93,13 +93,13 @@ class Array
 		self.grep(pattern).length
 	end
 	# Convert all elements of the array to regexp
-	def to_regexp(escape)
-		self.map{|x| x.to_regexp(escape)}
+	def to_regex(escape)
+		self.map{|x| x.to_regex(escape)}
 	end
 end
 
 class Regexp
-	def to_regexp(escape)
+	def to_regex(escape)
 		self
 	end
 end
