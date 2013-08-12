@@ -378,7 +378,7 @@ class Screen
 	# Typically used for asking the user a question.
 	def write_bottom_line(str)
 		write_string_colored(@rows,0," "*@cols,:message)
-		write_string_colored(@rows,0,str,:message)
+		write_string_colored(@rows,0,str.gsub(/	/,' '),:message)
 	end
 
 	# Write an entire line of text to the screen.
