@@ -1198,32 +1198,57 @@ class FileBuffer
 	end
 
 
+	#
+	# Write a line of text to the screen.
+	#
+	# Input:
+	#   text  A text buffer (array of strings)
+	#   r     The row to print
+	#
+	# The line to be printed could be a string or and array (folded).
+	# If it is a string, do syntax coloring and convert tabs to spaces.
+	# If it is an array, print a special folded-text descriptor.
+	#
 	def write_line(text,r)
+
 		line = text[r]
 		return if line.nil?
+
 		if line.kind_of?(String)
-			line = line.bytes.to_a.map{|b|[b,126].min.chr}.join if @enforce_ascii
+
+			if @enforce_ascii
+				line = line.bytes.to_a.map{|b|[b,126].min.chr}.join
+			end
+
 			if @syntax_color
 				aline = $syntax_colors.syntax_color(line,@filetype,@indentchar)
 			else
 				aline = line + $color[:normal]
 			end
+
 			aline = tabs2spaces(aline)
+
 		else
-			bline = tabs2spaces(line[0])
-			descr = "[[" + line.length.to_s + " lines: "
-			tail = "]]"
-			sample_text =  bline[0,(@window.cols-descr.length-tail.length).floor]
+
+			bline = tabs2spaces(line[0]).gsub(/^ {1,2}/,'')
+			head = "[["
+			tail = "]] (" + line.length.to_s + " lines)"
+			sample_text =  bline[0,(@window.cols-head.length-tail.length).floor]
 			sample_text = "" if sample_text.nil?
-			aline = $color[:hiddentext] + descr + sample_text + \
-				tail + $color[:normal]
+			aline = head + sample_text + tail
+			aline = $color[:hiddentext] + aline + $color[:normal]
+
 		end
+
 		if @horiz_scroll==:screen || r==(@row-@linefeed)
 			@window.write_line(r,@colfeed,aline)
 		else
 			@window.write_line(r,0,aline)
 		end
+
 	end
+
+
 
 	#
 	# just dump the buffer text to the screen
