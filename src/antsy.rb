@@ -258,6 +258,9 @@ class Screen
 		# Define status and message colors
 		add_colors({:status=>:underline,:message=>:yellow})
 
+		# Do this to prevent thread locking problems from printing.
+		$stdout.sync = true
+
 	end
 
 
