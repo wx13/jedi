@@ -75,7 +75,7 @@ else
 end
 
 tests.each{|file|
-	require file
+	require './'+file
 }
 $tester.report
 
