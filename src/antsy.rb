@@ -812,7 +812,7 @@ class Screen
 					idx = [idx-nr/2,0].max
 				when '/'
 					term = ask("Search:")
-					idx = search_array(term,choices,idx)
+					idx = search_array(term,choices,idx) unless term.nil?
 				when 'n'
 					idx = search_array(term,choices,idx)
 				when 'g'
