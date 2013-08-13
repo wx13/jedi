@@ -133,6 +133,10 @@ class Terminal
 		if c=="\e"
 			2.times{c += STDIN.getc.chr}
 		end
+		# Funky gnome-terminal issues
+		if c[1,1] == "O"
+			c[1] = "["
+		end
 		# Mouse
 		if c[2,1] == "M"
 			c += get_mouse_code
