@@ -12,7 +12,7 @@ $tester.test("BuffersList.new, non-existent file"){
 }
 
 $tester.test("BuffersList.new, existent file"){
-	file = Tempfile.new(['foo'])
+	file = Tempfile.new('foo')
 	b = BuffersList.new([file.path])
 	b
 }
