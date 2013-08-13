@@ -392,6 +392,23 @@ class CopyBuffer
 		@text = text
 		$buffers.current.paste
 	end
+	def send_to_xclip
+		begin
+			text = @text.join("\n")
+			system("echo -n \'#{text}\' | xclip -i 2> /dev/null")
+		rescue
+			$screen.write_message("Error: can't write to xclip")
+		end
+	end
+	def get_from_xclip
+		begin
+			text = `xclip -o 2> /dev/null`
+			clear
+			@text = text.split("\n")
+		rescue
+			$screen.write_message("Error: can't copy from xclip")
+		end
+	end
 end
 # end of CopyBuffer class
 #---------------------------------------------------------------------

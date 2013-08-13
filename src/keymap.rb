@@ -110,6 +110,8 @@ class KeyMap
 			:end => "buffer.goto_line(-1)",
 			:home2 => "buffer.goto_line(0)",
 			:end2 => "buffer.goto_line(-1)",
+			:ctrl_c => "$copy_buffer.send_to_xclip",
+			:ctrl_v => "$copy_buffer.get_from_xclip",
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
 			:ctrl_u => "$copy_buffer.menu",
