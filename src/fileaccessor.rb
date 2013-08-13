@@ -21,7 +21,7 @@ class FileAccessor
 	# Determine the primary indentation string of the file.
 	def update_indentation(text)
 		a = text.map{|line|
-			if line[0] != nil && !line[0].is_a?(String)
+			if line[0] != nil && line[0].is_a?(String)
 				line[0].chr
 			end
 		}
