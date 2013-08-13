@@ -20,8 +20,8 @@ class FileAccessor
 
 	# Determine the primary indentation string of the file.
 	def update_indentation(text)
-		a = text.map{|line|
-			if line[0] != nil && line[0].is_a?(String)
+		a = text.flatten.map{|line|
+			if line[0] != nil
 				line[0].chr
 			end
 		}
