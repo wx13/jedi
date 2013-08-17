@@ -19,6 +19,16 @@ class TextBuffer < Array
 		}
 	end
 
+	# Return a deep copy of the text buffer.
+	def deep_copy
+		text = self.flatten
+		rtext = []
+		text.each_index{|k|
+			rtext[k] = text[k].dup
+		}
+		return rtext
+	end
+
 	# Delete a character at a (row,col) location.
 	def delchar(row,col)
 		return if self[row].kind_of?(Array)

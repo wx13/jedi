@@ -71,12 +71,11 @@ class FileAccessor
 	end
 
 	# Save buffer to a file.
-	def save(text)
+	def save(textb)
 
+		text = TextBuffer.new(textb.deep_copy)
 		if @bufferindentstring != @indentstring
-			textb = TextBuffer.new(text.dup)
-			textb.swap_indent_string(@bufferindentstring,@indentstring)
-			text = textb
+			text.swap_indent_string(@bufferindentstring,@indentstring)
 		end
 
 		update_indentation(text)
