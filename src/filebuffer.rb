@@ -224,7 +224,7 @@ class FileBuffer
 		# Save the command/search histories.
 		$histories.save
 
-		@indentchar = @file.indentchar
+		@indentchar = @file.bufferindentchar
 		@window.write_message("saved to: "+@file.name)
 
 	end
@@ -1524,6 +1524,7 @@ class FileBuffer
 
 		# Replace one indentation with the other.
 		@file.indentstring = fileindentstring
+		@file.bufferindentchar = indentstring[0,1]
 		@file.bufferindentstring = indentstring
 		@indentstring = indentstring
 		@buffer_history.swap_indent_string(@file.indentstring, @indentstring)

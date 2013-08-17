@@ -7,7 +7,8 @@
 
 class FileAccessor
 
-	attr_accessor :name, :indentchar, :indentstring, :bufferindentstring
+	attr_accessor :name, :indentchar, :indentstring, :bufferindentstring,
+	:bufferindentchar
 
 	def initialize(filename)
 		@name = filename
@@ -76,9 +77,9 @@ class FileAccessor
 		text = TextBuffer.new(textb.deep_copy)
 		if @bufferindentstring != @indentstring
 			text.swap_indent_string(@bufferindentstring,@indentstring)
+		else
+			update_indentation(text)
 		end
-
-		update_indentation(text)
 
 		# Dump the text to the file.
 		begin
