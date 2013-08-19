@@ -1,1 +1,1 @@
-ronn --organization="version 0.4.5" --manual="Jedi Manual" --style="./ronn.css" jedi.1.ronn
+ronn --organization="version 0.4.6" --manual="Jedi Manual" --style="./ronn.css" jedi.1.ronn

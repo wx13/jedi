@@ -1,3 +1,29 @@
+0.4.6
+-----
+
+Bug fixes:
+
+  + Fixed some issues with character input and various terminals
+  + Fixed a mouse highlighting crash
+  + Set stdout.sync = true to prevent output deadlocking
+  + Fixed some regexp issues
+  + Fixed crashing when cancelling menu search
+  + Fixed string compatability code errors
+  + Fixed some text code errors
+  + Fixed two indentation facade bugs
+
+Clean up:
+
+  + Updated documentation
+  + Prettier folded text
+  + Handle tabs in ask line
+  + Don't clear as many lines on startup
+
+Features:
+
+  + Copy text to/ from xclip (if available)
+
+
 0.4.5
 -----
 
