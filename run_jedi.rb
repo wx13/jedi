@@ -3,7 +3,7 @@
 #---------------------------------------------------------------------
 
 # Require all the files in 'src'.
-Dir[File.dirname(__FILE__) + '/src/*.rb'].each{|file|
+Dir[File.dirname(__FILE__) + '/src/**/*.rb'].each{|file|
 	require file
 }
 

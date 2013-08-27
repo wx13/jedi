@@ -81,7 +81,7 @@ class FileBuffer
 		@bookmarks_hist = [""]
 
 		# grab a window to write to
-		@window = Antsy::Window.new($screen)
+		@window = Window.new($screen)
 
 		# for marked text highlighting
 		@buffer_marks = {}

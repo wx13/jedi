@@ -52,7 +52,7 @@ class Editor
 		# Initialize the interactive screen environment, and set the color
 		# global to point to the one that screen defines.  This will keep
 		# everything in the same place, but allow easy on-the-fly color changes.
-		$screen = Antsy::Screen.new
+		$screen = Screen.new
 		$color = $screen.add_colors($color)
 		$screen.set_cursor_color($cursor_color)
 		$screen.toggle_mouse($mouse)
