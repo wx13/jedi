@@ -39,6 +39,7 @@ class Editor
 		$suspend = true
 		$search_for_scripts = true
 		$startup_script = nil
+		$histories_file = ENV['HOME'] + "/.jedi/history.yaml"
 
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
