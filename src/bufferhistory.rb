@@ -1,30 +1,49 @@
 #---------------------------------------------------------------------
 # BufferHistory class
 #
-# This class manages a list of buffer text states for
-# undo/redo purposes.  The whole thing is a wrapper around a
-# list of Node objects, which are defined inside this
-# BufferHistory class.
+# This class manages a list of buffer text states for undo/redo purposes.
+# It keeps a list a buffer states, and some indexes into the list.
+# Each element of the buffer state list is an instance the class State
+# (defined within the BufferHistory class).
+# A state instance contains: a text buffer, row, and column.
 #---------------------------------------------------------------------
 
 class BufferHistory
 
+	# BufferHistory must be initialized with a text state.
 	def initialize(text,row,col)
+
 		@hist = [State.new(text,row,col)]
 		@idx = 0
-		# These are for (un)reverting to saved copy.
+
+		# This is an index of snapshots made each time the buffer is saved
+		# to file.
 		@saved = [@idx]
 		@saved_idx = 0
 		@last_saved = @hist[@idx]
+
+		# Put some limits on the length of the state list:
+		# both number of elements and byte size matter.
 		@maxlength = 1000
 		@maxbytes = 1e8
 		@maxlength_saved = 100
 		@maxbytes_saved = 1e6
 	end
 
+
+
+	# Let us directly access the current state.
 	def text
 		@hist[@idx].text
 	end
+	def row
+		@hist[@idx].row
+	end
+	def col
+		@hist[@idx].col
+	end
+
+
 
 	# Define a buffer state.
 	class State
@@ -35,6 +54,7 @@ class BufferHistory
 			@col = col
 		end
 	end
+
 
 
 	# Keep the history from getting too long.
@@ -83,6 +103,8 @@ class BufferHistory
 
 	end
 
+
+
 	# Add a new snapshot.
 	def add(text,row,col)
 		@hist = @hist[0..@idx] + [State.new(text,row,col)] + @hist[@idx+1..-1]
@@ -90,19 +112,13 @@ class BufferHistory
 		prune
 	end
 
-	# Bump forward by one.
-	def row
-		@hist[@idx].row
-	end
-	# Bump backward by one.
-	def col
-		@hist[@idx].col
-	end
+
 
 	# Make a shallow copy of the text.
 	def copy
 		@hist[@idx].text.dup
 	end
+
 
 
 	#
@@ -131,6 +147,8 @@ class BufferHistory
 		return false, @hist[idx].row, @hist[idx].col
 	end
 
+
+
 	# This should get called only when the file is saved.
 	# This makes a "saved" snapshot of the history,
 	# *and* sets the "last_saved" state, which should track
@@ -138,7 +156,6 @@ class BufferHistory
 	# else has changed it).
 	def save
 		return if !modified?
-#		@saved = @saved[0..@saved_idx] + [@idx] + @saved[@saved_idx+1..-1]
 		@saved = @saved[0..@saved_idx] + [@idx]
 		if @saved_idx < @saved.length
 			@saved += @saved[@saved_idx+1..-1]
@@ -146,6 +163,8 @@ class BufferHistory
 		@saved_idx += 1
 		@last_saved = @hist[@idx]
 	end
+
+
 
 	# Optional file history backup.  Write to a backup file all the saved
 	# state history. The first line of the file will be the current
@@ -185,6 +204,8 @@ class BufferHistory
 		$screen.write_message($!.to_s)
 		return
 	end
+
+
 
 	# Read in the saved states from the backup file.
 	def load(filename)
@@ -228,11 +249,14 @@ class BufferHistory
 		}
 	end
 
+
+
 	# Is the text modified from the saved version?
 	# Use flatten, so that folded text is seen as unchanged.
 	def modified?
 		@last_saved.text.flatten != @hist[@idx].text.flatten
 	end
+
 
 
 	# These bumps along the "saved" states of the buffer history.
@@ -265,7 +289,6 @@ class BufferHistory
 	rescue
 		$screen.write_message($!.to_s)
 	end
-
 
 
 
