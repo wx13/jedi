@@ -593,15 +593,15 @@ class FileBuffer
 			center_screen
 		end
 	end
-	def undo(method=:undo)
-		changed,@row,@col = @buffer_history.send(method,@row,@col)
+	def undo(n=-1)
+		changed,@row,@col = @buffer_history.undo(@row,@col,n)
 		if changed
 			@text = @buffer_history.copy
 		end
 		better_cursor_position
 	end
 	def redo
-		undo(:redo)
+		undo(1)
 	end
 	def revert_to_saved(method=:revert_to_saved)
 		@text.delete_if{|x|true}

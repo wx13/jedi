@@ -104,26 +104,31 @@ class BufferHistory
 		@hist[@idx].text.dup
 	end
 
-	def undo(r,c)
-		if @idx == 0
-			return false, r, c
-		elsif r!=@hist[@idx].row
-			return false, @hist[@idx].row, @hist[@idx].col
-		else
-			@idx -= 1
-			return true, @hist[@idx+1].row, @hist[@idx+1].col
-		end
-	end
 
-	def redo(r,c)
-		if @idx == @hist.length-1
+	#
+	# Bump to the next/previous item in the buffer history list.
+	#
+	# - If we are at the end/start of the list already, do nothing.
+	# - If the current row is sufficiently different than the changed row, then
+	#   move to the changed row, but don't make the change.
+	# - If the changed row is the current row, then make the change.
+	# A. Caveat, if we can't move to the appropriate row, make the change
+	#    anyway.  Otherwise we could lose access to changes.
+	#
+	def undo(r,c,n=-1)
+		unless (0..@hist.length-1).include?(@idx+n)
 			return false, r, c
-		elsif r!=@hist[@idx+1].row
-			return false, @hist[@idx+1].row, @hist[@idx+1].col
-		else
-			@idx += 1
-			return true, @hist[@idx].row, @hist[@idx].col
 		end
+		idx = @idx + (n+1)/2
+		if r==@hist[idx].row
+			@idx += n
+			return true, r, c
+		end
+		if @hist[idx].row >= @hist[@idx].text.length
+			@idx += n
+			return true, @hist[idx].row, @hist[idx].col
+		end
+		return false, @hist[idx].row, @hist[idx].col
 	end
 
 	# This should get called only when the file is saved.
