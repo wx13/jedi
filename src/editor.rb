@@ -179,6 +179,14 @@ class Editor
 	# --------------------------------------------------------
 
 
+	def debug
+		require 'irb'
+		$screen.suspend_screen
+		IRB.start_session(binding)
+		$screen.restart_screen
+		$buffers.update_screen_size
+	end
+
 
 	# Parse the command line inputs.
 	def parse_options

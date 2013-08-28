@@ -115,6 +115,7 @@ class KeyMap
 			:ctrl_x => "buffer.mark",
 			:ctrl_6 => "buffer.sticky_extramode ^= true",
 			:ctrl_u => "$copy_buffer.menu",
+			:ctrl_d => "debug",
 			:tab => "eval(buffer.menu($keymap.extramode_commandlist,'extramode').last)"
 		}
 		@extramode_commandlist.default = ""

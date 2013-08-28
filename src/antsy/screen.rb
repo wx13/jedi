@@ -100,19 +100,27 @@ class Screen
 		end
 	end
 
-	# Suspend the editor, and refresh on return.
-	def suspend
+	def suspend_screen
 		@terminal.enable_linewrap
 		@terminal.clear_screen
 		@terminal.show_cursor
 		@terminal.cursor(0,0)
 		@terminal.unset_raw
-		Process.kill("SIGSTOP",0)
+	end
+
+	def restart_screen
 		@terminal.set_raw
 		@nroll = @terminal.get_cursor_row
 		@terminal.roll_screen_up(@nroll)
 		@terminal.disable_linewrap
 		update_screen_size
+	end
+
+	# Suspend the editor, and refresh on return.
+	def suspend
+		suspend_screen
+		Process.kill("SIGSTOP",0)
+		restart_screen
 	end
 
 	# Set cursor position.
