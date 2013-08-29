@@ -26,7 +26,7 @@ $tester.test("FileAccessor.save"){
 	tempfile = Tempfile.new('foo')
 	file = FileAccessor.new(tempfile.path)
 	text = ["foo","bar"]
-	file.save(text)
+	file.save(TextBuffer.new(text))
 	text2 = tempfile.read
 	tempfile.unlink
 	text2 == text.join("\n")
