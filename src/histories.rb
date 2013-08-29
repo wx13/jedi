@@ -53,7 +53,11 @@ class Histories
 		if (@file.nil?) || (!File.exist?(@file))
 			return
 		end
-		hists = YAML.load_file(@file)
+		begin
+			hists = YAML.load_file(@file)
+		rescue
+			hists = {}
+		end
 		if !hists
 			return
 		end
