@@ -7,19 +7,21 @@
 
 if RUBY_VERSION < "1.8.7"
 class String
-	def partition(pattern)
-		x = self.index(pattern)
+	def partition(pattern,index=:index)
+		x = self.send(index,pattern)
+		#x = self.index(pattern)
 		return self, "", "" if x.nil?
 		c = self[x..-1].match(pattern)[0]
 		cn = c.length
 		return self[0,x], c, self[x+cn..-1]
 	end
 	def rpartition(pattern)
-		x = self.rindex(pattern)
-		return self, "", "" if x.nil?
-		c = self[x..-1].match(pattern)[0]
-		cn = c.length
-		return self[0,x], c, self[x+cn..-1]
+		partition(pattern,:rindex)
+		#x = self.rindex(pattern)
+		#return self, "", "" if x.nil?
+		#c = self[x..-1].match(pattern)[0]
+		#cn = c.length
+		#return self[0,x], c, self[x+cn..-1]
 	end
 	def each_char
 		self.each_byte{|b| yield b.chr}

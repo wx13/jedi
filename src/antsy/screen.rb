@@ -61,10 +61,6 @@ class Screen
 	end
 
 
-	def getch(options={})
-		return @terminal.getch(options)
-	end
-
 
 	# Call to stty utility for screen size update, and set
 	# @rows and @cols.
@@ -540,14 +536,15 @@ class Screen
 		shift = 0
 		while true
 
-			# shift menu if need be
+			# Shift choices if idx is off the screen.
 			shift = idx-nr if idx-shift > nr
 			shift = idx if idx < shift
 
-			# loop over menu choices
+			# Print the choices.
 			s = choices[shift..(nr+shift)]
 			s.each_index{|j|
 
+				# Highlight the current selection.
 				if j==idx-shift
 					pre = @color[:reverse]
 					post = @color[:normal]
@@ -555,10 +552,14 @@ class Screen
 					pre = ""
 					post = ""
 				end
+
+				# Write each choice.
 				r = margin + j + 1
 				write_string(r,margin+2,pre+' '*(cols-3))
 				write_string(r,margin+2,s[j].join('  ')+post)
 			}
+
+			# Interact.
 			c = getch({:hide_cursor=>true})
 			case c
 				when :up
@@ -590,6 +591,10 @@ class Screen
 	end
 
 
+	# Search an array of choices for a term. Start at
+	# idx and search to the end.  Then wrap back to the start
+	# and search from start to idx.
+	# Return nil if not found, otherwise return idx.
 	def search_array(term,choices,idx)
 		idx2 = search_array_from_idx(term,choices,idx)
 		if idx2==idx
@@ -599,6 +604,12 @@ class Screen
 		end
 		return idx
 	end
+
+
+	# Search for term in choices, but only looking from
+	# idx on down.
+	# Return nil if term is not found, otherwise return
+	# the index it is found at.
 	def search_array_from_idx(term,choices,idx)
 		return if term.nil?
 		choices[idx+1..-1].each_index{|k|
