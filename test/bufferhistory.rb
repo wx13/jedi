@@ -33,7 +33,7 @@ $tester.test("BufferHistory.redo"){
 	bh.add(["foo","bar","buz"],1,1)
 	bh.add(["foo"],0,1)
 	bh.undo(0,1)
-	bh.redo(0,1)
+	bh.undo(0,1,1)
 	bh.text == ["foo"] && bh.row == 0 && bh.col == 1
 }
 

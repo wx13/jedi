@@ -1,4 +1,4 @@
-$screen = Antsy::Screen.new
+$screen = Screen.new
 $editor = Editor.new
 
 $tester.test("SyntaxColors.new()"){
@@ -8,7 +8,7 @@ $tester.test("SyntaxColors.new()"){
 
 $tester.test("SyntaxColors.apply_rules"){
 	sc = SyntaxColors.new
-	$screen = Antsy::Screen.new
+	$screen = Screen.new
 	$editor = Editor.new
 	a,b,c = sc.apply_rules("foo ","bar baz",{/b/=>/r/},:green)
 	(a==("foo "+$color[:green]+"bar"+$color[:normal]))&&(b==" baz")&&(c)

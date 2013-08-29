@@ -53,7 +53,7 @@ end
 
 
 # Require all the files in 'src'.
-Dir['../src/*.rb'].each{|src_file|
+Dir['../src/**/*.rb'].each{|src_file|
 	require src_file
 }
 
