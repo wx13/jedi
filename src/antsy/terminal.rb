@@ -1,7 +1,11 @@
 #---------------------------------------------------------------------
 # Terminal class defines the API for interacting with the terminal.
-# Everything terminal specific belongs in here.  In theory, to change
+# Everything terminal-specific belongs in here.  In theory, to change
 # from ANSI to curses to tk, would require only changing this class.
+#
+# The Terminal class uses ANSI escapes to interact with the terminal.
+# This is a little less portable than curses (theoretically), but can
+# be done without external libraries.
 #---------------------------------------------------------------------
 class Terminal
 
