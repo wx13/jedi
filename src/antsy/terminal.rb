@@ -16,6 +16,8 @@ class Terminal
 	def initialize
 		define_colors
 		define_keycodes
+		define_outputcodes
+		# This is a regexp to recognize an ANSI escape:
 		@escape_regexp = /\e\[.*?m/
 	end
 
@@ -184,50 +186,36 @@ class Terminal
 	def unset_raw
 		system('stty -raw echo')
 	end
-	def roll_screen_up(r)
-		print "\e[#{r}S"
-	end
-	def clear_screen
-		print "\e[2J"
-	end
-	def disable_linewrap
-		print "\e[?7l"
-	end
-	def enable_linewrap
-		print "\e[?7h"
-	end
-	def cursor(r,c)
-		print "\e[#{r};#{c}H"
+
+	# Allow the user to toggle mouse support on/off.
+	def toggle_mouse(mouse)
+		print (mouse)?("\e[?9h"):("\e[?9l")
 	end
 
 	def write(text)
 		print text
 	end
 
-	def clear_line
-		print "\e[2K"
+	# Some commands just print a code to the screen.
+	# Handle these here.
+	def define_outputcodes
+		@outputcodes =
+		{
+			:restore_cursor   => "u",
+			:save_cursor      => "s",
+			:hide_cursor      => "?25l",
+			:show_cursor      => "?25h",
+			:clear_line       => "2K",
+			:cursor           => "%d;%dH",
+			:enable_linewrap  => "?7h",
+			:disable_linewrap => "?7l",
+			:clear_screen     => "2J",
+			:roll_screen_up   => "%dS",
+		}
+		@outputcodes.default = ""
 	end
-
-	def hide_cursor
-		print "\e[?25l"
-	end
-	def show_cursor
-		print "\e[?25h"
-	end
-	def save_cursor
-		print "\e[s"
-	end
-	def restore_cursor
-		print "\e[u"
-	end
-
-	# Allow the user to toggle mouse support on/off.
-	def toggle_mouse(mouse)
-		if mouse
-			print "\e[?9h"
-		else
-			print "\e[?9l"
-		end
+	def method_missing(method,*args,&block)
+		print "\e[" + @outputcodes[method] % args
 	end
 
 end
