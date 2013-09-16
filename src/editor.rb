@@ -101,6 +101,7 @@ class Editor
 			/\.html?$/        => :html,
 			/\.java$/         => :java,
 			/\.awk$/          => :awk,
+			/\.[rR]$/         => :r,
 		}
 		return filetypes
 	end

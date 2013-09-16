@@ -30,6 +30,7 @@ class SyntaxColors
 			:octave  => {'#'=>/$/,'%'=>/$/},
 			:html    => {'<!--'=>'-->'},
 			:awk     => {'#'=>/$/},
+			:r       => {'#'=>/$/},
 		}
 		@comments.default = {}
 
