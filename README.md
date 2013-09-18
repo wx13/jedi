@@ -1,22 +1,24 @@
 Jedi (J's EDItor)
 =================
 
-Jedi is a text editor, writen in ruby, for the unix console,
-designed to be portable and hackable.
+Jedi is a unix console text editor designed to be portable and
+hackable.
 
  - Portable
    + No installation required
+   + No build step
    + No dependencies, other than ruby
  - Hackable
    + Full ruby scriptability (on startup, and while running)
-   + 3000 SLOC
- - Features
+   + 3K SLOC
+ - Some Features
    + Text folding (manual and pattern-based auto-folding)
    + Multi-level undo/redo with (optional) history saved to disk
    + Multiple cursor modes
    + Indentation facade
    + Searchable copy/paste history
    + Split screen modes
+   + Drop into an IRB session at anytime
 
 
 
@@ -67,6 +69,28 @@ To create a single-file portable executable, run
 
 The resulting file is entirely self contained, and may be executed
 anywhere ruby is installed.  The installer script does this for you.
+
+
+
+Philosophy and Requirements
+---------------------------
+
+The dual goals of the Jedi text editor are portability and hackability.
+By portability I mean: if you are in a unix-like environment, you
+should be able to run jedi (regardless of user access, build tool
+availability, etc.).  By hackability, I mean: you can modify the code
+anywhere at anytime (regardless of user access, build tool
+availability, etc.).
+
+Derived requirements:
+
+ * No dependencies other than the ruby interpreter
+   * Any code with external dependencies must remain an extension, and not
+     part of the core code.
+ * Keep the code short and simple
+   * The longer and more complex the code gets, the harder it is to hack.
+   * Some advanced functionality may have to be built as optional
+     extensions, to keep the code base small.
 
 
 A note about portability
