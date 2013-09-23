@@ -41,6 +41,14 @@ Stick the jedi.rb file in your path.
 
 *Option 2:*
 
+Add the following line to `/etc/apt/sources.list`
+
+    deb http://debian.wx13.com binary/
+
+Then: `apt-get update; apt-get install jedi-editor`
+
+*Option 3:*
+
 Grab the full source code from
 http://github.com/wx13/jedi, and run
 
