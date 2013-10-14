@@ -1,3 +1,26 @@
+0.4.7
+-----
+
+Bug fixes:
+
+ + Fixed some bugs in the test code
+ + Set a default histories file location
+ + Undo/redo issues when changes were made a the end of a file.
+ + Handle empty history file
+
+Clean up:
+
+ + Split Antsy code into 3 files.
+ + Removed some redundant code
+ + Replaced a bunch of methods with "missing_method"
+
+Features:
+
+ + Drop into an IRB session at any time.  All the editor variables and
+   methods will be accessible.
+ + Syntax coloring for R
+
+
 0.4.6
 -----
 
