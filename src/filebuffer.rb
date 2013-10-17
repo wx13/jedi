@@ -1498,7 +1498,7 @@ class FileBuffer
 	# pairs, and convert the buffer.  On save, the buffer will be unconverted.
 	# Should warn user if changes are irreversible.
 	def mask
-		ans = @window.ask("Mask (hash):")
+		ans = @window.ask("Mask (hash):",$histories.mask)
 		if ans.nil? || ans.empty?
 			@window.write_message("Cancelled.")
 			return

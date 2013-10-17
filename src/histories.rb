@@ -11,7 +11,7 @@ class Histories
 	require 'yaml'
 
 	attr_accessor :file, :search, :replace, :line_number, \
-	:command, :script, :start_folding, :end_folding
+	:command, :script, :start_folding, :end_folding, :mask
 
 	def initialize
 		@file = $histories_file
@@ -22,6 +22,7 @@ class Histories
 		@command = []
 		@start_folding = []
 		@end_folding = []
+		@mask = []
 		read
 	end
 
@@ -37,7 +38,8 @@ class Histories
 			"command" => @command.last(1000),
 			"script" => @script.last(1000),
 			"start_folding" => @start_folding.last(1000),
-			"end_folding" => @end_folding.last(1000)
+			"end_folding" => @end_folding.last(1000),
+			"mask" => @mask.last(1000),
 		}
 		begin
 			File.open(@file,"w"){|file|
@@ -68,6 +70,7 @@ class Histories
 		@script = @script.reverse.concat(hists["script"].reverse).uniq.reverse
 		@start_folding = @start_folding.reverse.concat(hists["start_folding"].reverse).uniq.reverse
 		@end_folding = @end_folding.reverse.concat(hists["end_folding"].reverse).uniq.reverse
+		@mask = @mask.reverse.concat(hists["mask"].reverse).uniq.reverse
 	end
 
 end
