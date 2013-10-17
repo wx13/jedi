@@ -1519,6 +1519,7 @@ class FileBuffer
 	end
 	def unmask
 		@buffer_history.unapply_mask(@file.mask)
+		@file.mask = {}
 		dump_to_screen(true)
 	end
 

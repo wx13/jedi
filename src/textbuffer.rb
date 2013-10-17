@@ -306,6 +306,14 @@ class TextBuffer < Array
 
 	end
 
+	def gsub!(rules)
+		self.map{|line|
+			rules.each{|k,v|
+				line.gsub!(k,v)
+			}
+			line
+		}
+	end
 
 end
 

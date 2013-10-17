@@ -68,6 +68,12 @@ class FileAccessor
 			text = textb
 		end
 
+		unless @mask.empty?
+			textb = TextBuffer.new(text)
+			textb.gsub!(@mask)
+			text = textb
+		end
+
 		return(text)
 
 	end
@@ -81,6 +87,8 @@ class FileAccessor
 		else
 			update_indentation(text)
 		end
+
+		text.gsub!(@mask.invert)
 
 		# Dump the text to the file.
 		begin
