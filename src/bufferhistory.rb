@@ -306,11 +306,26 @@ class BufferHistory
 	end
 
 	def apply_mask(mask)
+		# dry run
+		each_line{|line|
+			temp = line.dup
+			mask.each{|k,v|
+				temp.gsub!(k,v)
+			}
+			mask.invert.each{|k,v|
+				temp.gsub!(k,v)
+			}
+			unless temp == line
+				return "Irreversibility error"
+			end
+		}
+		# for real
 		each_line{|line|
 			mask.each{|k,v|
 				line.gsub!(k,v)
 			}
 		}
+		return nil
 	end
 
 	def unapply_mask(mask)

@@ -1514,8 +1514,12 @@ class FileBuffer
 			@window.write_message("Error: not a hash")
 			return
 		end
-		@buffer_history.apply_mask(@file.mask)
-		dump_to_screen(true)
+		err = @buffer_history.apply_mask(@file.mask)
+		if err
+			$screen.write_message(err)
+		else
+			dump_to_screen(true)
+		end
 	end
 	def unmask
 		@buffer_history.unapply_mask(@file.mask)
