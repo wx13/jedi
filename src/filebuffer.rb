@@ -69,9 +69,9 @@ class FileBuffer
 		@enforce_ascii = $enforce_ascii[@filetype]
 		@horiz_scroll = $horiz_scroll[@filetype]
 
-		# undo-redo history
-		@buffer_history = BufferHistory.new(@text,@row,@col)
-		@buffer_history.load(@file.name.rpartition('/').insert(2,@backups).join) if @backups
+
+		init_buffer_history
+
 		# save up info about screen to detect changes
 		@colfeed_old = 0
 		@marked_old = false
@@ -104,6 +104,18 @@ class FileBuffer
 	end
 
 
+	# undo-redo history
+	def init_buffer_history
+		@buffer_history = BufferHistory.new(@text,@row,@col)
+		@buffer_history.load(@file.name.rpartition('/').insert(2,@backups).join) if @backups
+		# If current text state is the same as the buffer history state,
+		# set the current text to that state.  Otherwise, make a new snapshot.
+		if @text == @buffer_history.text
+			@text = @buffer_history.copy
+		else
+			@buffer_history.add(@text,@row,@col)
+		end
+	end
 
 	# Set the file type from the filename.
 	def get_filetype(filename)
