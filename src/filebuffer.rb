@@ -1493,6 +1493,36 @@ class FileBuffer
 
 
 
+	# Allow the user to create a regexp replacement "mask" between
+	# the buffer and the file.  Ask the user for a hash of regexp/string
+	# pairs, and convert the buffer.  On save, the buffer will be unconverted.
+	# Should warn user if changes are irreversible.
+	def mask
+		ans = @window.ask("Mask (hash):")
+		if ans.nil? || ans.empty?
+			@window.write_message("Cancelled.")
+			return
+		end
+		@buffer_history.unapply_mask(@file.mask)
+		begin
+			@file.mask = eval(ans)
+		rescue
+			@window.write_message("Error: bad input")
+			return
+		end
+		unless @file.mask.is_a?(Hash)
+			@window.write_message("Error: not a hash")
+			return
+		end
+		@buffer_history.apply_mask(@file.mask)
+		dump_to_screen(true)
+	end
+	def unmask
+		@buffer_history.unapply_mask(@file.mask)
+		dump_to_screen(true)
+	end
+
+
 	# These functions allow a user to pretend the indentaion scheme is
 	# different than it actually is.  For example, if a file is indented with
 	# 4 spaces, and the user likes tabs.

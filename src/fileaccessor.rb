@@ -8,7 +8,7 @@
 class FileAccessor
 
 	attr_accessor :name, :indentchar, :indentstring, :bufferindentstring,
-	:bufferindentchar
+	:bufferindentchar, :mask
 
 	def initialize(filename)
 		@name = filename
@@ -16,6 +16,7 @@ class FileAccessor
 		@indentchar = nil
 		@indentstring = nil
 		@bufferindentstring = nil
+		@mask = {}
 	end
 
 

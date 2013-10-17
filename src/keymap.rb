@@ -96,6 +96,8 @@ class KeyMap
 			"f" => "buffer = $buffers.duplicate",
 			"i" => "buffer.indentation_facade",
 			"I" => "buffer.indentation_real",
+			"m" => "buffer.mask",
+			"M" => "buffer.unmask",
 			"x" => "buffer.multimark",
 			"C" => "$screen.set_cursor_color",
 			"t" => "buffer.set_tabchar",

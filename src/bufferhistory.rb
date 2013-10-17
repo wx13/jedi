@@ -279,17 +279,47 @@ class BufferHistory
 
 	# Change indentation string in text buffers.
 	def swap_indent_string(str1, str2)
+		each_line{|line|
+			line.swap_indent_string(str1,str2)
+		}
+		#texts = @hist.map{|text| text.text}
+		#ids = texts.flatten.map{|line| line.object_id}
+		#require 'set'
+		#s = Set.new(ids)
+		#s.each{|id|
+		#	ObjectSpace._id2ref(id).swap_indent_string(str1,str2)
+		#}
+	rescue
+		$screen.write_message($!.to_s)
+	end
+
+	def each_line
 		texts = @hist.map{|text| text.text}
 		ids = texts.flatten.map{|line| line.object_id}
 		require 'set'
 		s = Set.new(ids)
 		s.each{|id|
-			ObjectSpace._id2ref(id).swap_indent_string(str1,str2)
+			yield ObjectSpace._id2ref(id)
 		}
 	rescue
 		$screen.write_message($!.to_s)
 	end
 
+	def apply_mask(mask)
+		each_line{|line|
+			mask.each{|k,v|
+				line.gsub!(k,v)
+			}
+		}
+	end
+
+	def unapply_mask(mask)
+		each_line{|line|
+			mask.each{|k,v|
+				line.gsub!(v,k)
+			}
+		}
+	end
 
 
 end
