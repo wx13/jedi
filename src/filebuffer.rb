@@ -1608,6 +1608,77 @@ class FileBuffer
 		end
 	end
 
+	def align
+		unless @marked
+			@window.write_message("Must mark text first")
+			return
+		end
+		ptrn = @window.ask("Align:")
+		if ptrn[0] == "/"
+			ptrn = eval(ptrn)
+		end
+		return if ptrn.nil?
+		rows = [@mark_row,@row].sort
+		rows = (rows[0]..rows[1])
+		@marked = false
+		d = rows.map{|r|@text[r].partition(ptrn)[0].length}.max
+		rows.each{|r|
+			line = @text[r]
+			a,b,c = line.partition(ptrn)
+			@text[r] = sprintf("%-#{d}s%s%s",a,b,c)
+		}
+	end
+
+	def align_all
+		unless @marked
+			@window.write_message("Must mark text first")
+			return
+		end
+		ptrn = @window.ask("Align:")
+		return if ptrn.nil?
+		rows = [@mark_row,@row].sort
+		rows = (rows[0]..rows[1])
+		@marked = false
+		d = []
+		k = 0
+		text = @text[rows]
+		while true
+			d[k] = text.map{|line|line.partition(ptrn)[0].length}.max
+			text = text.map{|line|line.partition(ptrn)[2]}
+			break if text.map{|line|line.length}.max == 0
+			k+=1
+		end
+		$screen.write_message(d.inspect)
+		rows.each{|r|
+			line = @text[r]
+			@text[r] = ""
+			k = 0
+			while true
+				a,b,c = line.partition(ptrn)
+				@text[r] += sprintf("%-#{d[k]}s%s",a,b)
+				k+=1
+				line = c
+				break if line.empty?
+			end
+		}
+	end
+
+	def unalign
+		unless @marked
+			@window.write_message("Must mark text first")
+			return
+		end
+		rows = [@mark_row,@row].sort
+		rows = (rows[0]..rows[1])
+		@marked = false
+		rows.each{|r|
+			line = @text[r]
+			@text[r] = line.gsub(/[^\s].*$/,'')
+			@text[r] += line.gsub(/\s+/,' ')
+		}
+	end
+
+
 end
 
 # end of big buffer class
