@@ -1,7 +1,5 @@
 #---------------------------------------------------------------------
-# Utils
-#
-# Various utility methods
+# Add some useful methods to strings, arrays, etc.
 #---------------------------------------------------------------------
 
 
@@ -36,12 +34,21 @@ class String
 	end
 
 	# Replace the contents of a string in-place (same memory location).
+	#
+	# Example:
+	#   a = "foo"
+	#   b = a
+	#   a.replace("bar")
+	#   puts b  #=> "bar"
 	def replace(str)
 		self.slice!(0..-1)
 		self << str
 	end
 
 	# Swap out leading occurances of one string for another.
+	#
+	# Example:
+	#   "  foo".swap_indent_string(" ","\t") #=> "\t\tfoo"
 	def swap_indent_string(str1,str2)
 		ni, after = self.leading_occurances(str1)
 		self.replace(str2*ni + after)
@@ -49,6 +56,14 @@ class String
 
 	# Find the next match within a string.
 	# Handle both forward and backward searches.
+	#
+	# Examples:
+	#   "foo bar foo bar".search_string("foo")
+	#     #=> [0,3]
+	#   "foo bar foo bar".search_string("foo",:backward)
+	#     #=> [8,3]
+	#   "foo bar foo bar".search_string("foo",:forward,2)
+	#     #=> [8,3]
 	def search_string(token,dir=:forward,pos=nil)
 		return nil if pos && pos >= self.length
 		if dir == :forward
@@ -69,6 +84,7 @@ class String
 		end
 	end
 
+	# Convert a string to a regex, following these rules:
 	# "normal string"        => /normal string/
 	# "special/chars"        => /special\/chars/
 	# "/regex/", escape=nil  => /regex/
@@ -89,6 +105,10 @@ end
 
 
 class Array
+	# Count the number of array elements which match the pattern.
+	#
+	# Example:
+	#   ["foo","bar","baz"].count(/ba./) #=> 2
 	def count(pattern)
 		self.grep(pattern).length
 	end
@@ -99,6 +119,9 @@ class Array
 end
 
 class Regexp
+	# This is an identity function.  It is defined, so that
+	# this method can be called without worryting if the object
+	# is already a regex
 	def to_regex(escape)
 		self
 	end
