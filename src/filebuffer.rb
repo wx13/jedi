@@ -16,45 +16,43 @@ class FileBuffer
 
 	def initialize(filename)
 
-		# read in the file
+		# Read in the file.
 		@file = FileAccessor.new(filename)
 		@text = TextBuffer.new(@file.read)
 
-		# file type for syntax coloring
+		# Use the filename extension to set the
+		# file type (for syntax coloring, etc).
 		@filetype = get_filetype(@file.name)
 
-		# position of cursor in buffer
-		@row = 0
-		@col = 0
+		# position in the buffer
+		@row = @col = 0
 		# Desired column (memory of where we used to be)
-		@usedescol = false
-		@descol = false
-		# shifts of the buffer
-		@linefeed = 0
-		@colfeed = 0
+		@usedescol = @descol = false
+		# These allow the text to be shifted on the screen.
+		@linefeed = @colfeed = 0
 
 		# copy,cut,paste stuff
-		@marked = false
-		@cutrow = -1  # keep track of last cut row, to check for consecutiveness
-		@cutscore = 0  # don't let cuts be consecutive after lots of stuff has happened
-		@mark_col = 0
-		@mark_row = 0
+		@marked = false             # Is the text marked?
+		@cutrow = -1                # Keep track of last cut row, to check for consecutiveness.
+		@cutscore = 0               # Don't let cuts be consecutive after lots of stuff has happened.
+		@mark_col = @mark_row = 0   # Start/end of the marked text.
+
+		# Multimark for multiple cursor mode.
 		@mark_list = {}
 		@multimarkmode = false
 
-
-		# displayed width of a literal tab chracter
+		# Set the tab character width according to filetype.
 		@tabsize = $tabsize[@filetype]
 		# what to insert when tab key is pressed
 		@tabchar = $tabchar[@filetype]
-		# char the editor uses for indentation
+		# The char and string the editor condsiders to be an indent.
+		# By default, this is set by what is seen in the file.
 		@indentchar = @file.indentchar
 		@indentstring = @file.indentstring
 
 		# for text justify
 		# 0 means full screen width
 		@linelength = $linelength[@filetype]
-
 
 		# flags
 		@autoindent = $autoindent[@filetype]
@@ -68,7 +66,6 @@ class FileBuffer
 		@backups = $backups[@filetype]
 		@enforce_ascii = $enforce_ascii[@filetype]
 		@horiz_scroll = $horiz_scroll[@filetype]
-
 
 		init_buffer_history
 
@@ -87,7 +84,8 @@ class FileBuffer
 		@buffer_marks = {}
 		@buffer_marks.default = [-1,-1]
 
-		# Time of the last status bar update
+		# Time of the last status bar update, so that
+		# we don't update too frequently.
 		@last_status_update = 0.0
 		@min_status_update = 0.1
 
@@ -104,12 +102,16 @@ class FileBuffer
 	end
 
 
-	# undo-redo history
+
+	# Setup the undo-redo history.
+	# 1. Create a new buffer history object
+	# 2. Read in the history file
+	# 3. If the current state is the same as the buffer history state,
+	#    set the current state to that state. Otherwise, make a new snapshot.
+	#    If we don't do this, then the current state is orphaned from the history.
 	def init_buffer_history
 		@buffer_history = BufferHistory.new(@text,@row,@col)
 		@buffer_history.load(@file.name.rpartition('/').insert(2,@backups).join) if @backups
-		# If current text state is the same as the buffer history state,
-		# set the current text to that state.  Otherwise, make a new snapshot.
 		if @text == @buffer_history.text
 			@text = @buffer_history.copy
 		else
@@ -117,16 +119,15 @@ class FileBuffer
 		end
 	end
 
+
+
 	# Set the file type from the filename.
 	def get_filetype(filename)
-		filetype = nil
 		$filetypes.each{|k,v|
-			if filename.match(k) != nil
-				filetype = v
-			end
+			return v if filename.match(k)
 		}
-		return filetype
 	end
+
 
 
 	# Remember a position in the text.
@@ -140,22 +141,21 @@ class FileBuffer
 		end
 	end
 
+
+
 	# Go to a remembered position.
 	def goto_bookmark
 		answer = @window.ask("go to:",@bookmarks_hist)
-		if answer == nil
+		if answer.nil?
 			@window.write_message("Cancelled")
 			return
 		end
 		rc = @bookmarks[answer]
-		if rc == nil
+		if rc.nil?
 			@window.write_message("Invalid bookmark")
 			return
 		end
-		@row = rc[0]
-		@col = rc[1]
-		@linefeed = rc[2]
-		@colfeed = rc[3]
+		@row,@col,@linefeed,@colfeed = rc
 		@window.write_message("found it")
 	end
 
@@ -163,7 +163,6 @@ class FileBuffer
 
 	# Toggle one of many states.
 	def toggle
-		# get answer and execute the code
 		@window.write_message("Toggle")
 		c = @window.getch until c!=nil
 		if c == :tab
@@ -177,6 +176,8 @@ class FileBuffer
 		@window.write_message(cmd)
 	end
 
+
+
 	# Go back to edit mode.
 	def toggle_editmode
 		@editmode = :edit
@@ -185,18 +186,17 @@ class FileBuffer
 
 
 
-
 	def save
 
 		# Ask the user for a file.
 		# Defaults to current file.
 		ans = @window.ask("save to:",[@file.name],:display_last_answer=>true,:file=>true)
-		if ans == nil
+		if ans.nil?
 			@window.write_message("Cancelled")
 			return
 		end
-		if ans == "" then ans = @file.name end
-		if ans == ""
+		ans = @file.name if ans.empty?
+		if ans.empty?
 			@window.write_message("Cancelled")
 			return
 		end
@@ -274,15 +274,12 @@ class FileBuffer
 
 	# make sure file position is valid
 	def sanitize
-		if @text.length == 0
+		if @text.empty?
 			@text[0] = ""
-			@row = 0
-			@col = 0
+			@row = @col = 0
 			return
 		end
-		if @row >= @text.length
-			@row = @text.length - 1
-		end
+		@row = [@row,@text.length-1].min
 		if @text[@row].is_a?(String)
 			len = @text[@row].length
 		else
