@@ -41,14 +41,14 @@ class Editor
 		$startup_script = nil
 		$histories_file = ENV['HOME'] + "/.jedi/history.yaml"
 
+		# Run startup scripts.
+		search_for_startup_scripts if $search_for_scripts
+		run_script($startup_script) if $startup_script
+
 		# Parse input options after keymap and colors are defined, but before
 		# we initialize any of the big classes.  This way, a user script can
 		# modify the screen/buffer/etc classes on start-up.
 		parse_options
-
-		# Run startup scripts.
-		search_for_startup_scripts if $search_for_scripts
-		run_script($startup_script) if $startup_script
 
 		# Initialize the interactive screen environment, and set the color
 		# global to point to the one that screen defines.  This will keep
