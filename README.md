@@ -11,46 +11,31 @@ hackable.
  - Hackable
    + Full ruby scriptability (on startup, and while running)
    + 3K SLOC
- - Some Features
+ - Cool Features
    + Text folding (manual and pattern-based auto-folding)
    + Multi-level undo/redo with (optional) history saved to disk
-   + Multiple cursor modes
-   + Indentation facade
+   + Multiple cursor modes (normal, column, multiple)
+   + Indentation facade (buffer can use different indentation string
+     than file)
    + Searchable copy/paste history
    + Split screen modes
    + Drop into an IRB session at anytime
 
 
 
-Try it out
-----------
-
-To try out the latest release:
-
-    wget http://wx13.com/jedi/latest/jedi.rb
-    ruby jedi.rb <list of files>
-
-
 
 Installation
 ------------
 
-*Option 1:*
+Grab the code with git
 
-Stick the jedi.rb file in your path.
+	git clone https://github.com/wx13/jedi.git
 
-*Option 2:*
+or download and extract the tarball:
 
-Add the following line to `/etc/apt/sources.list`
+	wget https://github.com/wx13/jedi/archive/master.zip
 
-    deb http://debian.wx13.com binary/
-
-Then: `apt-get update; apt-get install jedi-editor`
-
-*Option 3:*
-
-Grab the full source code from
-http://github.com/wx13/jedi, and run
+Then run
 
     sh install.sh [prefix]
 
